@@ -5,3 +5,6 @@ todo
 build/*
 .vscode/*
 imgui.ini
+*.exe
+*.pcx
+*.txt
