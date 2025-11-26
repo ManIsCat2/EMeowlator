@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <SDL2/SDL.h>
 typedef unsigned short ushort;
 
 #define NES_WIDTH  256
