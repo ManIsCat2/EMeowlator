@@ -34,6 +34,17 @@ bool SpritePatternTable = false;
 bool BGPatternTable = false;
 bool Use8x16Sprites = false;
 bool EnableNMI = false;
+ushort ShiftRegPatternL = 0;
+ushort ShiftRegPatternH = 0;
+ushort ShiftRegAttrL = 0;
+ushort ShiftRegAttrH = 0;
+ushort EightStepPatternLowBitPlane = 0;
+ushort EightStepPatternHighBitPlane = 0;
+uint8_t EightStepAttr = 0;
+ushort AddrBus = 0;
+uint8_t EightStepTemp = 0;
+uint8_t EightStepNextChar = 0;
+uint8_t ScrollFineX = 0;
 
 //mem
 uint8_t RAM[0x800] = {0};
@@ -42,6 +53,27 @@ uint8_t Header[0x10] = {0};
 uint8_t CHRData[0x2000] = {0};
 
 bool CPUHalted = false;
+
+uint8_t ReadPPU(ushort Address) {
+    if (Address < 0x2000) {
+        return CHRData[Address];
+    } else if (Address < 0x3F00) {
+        if ((Header[6] & 1) == 0) {
+            //horizontal
+            return VRAM[(Address & 0x3FF) | (Address & 0x800) >> 1];
+        } else {
+            //vertical
+            return VRAM[Address & 0x7FF];
+        }
+    } else {
+        if ((Address & 3) == 0) {
+            return PaletteRAM[Address & 0x0F];
+        } else {
+            return PaletteRAM[Address & 0x1F];
+        }
+    }
+}
+
 
 uint8_t Read(ushort Address) {
     if (Address < 0x800) {
@@ -59,22 +91,10 @@ uint8_t Read(ushort Address) {
             }
             case 0x2007: {
                 uint8_t Temp = ReadBuffer;
-                if (VRAMAddress < 0x2000) {
-                    ReadBuffer = CHRData[VRAMAddress];
-                } else if (VRAMAddress < 0x3F00) {
-                    if ((Header[6] & 1) == 0) {
-                        //horizontal
-                        ReadBuffer = VRAM[(VRAMAddress & 0x3FF) | (VRAMAddress & 0x800) >> 1];
-                    } else {
-                        //vertical
-                        ReadBuffer = VRAM[VRAMAddress & 0x7FF];
-                    }
+                if (VRAMAddress > 0x3F00) {
+                    Temp = ReadPPU(VRAMAddress);
                 } else {
-                    if ((VRAMAddress & 3) == 0) {
-                        Temp = PaletteRAM[VRAMAddress & 0x0F];
-                    } else {
-                        Temp = PaletteRAM[VRAMAddress & 0x1F];
-                    }
+                    ReadBuffer = ReadPPU(VRAMAddress);
                 }
                 VRAMAddress += VRAMInc32Mode ? 32 : 1;
                 VRAMAddress &= 0x3FFF;
@@ -116,6 +136,13 @@ void Write(ushort Address, uint8_t Value) {
             case 0x2004: // OAMDATA
                 break;
             case 0x2005: // PPUSCROLL
+                if (!WriteLatch) {
+                    ScrollFineX = Value & 7;
+                    TempVRAMAddress = (ushort)((TempVRAMAddress & 0b0111111111100000) | (Value >> 3));
+                } else {
+                    TransferAddress = (ushort)((TempVRAMAddress & 0b0000110000011111) | (((Value & 0xF8) << 2) | ((Value & 7) << 12)));
+                }
+                WriteLatch = !WriteLatch;
                 break;
             case 0x2006: // PPUADDR
                 if (!WriteLatch) {
@@ -1019,11 +1046,146 @@ void EmulateCPU(void) {
     }
 }
 
+void IncScrollY(void) {
+    if ((VRAMAddress & 0x7000) != 0x7000) {
+        VRAMAddress += 0x1000;
+    } else {
+        VRAMAddress &= 0x0FFF;
+        int YScroll = (VRAMAddress & 0x03E0) >> 5;
+        if (YScroll == 29) {
+            YScroll = 0;
+            VRAMAddress ^= 0x0800;
+        } else {
+            YScroll++;
+            YScroll &= 0x1F;
+        }
+        VRAMAddress = (ushort)((VRAMAddress & 0xFC1F) | (YScroll << 5));
+    }
+}
+
+void ResetXScroll(void) {
+    VRAMAddress = (ushort)((VRAMAddress & 0b0111101111100000) | (TransferAddress & 0b0000010000011111));
+}
+
+void ResetYScroll(void) {
+    VRAMAddress = (ushort)((VRAMAddress & 0b0000010000011111) | (TransferAddress & 0b0111101111100000));
+}
+
+SDL_Surface *PPUBitmap = nullptr;
+
+const uint32_t Palette[64] = {
+    0xFF757575,0xFF271B8F,0xFF0000AB,0xFF47009F,0xFF8F0077,0xFFAB0013,0xFFA70000,0xFF7F0B00,
+    0xFF432F00,0xFF004700,0xFF005100,0xFF003F17,0xFF1B3F5F,0xFF000000,0xFF000000,0xFF000000,
+    0xFFBCBCBC,0xFF0073EF,0xFF233BEF,0xFF8300F3,0xFFBF00BF,0xFFE7005B,0xFFDB2B00,0xFFCB4F0F,
+    0xFF8B7300,0xFF009F0F,0xFF00AB00,0xFF00933B,0xFF00838B,0xFF000000,0xFF000000,0xFF000000,
+    0xFFFFFFFF,0xFF3FBFFF,0xFF5F97FF,0xFFA78BFD,0xFFF77BFF,0xFFFF77B7,0xFFFF7763,0xFFFF9B3B,
+    0xFFF3BF3F,0xFF83D313,0xFF4FDF4B,0xFF58F898,0xFF00EBDB,0xFF000000,0xFF000000,0xFF000000,
+    0xFFFFFFFF,0xFFA7E7FF,0xFFC7D7FF,0xFFD7CBFF,0xFFFFC7FF,0xFFFFC7DB,0xFFFFBFB3,0xFFFFDBAB,
+    0xFFFFE7A3,0xFFE3FFA3,0xFFABF3BF,0xFFB3FFCF,0xFF9FFFF3,0xFF000000,0xFF000000,0xFF000000
+};
+
 void EmulatePPU(void) {
     if (Dot == 1 && Scanline == 241) {
         VBlank = true;
     } else if (Dot == 1 && Scanline == 261) {
         VBlank = false;
+    }
+
+    if ((Scanline < 240 || Scanline == 261)) {
+        if ((Dot > 0 && Dot <= 256) || (Dot > 320 && Dot <= 336)) {
+            if (MaskRenderBG || MaskRenderSprites) {
+                if (MaskRenderBG) {
+                    ShiftRegPatternL = ShiftRegPatternL << 1;
+                    ShiftRegPatternH = ShiftRegPatternH << 1;
+                    ShiftRegAttrL = ShiftRegAttrL << 1;
+                    ShiftRegAttrH = ShiftRegAttrH << 1;
+
+                    uint8_t CycleTick = (uint8_t)((Dot - 1) & 7);
+                    switch (CycleTick) {
+                        case 0:
+                            ShiftRegPatternL = (ushort)((ShiftRegPatternL & 0xFF00) | EightStepPatternLowBitPlane);
+                            ShiftRegPatternH = (ushort)((ShiftRegPatternH & 0xFF00) | EightStepPatternHighBitPlane);
+                            ShiftRegAttrL = (ushort)((ShiftRegAttrL & 0xFF00) | ((EightStepAttr & 1) == 1 ? 0xFF : 0));
+                            ShiftRegAttrH = (ushort)((ShiftRegAttrH & 0xFF00) | ((EightStepAttr & 2) == 2 ? 0xFF : 0));
+                            AddrBus = 0x2000 + (VRAMAddress & 0x0FFF);
+                            EightStepTemp = ReadPPU(AddrBus);
+                            break;
+                        case 1:
+                            EightStepNextChar = EightStepTemp;
+                            break;
+                        case 2:
+                            AddrBus = (0x23C0 | (VRAMAddress & 0x0C00) | ((VRAMAddress >> 4) & 0x38) | ((VRAMAddress >> 2) & 0x07));
+                            EightStepTemp = ReadPPU(AddrBus);
+                            break;
+                        case 3:
+                            EightStepAttr = EightStepTemp;
+                            if ((VRAMAddress & 3) >= 2) {
+                                EightStepAttr = EightStepAttr >> 2;
+                            }
+                            if ((((VRAMAddress & 0b0000001111100000) >> 5) & 3) >= 2) {
+                                EightStepAttr = EightStepAttr >> 4;
+                            }
+                            EightStepAttr = EightStepAttr & 3;
+                            break;
+                        case 4:
+                            AddrBus = (((VRAMAddress & 0b0111000000000000) >> 12) | EightStepNextChar * 16 | (BGPatternTable ? 0x1000 : 0));
+                            EightStepTemp = ReadPPU(AddrBus);
+                            break;
+                        case 5:
+                            EightStepPatternLowBitPlane = EightStepTemp;
+                            AddrBus += 8;
+                            break;
+                        case 6:
+                            EightStepTemp = ReadPPU(AddrBus);
+                            break;
+                        case 7:
+                            EightStepPatternHighBitPlane = EightStepTemp;
+                            if ((VRAMAddress & 0x001F) == 31) {
+                                VRAMAddress &= 0xFFE0;
+                                VRAMAddress ^= 0x0400;
+                            } else {
+                                VRAMAddress++;
+                            }
+                            break;
+                    }
+                }
+            }
+        }
+    }
+    if (Dot == 256) {
+        IncScrollY();
+    } else if (Dot == 257) {
+        ResetXScroll();
+    }
+    if (Dot >= 280 && Dot <= 304 && Scanline == 261) {
+        ResetYScroll();
+    }
+    if (Scanline < 241 && Dot > 0 && Dot <= 256) {
+        uint8_t PalHigh = 0;
+        uint8_t PalLow = 0;
+        if (MaskRenderBG && (Dot > 8 || Mask8pxMaskBG)) {
+            uint8_t Col0 = (uint8_t)(((ShiftRegPatternL >> (15 - ScrollFineX))) & 1);
+            uint8_t Col1 = (uint8_t)(((ShiftRegPatternH >> (15 - ScrollFineX))) & 1);
+            PalLow = ((Col1 << 1) | Col0);
+
+            uint8_t Pal0 = (uint8_t)(((ShiftRegAttrL) >> (15 - ScrollFineX)) & 1);
+            uint8_t Pal1 = (uint8_t)(((ShiftRegAttrH) >> (15 - ScrollFineX)) & 1);
+            PalHigh = ((Pal1 << 1) | Pal0);
+
+            if (PalLow == 0 && PalHigh != 0) {
+                PalHigh = 0;
+            }
+
+            uint8_t PalIndex = (PalHigh << 2) | PalLow; // 0–63
+
+            // Write pixel to SDL_Surface
+            if (PPUBitmap && PPUBitmap->pixels) {
+                uint32_t* Pixels = (uint32_t*)PPUBitmap->pixels;
+                int X = Dot - 1;          // 0-based pixel X
+                int Y = Scanline;         // 0-based pixel Y
+                Pixels[Y * PPUBitmap->w + X] = Palette[PalIndex];
+            }
+        }
     }
     Dot++;
     if (Dot > 341) {
@@ -1049,14 +1211,20 @@ void Run(void) {
 }
 
 int main(int argc, char **argv) {
-    Reset(argv[1]);
-    Run();
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window* Win = SDL_CreateWindow("awesome emulator", 100, 100, NES_WIDTH, NES_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     SDL_Renderer* Renderer = SDL_CreateRenderer(Win, -1, SDL_RENDERER_ACCELERATED);
-    SDL_Surface* Bitmap = SDL_CreateRGBSurfaceWithFormat(0, NES_WIDTH, NES_HEIGHT, 32, SDL_PIXELFORMAT_RGBA32);
-    for (int Row = 0; Row < 30; Row++) {
+    SDL_Surface* Bitmap = SDL_CreateRGBSurfaceWithFormat(0, NES_WIDTH, NES_HEIGHT, 32, SDL_PIXELFORMAT_ARGB8888);
+    PPUBitmap = Bitmap;
+    Reset(argv[1]);
+    Run();
+
+    /*for (int Row = 0; Row < 30; Row++) {
         for (int Col = 0; Col < 32; Col++) {
+            uint8_t AttrOffset = ((Col >> 2) + (Row >> 2) * 8);
+            uint8_t Attrs = VRAM[0x3C0 + AttrOffset];
+            uint8_t Quad = (((Col >> 1) & 1) + ((Row >> 1) & 1) * 2);
+            uint8_t Pair = ((Attrs >> (Quad * 2)) & 3);
             for (int ScreenY = 0; ScreenY < 8; ScreenY++) {
                 int Use2ndPatternTable = BGPatternTable ? 4096 : 0;
                 uint8_t LowByte = CHRData[VRAM[Col + Row * 32] * 16 + ScreenY+Use2ndPatternTable];
@@ -1064,13 +1232,18 @@ int main(int argc, char **argv) {
                 for (int ScreenX = 0; ScreenX < 8; ScreenX++) {
                     // draw pixel
                     int TwoBit = ((LowByte >> (7-ScreenX)) & 1) == 1 ? 1 : 0;
-                    TwoBit +=  ((HighByte >> (7-ScreenX)) & 1) == 1 ? 2 : 0;
-                    uint32_t Color = SDL_MapRGBA(Bitmap->format, TwoBit * 85, TwoBit * 85, TwoBit * 85, 255);
-                    ((Uint32*)Bitmap->pixels)[(ScreenY + Row * 8) * Bitmap->w + (ScreenX + Col * 8)] = Color;
+                    TwoBit += ((HighByte >> (7-ScreenX)) & 1) == 1 ? 2 : 0;
+                    uint32_t Color = 0;
+                    if (TwoBit == 0) {
+                        Color = Palette[PaletteRAM[0]];
+                    } else {
+                        Color = Palette[PaletteRAM[TwoBit + Pair * 4]];
+                    }
+                    ((uint32_t*)Bitmap->pixels)[(ScreenY + Row * 8) * Bitmap->w + (ScreenX + Col * 8)] = Color;
                 }
             }
         }
-    }
+    }*/
     SDL_Texture* Tex = SDL_CreateTextureFromSurface(Renderer, Bitmap);
     SDL_FreeSurface(Bitmap);
 
