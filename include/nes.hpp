@@ -1,11 +1,6 @@
 #pragma once
 
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <SDL2/SDL.h>
-typedef unsigned short ushort;
+#define MEMORY_SIZE 0x10000
 
 #define NES_WIDTH  256
 #define NES_HEIGHT 240
