@@ -13,8 +13,35 @@ NesROM globalROM;
 bool romIsLoaded = false;
 static bool fullscreen = false;
 static bool unlimitFPS = false;
+static bool showRAMview = false;
 
 static const char* NesPalettes[] = { "NTSC", "PAL" };
+
+void DrawRAMView() {
+    ImGui::Begin("Memory View", &showRAMview);
+
+    const int bytesPerRow = 16;
+    for (size_t offset = 0; offset < RAM_SIZE; offset += bytesPerRow) {
+        ImGui::Text("%04X: ", (unsigned int)offset);
+        ImGui::SameLine();
+        for (size_t i = 0; i < bytesPerRow; ++i) {
+            if (offset + i < RAM_SIZE) {
+                ImGui::Text("%02X ", cpu.RAM[offset + i]);
+                ImGui::SameLine();
+            }
+        }
+        ImGui::SameLine();
+        for (size_t i = 0; i < bytesPerRow; ++i) {
+            if (offset + i < RAM_SIZE) {
+                uint8_t c = cpu.RAM[offset + i];
+                ImGui::Text("%c", (c >= 32 && c < 127) ? c : '.');
+                ImGui::SameLine();
+            }
+        }
+        ImGui::NewLine();
+    }
+    ImGui::End();
+}
 
 int main(int argc, char* argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) != 0) {
@@ -45,14 +72,12 @@ int main(int argc, char* argv[]) {
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer2_Init(renderer);
 
-    std::array<uint8_t, MEMORY_SIZE> mem{};
     bool running = true;
     std::string romPath;
     SDL_Event event;
 
     if (argc > 1) {
-        if (globalROM.LoadNES(argv[1], mem)) {
-            cpu.LoadMem(mem);
+        if (globalROM.LoadNES(argv[1])) {
             cpu.reset();
             romIsLoaded = true;
         }
@@ -68,7 +93,6 @@ int main(int argc, char* argv[]) {
         ImGui::NewFrame();
 
         if (ImGui::BeginMainMenuBar()) {
-            
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("Open ROM")) {
                     auto selection = pfd::open_file(
@@ -80,8 +104,7 @@ int main(int argc, char* argv[]) {
 
                     if (!selection.empty()) {
                         romPath = selection.front();
-                        if (globalROM.LoadNES(romPath, mem)) {
-                            cpu.LoadMem(mem);
+                        if (globalROM.LoadNES(romPath)) {
                             cpu.reset();
                             romIsLoaded = true;
                         } else {
@@ -123,6 +146,17 @@ int main(int argc, char* argv[]) {
                     ImGui::EndMenu();
                 }
                 ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Debug")) {
+                if (ImGui::MenuItem("View Memory")) {
+                    showRAMview = true;
+                }
+                ImGui::EndMenu();
+            }
+
+            if (showRAMview) {
+                DrawRAMView();
             }
 
             if (ImGui::BeginMenu("Settings")) {

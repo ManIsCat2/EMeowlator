@@ -1775,7 +1775,7 @@ void CPU::SetZN(uint8_t value)
 uint8_t CPU::read(uint16_t addr)
 {
     if (addr < 0x2000) {
-        return memory[addr & 0x07FF];
+        return RAM[addr & 0x07FF];
     }
 
     if (addr >= 0x2000 && addr < 0x4000) {
@@ -1823,7 +1823,6 @@ uint8_t CPU::read(uint16_t addr)
         }
     }
 
-
     switch (addr) {
         case 0x4015: // apu
             return 0;
@@ -1843,13 +1842,20 @@ uint8_t CPU::read(uint16_t addr)
         }
     }
 
-    return memory[addr];
+    if (addr >= 0x6000 && addr < 0x8000) {
+        return prgRam[addr - 0x6000];
+    }
+
+    if (addr >= 0x8000) {
+        return globalROM.ROM[addr-0x8000];
+    }
+    return 0;
 }
 
 void CPU::write(uint16_t addr, uint8_t value)
 {
     if (addr < 0x2000) {
-        memory[addr & 0x07FF] = value;
+        RAM[addr & 0x07FF] = value;
         return;
     }
 
@@ -1957,7 +1963,7 @@ void CPU::write(uint16_t addr, uint8_t value)
     }
 
     if (addr >= 0x6000 && addr < 0x8000) {
-        memory[addr] = value;
+        prgRam[addr] = value;
         return;
     }
 }
@@ -1970,11 +1976,11 @@ uint16_t CPU::read16(uint16_t addr)
 }
 
 void CPU::push(uint8_t value) {
-    memory[0x100 + SP] = value;
+    RAM[0x100 + SP] = value;
     SP--;
 }
 
 uint8_t CPU::pop() {
     SP++;
-    return memory[0x100 + SP];
+    return RAM[0x100 + SP];
 }

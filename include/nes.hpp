@@ -1,9 +1,9 @@
 #pragma once
 
-#define MEMORY_SIZE 0x10000
-
 #define NES_WIDTH  256
 #define NES_HEIGHT 240
+
+#define RAM_SIZE 0x800
 
 #define A_BUTTON        (1 << 0)
 #define B_BUTTON        (1 << 1)

@@ -13,6 +13,8 @@ public:
     CPU() { reset(); }
 
     bool CPUPaused = false;
+    uint8_t RAM[RAM_SIZE];
+    uint8_t prgRam[0x2000];
 
     void reset() {
         A = X = Y = 0;
@@ -20,10 +22,6 @@ public:
         P = 0x24;
         PC = read16(0xFFFC);
         cycles = 0;
-    }
-
-    void LoadMem(const std::array<uint8_t, MEMORY_SIZE>& mem) {
-        memory = mem;
     }
 
     bool NMIDetector = false;
@@ -54,8 +52,6 @@ private:
     uint8_t SP;
     uint8_t P;
     uint64_t cycles;
-
-    std::array<uint8_t, MEMORY_SIZE> memory{};
 
     uint8_t fetch() { return read(PC++); }
 

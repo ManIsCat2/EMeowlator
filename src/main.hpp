@@ -20,8 +20,9 @@ extern NesROM globalROM;
 class NesROM {
 public:
     uint8_t Header[8];
+    uint8_t ROM[0x8000];
 
-    bool LoadNES(const std::string& filename, std::array<uint8_t, MEMORY_SIZE>& mem) {
+    bool LoadNES(const std::string& filename) {
         std::ifstream rom(filename, std::ios::binary | std::ios::ate);
         if (!rom) {
             std::cerr << "Failed to open ROM: " << filename << "\n";
@@ -47,7 +48,7 @@ public:
             return false;
         }
 
-        std::memcpy(globalROM.Header, data.data(), 8);
+        std::memcpy(Header, data.data(), 8);
 
         uint8_t prgPages = data[4];
         uint8_t chrPages = data[5];
@@ -76,11 +77,11 @@ public:
             std::cerr << "ROM has zero PRG pages.\n";
             return false;
         } else if (prgPages == 1) {
-            std::memcpy(&mem[0x8000], &data[offset], 0x4000);
-            std::memcpy(&mem[0xC000], &data[offset], 0x4000);
+            std::memcpy(&ROM[0], &data[offset], 0x4000);
+            std::memcpy(&ROM[0x4000], &data[offset], 0x4000);
         } else {
-            std::memcpy(&mem[0x8000], &data[offset], 0x4000);
-            std::memcpy(&mem[0xC000], &data[offset + 0x4000], 0x4000);
+            std::memcpy(&ROM[0], &data[offset], 0x4000);
+            std::memcpy(&ROM[0x4000], &data[offset + 0x4000], 0x4000);
         }
         offset += totalPrgSize;
 
