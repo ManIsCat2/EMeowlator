@@ -8,6 +8,8 @@
 
 #include "main.hpp"
 
+#include "savestate.hpp"
+
 NesROM globalROM;
 
 bool romIsLoaded = false;
@@ -16,6 +18,8 @@ static bool unlimitFPS = false;
 static bool showRAMview = false;
 
 static const char* NesPalettes[] = { "NTSC", "PAL" };
+
+SDL_Surface* icon = IMG_Load("gui/ico.png");
 
 void DrawRAMView() {
     ImGui::Begin("Memory View", &showRAMview);
@@ -55,8 +59,6 @@ int main(int argc, char* argv[]) {
 
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1,
         SDL_RENDERER_ACCELERATED);
-
-    SDL_Surface* icon = IMG_Load("gui/ico.png");
     if (!icon) {
         std::cout << "Failed to set window icon\n";
     } else {
@@ -144,6 +146,36 @@ int main(int argc, char* argv[]) {
                     ImGui::SetNextItemWidth(70);
                     ImGui::Combo("Palette System", &ppu.PaletteMode, NesPalettes, IM_ARRAYSIZE(NesPalettes));
                     ImGui::EndMenu();
+                }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Savestate")) {
+                if (ImGui::MenuItem("Save to file")) {
+                    auto save = pfd::save_file(
+                        "Save state",
+                        "savestate.nya",
+                        { "Savestate Files (.nya)", "*.nya",
+                        "All Files", "*" }
+                    );
+                    std::string path = save.result();
+                    if (!path.empty()) {
+                        SaveStateFile file;
+                        file.WriteSaveStateToFile(path.c_str());
+                    }
+                }
+                if (ImGui::MenuItem("Load from file")) {
+                    auto open = pfd::open_file(
+                        "Load state",
+                        "",
+                        { "Savestate Files (.nya)", "*.nya",
+                        "All Files", "*" }
+                    );
+                    auto results = open.result();
+                    if (!results.empty()) {
+                        SaveStateFile file;
+                        file.LoadSaveStateFromFile(results[0].c_str());
+                    }
                 }
                 ImGui::EndMenu();
             }

@@ -18,8 +18,8 @@ void PPU::Step() {
 }
 
 void PPU::LoadCHRROM(const uint8_t* chrData, int chrSize) {
-    if (chrSize > 0x2000) chrSize = 0x2000;
-    std::memcpy(&ChrROM[0x0000], chrData, chrSize);
+    ChrData.resize(chrSize);
+    std::memcpy(&ChrData[0x0000], chrData, chrSize);
 }
 
 SDL_Window* window = nullptr;
@@ -96,8 +96,8 @@ void PPU::Render(SDL_Renderer* renderer) {
             uint8_t tileIndex = VRAM[tileY * 32 + tileX];
 
             int useSecond = BGPatternTable ? 0x1000 : 0x0000;
-            uint8_t lo = ChrROM[tileIndex * 16 + fineY + useSecond];
-            uint8_t hi = ChrROM[tileIndex * 16 + fineY + 8 + useSecond];
+            uint8_t lo = ChrData[tileIndex * 16 + fineY + useSecond];
+            uint8_t hi = ChrData[tileIndex * 16 + fineY + 8 + useSecond];
 
             uint8_t attrOffset = (tileX / 4) + (tileY / 4) * 8;
             uint8_t attributes = VRAM[0x3C0 + attrOffset];
@@ -123,7 +123,7 @@ void PPU::Render(SDL_Renderer* renderer) {
         bool flipV = attr & 0x80;
         uint8_t paletteIndex = attr & 0x03;
         uint16_t spriteTable = spritePatternTable ? 0x1000 : 0x0000;
-        const uint8_t* tileData = &ChrROM[spriteTable + tile * 16];
+        const uint8_t* tileData = &ChrData[spriteTable + tile * 16];
 
         for (int row = 0; row < 8; row++) {
             int tileRow = flipV ? 7 - row : row;

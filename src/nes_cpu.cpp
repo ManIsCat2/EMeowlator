@@ -1801,7 +1801,7 @@ uint8_t CPU::read(uint16_t addr)
                     ret = ppu.ReadBuffer;
                     uint16_t nt = vaddr & 0x0FFF;
                     if (vaddr < 0x2000)
-                        ppu.ReadBuffer = ppu.ChrROM[vaddr];
+                        ppu.ReadBuffer = ppu.ChrData[vaddr];
                     else {
                         if (globalROM.Header[6] & 1) nt &= 0x7FF;
                         else nt = (nt & 0x800) ? (nt - 0x400) : nt;
@@ -1915,7 +1915,7 @@ void CPU::write(uint16_t addr, uint8_t value)
 
                 if (vaddr < 0x2000) {
                     if (globalROM.Header[5] == 0)
-                        ppu.ChrROM[vaddr] = value;
+                        ppu.ChrData[vaddr] = value;
                 }
                 else if (vaddr < 0x3F00) {
                     uint16_t nt = vaddr & 0x0FFF;

@@ -1,16 +1,17 @@
 #pragma once
 #include <array>
 #include <cstdint>
+#include <vector>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
 class PPU {
 public:
-    std::array<uint8_t, 0x4000> ChrROM{};
+    std::vector<uint8_t> ChrData{};
     std::array<uint8_t, 0x4000> VRAM{};
     std::array<uint8_t, 0x20> paletteRAM{};
-    std::array<uint8_t, 256> OAM{};
+    std::array<uint8_t, 0x100> OAM{};
 
     bool WriteLatch = false;
     unsigned short TransferAddr = 0;

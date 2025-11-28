@@ -36,6 +36,24 @@ public:
         cycles += 7;
     }
 
+    void GetInfo(uint8_t *AReg, uint8_t *XReg, uint8_t *YReg, uint16_t *PCPtr, uint8_t *SPPtr, uint8_t *PPtr) {
+        *AReg = A;
+        *XReg = X;
+        *YReg = Y;
+        *PCPtr = PC;
+        *SPPtr = SP;
+        *PPtr = P;
+    }
+
+    void SetInfo(uint8_t AReg, uint8_t XReg, uint8_t YReg, uint16_t PCNew, uint8_t SPNew, uint8_t PNew) {
+        A = AReg;
+        X = XReg;
+        Y = YReg;
+        PC = PCNew;
+        SP = SPNew;
+        P = PNew;
+    }
+
     void run(uint32_t maxCycles);
 
     void execute(uint8_t opcode);
@@ -47,11 +65,11 @@ public:
     uint8_t pop();
 
 private:
+    uint64_t cycles;
     uint8_t A, X, Y;
     uint16_t PC;
     uint8_t SP;
     uint8_t P;
-    uint64_t cycles;
 
     uint8_t fetch() { return read(PC++); }
 
