@@ -239,14 +239,15 @@ void CPU::execute(uint8_t opcode)
         uint8_t value = read(addr);
         uint8_t oldCarry = P & 0x01;
 
+        uint8_t newCarry = value & 0x01;
         value = (value >> 1) | (oldCarry << 7);
         write(addr, value);
-        uint16_t sum = (uint16_t)A + value + oldCarry;
+        P = (P & ~0x01) | newCarry;
+        uint16_t sum = (uint16_t)A + value + (P & 0x01);
 
         if (sum > 0xFF) P |= 0x01; else P &= ~0x01;
         if ((~(A ^ value) & (A ^ sum)) & 0x80) P |= 0x40;
         else P &= ~0x40;
-
         A = sum & 0xFF;
         SetZN(A);
     };
@@ -303,7 +304,9 @@ void CPU::execute(uint8_t opcode)
     switch (opcode)
     {
     case 0x02:
-        //hault
+        romIsLoaded = false;
+        reset();
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR , "Fatal error", "CPU reached a HLT instruction", NULL);
         break;
     // lda
     case 0xA9: // LDA immediate
@@ -461,6 +464,13 @@ void CPU::execute(uint8_t opcode)
         break;
     }
 
+    case 0x96: { // STX zp,Y
+        uint8_t zp = fetch();
+        uint8_t addr = (zp + Y) & 0xFF;
+        st_reg(addr, X, 4);
+        DEBUG_LOG("STX Y zp 0x%02X\n", zp);
+        break;
+    }
     case 0x86: { // STX zero page
         uint8_t addr = fetch();
         st_reg(addr, X, 3);
@@ -507,6 +517,21 @@ void CPU::execute(uint8_t opcode)
         DEBUG_LOG("LSR zp 0x%02X\n", addr);
         break;
     }
+    case 0x56: { // LSR zp,X
+        uint8_t zp = fetch();
+        uint8_t addr = (zp + X) & 0xFF;
+        lsr_mem(addr, 6);
+        DEBUG_LOG("LSR X zp 0x%02X\n", zp);
+        break;
+    }
+    case 0x5E: { // LSR abs,X
+        uint16_t addr = fetch16();
+        uint16_t effective = addr + X;
+        lsr_mem(effective, 7);
+        if ((addr & 0xFF00) != (effective & 0xFF00)) cycles++;
+        DEBUG_LOG("LSR X abs 0x%04X\n", addr);
+        break;
+    }
 
     case 0x2A: rol(A); cycles += 2; DEBUG_LOG2("ROL acc"); break;
     case 0x2E: {                                                                          
@@ -526,6 +551,14 @@ void CPU::execute(uint8_t opcode)
         uint8_t addr = (zp + X);
         rol_mem(addr, 6);
         DEBUG_LOG("ROL X zp 0x%02X\n", zp);
+        break;
+    }
+    case 0x3E: { // ROL abs,X
+        uint16_t addr = fetch16();
+        uint16_t effective = addr + X;
+        rol_mem(effective, 7);
+        if ((addr & 0xFF00) != (effective & 0xFF00)) cycles++;
+        DEBUG_LOG("ROL X abs 0x%04X\n", addr);
         break;
     }
 
@@ -565,6 +598,13 @@ void CPU::execute(uint8_t opcode)
         DEBUG_LOG("ASL abs 0x%04X\n", addr);
         break;
     }
+    case 0x16: { // ASL zp,X
+        uint8_t zp = fetch();
+        uint8_t addr = (zp + X) & 0xFF;
+        asl_mem(addr, 6);
+        DEBUG_LOG("ASL X zp 0x%02X\n", zp);
+        break;
+    }
     case 0x1E: { // ASL absolute,X
         uint16_t addr = fetch16();
         uint16_t effective = addr + X;
@@ -573,7 +613,6 @@ void CPU::execute(uint8_t opcode)
         DEBUG_LOG("ASL X abs 0x%04X\n", addr);
         break;
     }
-
     case 0x06: {
         uint8_t addr = fetch();
         asl_mem(addr, 5);
@@ -736,6 +775,15 @@ void CPU::execute(uint8_t opcode)
     case 0x70: branch((P & 0x40), fetch()); cycles+=2; break; // BVS
 
     // arithmatic
+    case 0x61: { // ADC (indirect,X)
+        uint8_t zp = fetch();
+        uint8_t ptr = (zp + X) & 0xFF;
+        uint16_t addr = read(ptr) | (read((ptr + 1) & 0xFF) << 8);
+        uint8_t value = read(addr);
+        adc_op(value, 6);
+        DEBUG_LOG("ADC X ind 0x%02X\n", zp);
+        break;
+    }
     case 0x69: { // ADC imm
         adc_op(fetch(), 2);
         DEBUG_LOG("ADC imm\n");
@@ -784,6 +832,15 @@ void CPU::execute(uint8_t opcode)
         break;
     }
 
+    case 0xE1: { // SBC (indirect,X)
+        uint8_t zp = fetch();
+        uint8_t ptr = (zp + X) & 0xFF;
+        uint16_t addr = read(ptr) | (read((ptr + 1) & 0xFF) << 8);
+        uint8_t value = read(addr);
+        sbc_op(value, 6);
+        DEBUG_LOG("SBC X ind 0x%02X\n", zp);
+        break;
+    }
     case 0xE9: { // SBC imm
         uint8_t value = fetch();
         sbc_op(value, 2);
@@ -833,8 +890,16 @@ void CPU::execute(uint8_t opcode)
         break;
     }
 
-
     //and or
+    case 0x21: { // AND (indirect,X)
+        uint8_t zp = fetch();
+        uint8_t ptr = (zp + X) & 0xFF;
+        uint16_t base = read(ptr) | (read((ptr + 1) & 0xFF) << 8);
+        uint8_t value = read(base);
+        and_op(value, 6); 
+        DEBUG_LOG("AND X ind 0x%02X\n", zp);
+        break;
+    }
     case 0x29: { // AND imm
         uint8_t addr = fetch();
         and_op(addr, 2);
@@ -889,7 +954,15 @@ void CPU::execute(uint8_t opcode)
         break;
     }
 
-
+    case 0x01: { // ORA (indirect,X)
+        uint8_t zp = fetch();
+        uint8_t ptr = (zp + X) & 0xFF;
+        uint16_t base = read(ptr) | (read((ptr + 1) & 0xFF) << 8);
+        uint8_t value = read(base);
+        ora_op(value, 6);
+        DEBUG_LOG("ORA X ind 0x%02X\n", zp);
+        break;
+    }
     case 0x09: { // ORA imm
         uint8_t addr = fetch();
         ora_op(addr, 2);
@@ -942,6 +1015,17 @@ void CPU::execute(uint8_t opcode)
         break;
     }
 
+    case 0x41: { // EOR (indirect,X)
+        uint8_t zp = fetch();
+        uint8_t ptr = (zp + X) & 0xFF;
+        uint16_t addr = read(ptr) | (read((ptr + 1) & 0xFF) << 8);
+        uint8_t value = read(addr);
+        A ^= value;
+        SetZN(A);
+        cycles += 6;
+        DEBUG_LOG("EOR X ind 0x%02X\n", zp);
+        break;
+    }
     case 0x49: { // EOR imm
         uint8_t value = fetch();
         A ^= value;
@@ -968,6 +1052,17 @@ void CPU::execute(uint8_t opcode)
         cycles += 4;
         if ((addr & 0xFF00) != (effective & 0xFF00)) cycles++;
         DEBUG_LOG("EOR X abs 0x%04X\n", addr);
+        break;
+    }
+    case 0x59: { // EOR absolute,Y
+        uint16_t addr = fetch16();
+        uint16_t effective = addr + Y;
+        uint8_t value = read(effective);
+        A ^= value;
+        SetZN(A);
+        cycles += 4;
+        if ((addr & 0xFF00) != (effective & 0xFF00)) cycles++;
+        DEBUG_LOG("EOR Y abs 0x%04X\n", addr);
         break;
     }
     case 0x45: { // EOR zero-page
@@ -997,7 +1092,7 @@ void CPU::execute(uint8_t opcode)
         SetZN(A);
         cycles += 5;
         if ((base & 0xFF00) != (effective & 0xFF00)) cycles++;
-        DEBUG_LOG("EOR Y ind 0x%02X -> 0x%04X\n", zp, effective);
+        DEBUG_LOG("EOR Y ind 0x%02X\n", zp);
         break;
     }
 
@@ -1021,6 +1116,15 @@ void CPU::execute(uint8_t opcode)
         break;
     }
 
+    case 0xC1: { // CMP (indirect,X)
+        uint8_t zp = fetch();
+        uint8_t ptr = (zp + X) & 0xFF;
+        uint16_t addr = read(ptr) | (read((ptr + 1) & 0xFF) << 8);
+        uint8_t value = read(addr);
+        cmp_reg(A, value, 6);
+        DEBUG_LOG("CMP X ind 0x%02X\n", zp);
+        break;
+    }
     case 0xC9:
     { // CMP imm
         uint8_t addr = fetch();
