@@ -5,12 +5,12 @@
 PPU ppu;
 
 void PPU::Step() {
+    if (Dot == 1 && ScanLine == 241) Vblank = true;
+    if (Dot == 1 && ScanLine == 261) Vblank = false;
     Dot++;
     if (Dot > 341) {
         Dot = 0;
         ScanLine++;
-        if (ScanLine == 241) Vblank = true;
-        if (ScanLine == 261) Vblank = false;
         if (ScanLine > 261) {
             ScanLine = 0;
         }
@@ -43,7 +43,7 @@ uint32_t nesPaletteDefault[64] = {
     0xFFBCBCBC,0xFF0073EF,0xFF233BEF,0xFF8300F3,0xFFBF00BF,0xFFE7005B,0xFFDB2B00,0xFFCB4F0F,
     0xFF8B7300,0xFF009F0F,0xFF00AB00,0xFF00933B,0xFF00838B,0xFF000000,0xFF000000,0xFF000000,
     0xFFFFFFFF,0xFF3FBFFF,0xFF5F97FF,0xFFA78BFD,0xFFF77BFF,0xFFFF77B7,0xFFFF7763,0xFFFF9B3B,
-    0xFFF3BF3F,0xFF83D313,0xFF4FDF4B,0xFF58F898,0xFF00EBDB,0xFF000000,0xFF000000,0xFF000000,
+    0xFFF3BF3F,0xFF83D313,0xFF4FDF4B,0xFF58F898,0xFF00EBDB,0xFF505050,0xFF000000,0xFF000000,
     0xFFFFFFFF,0xFFA7E7FF,0xFFC7D7FF,0xFFD7CBFF,0xFFFFC7FF,0xFFFFC7DB,0xFFFFBFB3,0xFFFFDBAB,
     0xFFFFE7A3,0xFFE3FFA3,0xFFABF3BF,0xFFB3FFCF,0xFF9FFFF3,0xFF000000,0xFF000000,0xFF000000
 };
@@ -54,7 +54,7 @@ uint32_t nesPalette[64] = {
     0xFFBCBCBC,0xFF0073EF,0xFF233BEF,0xFF8300F3,0xFFBF00BF,0xFFE7005B,0xFFDB2B00,0xFFCB4F0F,
     0xFF8B7300,0xFF009F0F,0xFF00AB00,0xFF00933B,0xFF00838B,0xFF000000,0xFF000000,0xFF000000,
     0xFFFFFFFF,0xFF3FBFFF,0xFF5F97FF,0xFFA78BFD,0xFFF77BFF,0xFFFF77B7,0xFFFF7763,0xFFFF9B3B,
-    0xFFF3BF3F,0xFF83D313,0xFF4FDF4B,0xFF58F898,0xFF00EBDB,0xFF000000,0xFF000000,0xFF000000,
+    0xFFF3BF3F,0xFF83D313,0xFF4FDF4B,0xFF58F898,0xFF00EBDB,0xFF505050,0xFF000000,0xFF000000,
     0xFFFFFFFF,0xFFA7E7FF,0xFFC7D7FF,0xFFD7CBFF,0xFFFFC7FF,0xFFFFC7DB,0xFFFFBFB3,0xFFFFDBAB,
     0xFFFFE7A3,0xFFE3FFA3,0xFFABF3BF,0xFFB3FFCF,0xFF9FFFF3,0xFF000000,0xFF000000,0xFF000000
 };
@@ -82,28 +82,39 @@ void PPU::Render(SDL_Renderer* renderer) {
 
     for (int screenY = 0; screenY < NES_HEIGHT; screenY++) {
         for (int screenX = 0; screenX < NES_WIDTH; screenX++) {
-            int scrolledX = (screenX + scrollX) % 256;
-            int scrolledY = (screenY + scrollY) % 240;
-            int tileX = scrolledX / 8;
-            int tileY = scrolledY / 8;
-            int fineX = scrolledX % 8;
-            int fineY = scrolledY % 8;
+            int absX = screenX + scrollX;
+            int absY = screenY + scrollY;
+            int ntH = (absX / 256) & 1;
+            int ntV = (absY / 240) & 1;
+            int nametable = nametableSelect ^ ntH ^ (ntV << 1);
+            int nametableBase = 0x2000 | (nametable << 10);
 
-            uint8_t tileIndex = VRAM[tileY * 32 + tileX];
+            int tileX = (absX / 8) & 31;
+            int tileY = (absY / 8) % 30;
+            int fineX = absX % 8;
+            int fineY = absY % 8;
 
-            int useSecond = BGPatternTable ? 0x1000 : 0x0000;
-            uint8_t lo = ChrData[tileIndex * 16 + fineY + useSecond];
-            uint8_t hi = ChrData[tileIndex * 16 + fineY + 8 + useSecond];
+            int vramAddr = (nametableBase + tileY * 32 + tileX) & 0x0FFF;
+            uint8_t tileIndex = VRAM[vramAddr];
 
-            uint8_t attrOffset = (tileX / 4) + (tileY / 4) * 8;
-            uint8_t attributes = VRAM[0x3C0 + attrOffset];
-            uint8_t quadrant = ((tileX / 2) & 1) + (((tileY / 2) & 1) * 2);
-            uint8_t pair = (attributes >> (quadrant * 2)) & 3;
+            int patternBase = BGPatternTable ? 0x1000 : 0x0000;
+            int tileAddr = patternBase + tileIndex * 16;
+            uint8_t lo = ChrData[tileAddr + fineY];
+            uint8_t hi = ChrData[tileAddr + fineY + 8];
+
+            int attrX = tileX / 4;
+            int attrY = tileY / 4;
+            int attrAddr = (nametableBase + 0x3C0 + attrY * 8 + attrX) & 0x0FFF;
+            uint8_t attrByte = VRAM[attrAddr];
+            int quadrantX = (tileX % 4) / 2;
+            int quadrantY = (tileY % 4) / 2;
+            int attrShift = (quadrantY * 2 + quadrantX) * 2;
+            uint8_t paletteIndex = (attrByte >> attrShift) & 0x03;
 
             int bit = 7 - fineX;
-            int twoBit = ((hi >> bit) & 1) << 1 | ((lo >> bit) & 1);
-            uint8_t palIndex = twoBit ? paletteRAM[twoBit + pair * palOffset] : paletteRAM[0];
-            uint32_t color = nesPalette[palIndex & 0x3F];
+            int colorBits = ((hi >> bit) & 1) << 1 | ((lo >> bit) & 1);
+            uint8_t finalPal = colorBits ? paletteRAM[colorBits + paletteIndex * palOffset] : paletteRAM[0];
+            uint32_t color = nesPalette[finalPal & 0x3F];
 
             pixels[screenY * NES_WIDTH + screenX] = color;
         }
