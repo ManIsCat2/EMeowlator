@@ -139,12 +139,45 @@ int main(int argc, char* argv[]) {
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("PPU")) {
-                if (ImGui::BeginMenu("Palettes")) {
-                    if (ImGui::Checkbox("Random Palettes", &ppu.UseRandPalIndex)) {
-                        ppu.RanPalIndex = rand() % 16;
+                if (ImGui::BeginMenu("Palette")) {
+                    ImGui::Text("Palette Editor");
+                    for (int i = 0; i < 64; i++) {
+                        ImGui::PushID(i);
+                        uint32_t C = nesPalette[i];
+                        uint8_t A = (C >> 24) & 0xFF;
+                        uint8_t R = (C >> 16) & 0xFF;
+                        uint8_t G = (C >>  8) & 0xFF;
+                        uint8_t B = (C >>  0) & 0xFF;
+                        float Col[4] = {
+                            R / 255.0f,
+                            G / 255.0f,
+                            B / 255.0f,
+                            A / 255.0f
+                        };
+                        if (ImGui::ColorEdit4("##pal", Col,
+                            ImGuiColorEditFlags_NoInputs |
+                            ImGuiColorEditFlags_DisplayRGB)) {
+                            uint8_t NewR = (uint8_t)(Col[0] * 255.0f);
+                            uint8_t NewG = (uint8_t)(Col[1] * 255.0f);
+                            uint8_t NewB = (uint8_t)(Col[2] * 255.0f);
+                            uint8_t NewA = (uint8_t)(Col[3] * 255.0f);
+                            nesPalette[i] =
+                                (NewA << 24) |
+                                (NewR << 16) |
+                                (NewG << 8)  |
+                                (NewB << 0);
+                        }
+
+                        ImGui::PopID();
+                        // 8 colomn
+                        if ((i % 8) != 7) {
+                            ImGui::SameLine();
+                        }
                     }
-                    ImGui::SetNextItemWidth(70);
-                    ImGui::Combo("Palette System", &ppu.PaletteMode, NesPalettes, IM_ARRAYSIZE(NesPalettes));
+                    ImGui::Separator();
+                    if (ImGui::MenuItem("Reset")) {
+                        memcpy(nesPalette, nesPaletteDefault, sizeof(uint32_t)*64);
+                    }
                     ImGui::EndMenu();
                 }
                 ImGui::EndMenu();

@@ -53,3 +53,5 @@ public:
 };
 
 extern PPU ppu;
+extern uint32_t nesPalette[64];
+extern uint32_t nesPaletteDefault[64];
