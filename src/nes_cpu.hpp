@@ -25,16 +25,7 @@ public:
     }
 
     bool NMIDetector = false;
-
-    void HandleNMI() {
-        write(0x100 + SP--, (PC >> 8) & 0xFF);
-        write(0x100 + SP--, PC & 0xFF);
-        write(0x100 + SP--, (P & ~0x10) | 0x20);
-        uint8_t lo = read(0xFFFA);
-        uint8_t hi = read(0xFFFB);
-        PC = (hi << 8) | lo;
-        cycles += 7;
-    }
+    bool doNMI = false;
 
     void GetInfo(uint8_t *AReg, uint8_t *XReg, uint8_t *YReg, uint16_t *PCPtr, uint8_t *SPPtr, uint8_t *PPtr) {
         *AReg = A;

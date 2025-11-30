@@ -21,10 +21,14 @@ void CPU::run(uint32_t maxCycles) {
         if (!romIsLoaded || CPUPaused) return;
         bool prevNMIDetect = NMIDetector;
         NMIDetector = ppu.Vblank && ppu.enableNMI;
+        uint8_t opcode = 0;
+        if (!prevNMIDetect && NMIDetector) {
+            opcode = 0x00;
+            doNMI = true;
+        } else {
+            opcode = fetch();
+        }
 
-        if (!prevNMIDetect && NMIDetector) HandleNMI();
-
-        uint8_t opcode = fetch();
         execute(opcode);
 
         ppu.Step();
@@ -1849,12 +1853,17 @@ void CPU::execute(uint8_t opcode)
     }
     
     case 0x00: { // BRK
-        PC++;
+        if (!doNMI) {
+            PC++;
+        }
         push((PC >> 8) & 0xFF);
         push(PC & 0xFF);
-        push(P | 0x30);
+        push((doNMI ? (P & ~0x10) : (P)) | 0x20 | 0x30);
         P |= 0x04;
-        PC = read16(0xFFFE);
+        uint8_t AddrLow = read(doNMI ? 0xFFFA : 0xFFFE);
+        uint8_t AddrHigh = read(doNMI ? 0xFFFB : 0xFFFF);
+        PC = ((AddrHigh*256)+AddrLow);
+        doNMI = false;
         cycles += 7;
         break;
     }
