@@ -1887,8 +1887,8 @@ void CPU::SetZN(uint8_t value)
 
 uint8_t CPU::read(uint16_t addr)
 {
-    if (addr < RAM_SIZE) {
-        return RAM[addr];
+    if (addr < RAM_MIRRORED_SIZE) {
+        return RAM[addr & 0x7ff];
     }
 
     if (addr >= 0x2000 && addr < 0x4000) {
@@ -1963,8 +1963,8 @@ uint8_t CPU::read(uint16_t addr)
 
 void CPU::write(uint16_t addr, uint8_t value)
 {
-    if (addr < RAM_SIZE) {
-        RAM[addr] = value;
+    if (addr < RAM_MIRRORED_SIZE) {
+        RAM[addr & 0x7ff] = value;
         return;
     }
 
