@@ -10,7 +10,7 @@
 class PPU {
 public:
     std::vector<uint8_t> ChrData{};
-    std::array<uint8_t, VRAM_SIZE> VRAM{};
+    std::array<uint8_t, 0x4000> VRAM{};
     std::array<uint8_t, PALRAM_SIZE> paletteRAM{};
     std::array<uint8_t, 0x100> OAM{};
 
