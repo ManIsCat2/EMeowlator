@@ -22,7 +22,6 @@ void PPU::LoadCHRROM(const uint8_t* chrData, int chrSize) {
     std::memcpy(&ChrData[0x0000], chrData, chrSize);
 }
 
-SDL_Window* window = nullptr;
 SDL_Texture* texture = nullptr;
 
 bool PPU::InitSDL(SDL_Renderer * renderer) {

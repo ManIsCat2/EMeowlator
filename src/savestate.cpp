@@ -35,7 +35,6 @@ void SaveStateFile::WriteSaveStateToFile(const char *FileName) {
 
     //cpu
     WriteBytesPtr<uint8_t>(cpu.RAM, RAM_SIZE);
-    WriteBytesPtr<uint8_t>(cpu.prgRam, 0x2000);
     uint8_t A,X,Y,SP,P = 0;
     uint16_t PC = 0;
     cpu.GetInfo(&A, &X, &Y, &PC, &SP, &P);
@@ -85,7 +84,6 @@ void SaveStateFile::LoadSaveStateFromFile(const char *FileName) {
 
     //cpu
     ReadBytesPtr<uint8_t>(cpu.RAM, RAM_SIZE);
-    ReadBytesPtr<uint8_t>(cpu.prgRam, 0x2000);
     uint8_t A,X,Y,SP,P = 0;
     uint16_t PC = 0;
     A = ReadBytes<uint8_t>();

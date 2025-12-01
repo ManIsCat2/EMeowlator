@@ -15,37 +15,73 @@ NesROM globalROM;
 bool romIsLoaded = false;
 static bool fullscreen = false;
 static bool unlimitFPS = false;
-static bool showRAMview = false;
+static bool showMemview = false;
+static bool showROMInfo = false;
 
 static const char* NesPalettes[] = { "NTSC", "PAL" };
 
 SDL_Surface* icon = IMG_Load("gui/ico.png");
 
-void DrawRAMView() {
-    ImGui::Begin("Memory View", &showRAMview);
-
+void DrawHex(size_t Size, uint8_t *Buf, int Start=0) {
     const int bytesPerRow = 16;
-    for (size_t offset = 0; offset < RAM_SIZE; offset += bytesPerRow) {
-        ImGui::Text("%04X: ", (unsigned int)offset);
+    for (size_t offset = 0; offset < Size; offset += bytesPerRow) {
+        ImGui::Text("%04X: ", (unsigned int)offset+Start);
         ImGui::SameLine();
         for (size_t i = 0; i < bytesPerRow; ++i) {
-            if (offset + i < RAM_SIZE) {
-                ImGui::Text("%02X ", cpu.RAM[offset + i]);
+            if (offset + i < Size) {
+                ImGui::Text("%02X ", Buf[offset + i]);
                 ImGui::SameLine();
             }
         }
         ImGui::SameLine();
         for (size_t i = 0; i < bytesPerRow; ++i) {
-            if (offset + i < RAM_SIZE) {
-                uint8_t c = cpu.RAM[offset + i];
+            if (offset + i < Size) {
+                uint8_t c = Buf[offset + i];
                 ImGui::Text("%c", (c >= 32 && c < 127) ? c : '.');
                 ImGui::SameLine();
             }
         }
         ImGui::NewLine();
     }
+}
+
+void StartShowHex(const char *Name) {
+    ImGui::Separator();
+    ImGui::Text("%s", Name);
+    ImGui::Separator();
+}
+
+void DrawMemoryView() {
+    ImGui::Begin("Memory View", &showMemview);
+    ImGui::Text("CPU RAM");
+    ImGui::Separator();
+    DrawHex(RAM_SIZE, cpu.RAM);
+    
+    StartShowHex("PPU VRAM");
+    DrawHex(VRAM_SIZE, ppu.VRAM.data(), 0x2000);
+
+    StartShowHex("PPU Palette RAM");
+    DrawHex(PALRAM_SIZE, ppu.paletteRAM.data(), 0x3F00);
     ImGui::End();
 }
+
+void DrawROMInfo() {
+    ImGui::Begin("ROM Info", &showROMInfo);
+    ImGui::Text("File: %s", globalROM.Name.c_str());
+    std::string HeaderHex;
+    for (int i = 0; i < 8; i++) {
+        char Buf[4];
+        snprintf(Buf, sizeof(Buf), "%02X", globalROM.Header[i]);
+        HeaderHex += Buf;
+        if (i < 7) HeaderHex += " ";
+    }
+
+    ImGui::Text("Header: %s", HeaderHex.c_str());
+    ImGui::Text("PRG Size: 0x%x (%zu), CHR Size: 0x%x (%zu)", globalROM.PRGRomSize, globalROM.PRGRomSize, globalROM.CHRRomSize, globalROM.CHRRomSize);
+    ImGui::Text("Mapper: %u", globalROM.Mapper);
+    ImGui::End();
+}
+
 
 int main(int argc, char* argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) != 0) {
@@ -53,12 +89,9 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    SDL_Window* window = SDL_CreateWindow("MeowNES",
-        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        800, 600, SDL_WINDOW_SHOWN);
+    SDL_Window* window = SDL_CreateWindow("MeowNES", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, SDL_WINDOW_SHOWN);
 
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1,
-        SDL_RENDERER_ACCELERATED);
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!icon) {
         std::cout << "Failed to set window icon\n";
     } else {
@@ -215,13 +248,19 @@ int main(int argc, char* argv[]) {
 
             if (ImGui::BeginMenu("Debug")) {
                 if (ImGui::MenuItem("View Memory")) {
-                    showRAMview = true;
+                    showMemview = true;
+                }
+                if (ImGui::MenuItem("ROM Info")) {
+                    showROMInfo = true;
                 }
                 ImGui::EndMenu();
             }
 
-            if (showRAMview) {
-                DrawRAMView();
+            if (showMemview) {
+                DrawMemoryView();
+            }
+            if (showROMInfo) {
+                DrawROMInfo();
             }
 
             if (ImGui::BeginMenu("Settings")) {

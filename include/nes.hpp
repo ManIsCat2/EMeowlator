@@ -4,6 +4,9 @@
 #define NES_HEIGHT 240
 
 #define RAM_SIZE 0x800
+#define VRAM_SIZE 0x800
+#define PALRAM_SIZE 0x20
+
 
 #define A_BUTTON        (1 << 0)
 #define B_BUTTON        (1 << 1)

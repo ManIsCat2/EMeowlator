@@ -21,13 +21,20 @@ class NesROM {
 public:
     uint8_t Header[8];
     uint8_t ROM[0x8000];
+    std::string Name = "";
+    size_t PRGRomSize = 0;
+    size_t CHRRomSize = 0;
+    uint16_t Mapper = 0;
 
-    bool LoadNES(const std::string& filename) {
+    bool LoadNES(const std::string &filename) {
         std::ifstream rom(filename, std::ios::binary | std::ios::ate);
         if (!rom) {
             std::cerr << "Failed to open ROM: " << filename << "\n";
             return false;
         }
+
+        std::filesystem::path Path(filename);
+        Name = Path.filename().string();
 
         std::streamsize fsize = rom.tellg();
         if (fsize < 16) {
@@ -57,11 +64,7 @@ public:
 
         bool hasTrainer = (flags6 & 0x04) != 0;
 
-        uint8_t mapper = (flags7 & 0xF0) | (flags6 >> 4);
-        if (mapper != 0) {
-            std::cerr << "Warning: mapper " << int(mapper) << " detected. only mapper 0 (NROM) is supported by MeowNES.\n";
-        }
-
+        Mapper = (flags7 & 0xF0) | (flags6 >> 4);
         size_t offset = 16;
         if (hasTrainer) {
             if (data.size() < offset + 512) {
@@ -71,7 +74,7 @@ public:
             offset += 512;
         }
 
-        size_t totalPrgSize = size_t(prgPages) * 16 * 1024;
+        PRGRomSize = size_t(prgPages) * 16 * 1024;
 
         if (prgPages == 0) {
             std::cerr << "ROM has zero PRG pages.\n";
@@ -83,21 +86,16 @@ public:
             std::memcpy(&ROM[0], &data[offset], 0x4000);
             std::memcpy(&ROM[0x4000], &data[offset + 0x4000], 0x4000);
         }
-        offset += totalPrgSize;
+        offset += PRGRomSize;
 
-        size_t totalChrSize = size_t(chrPages) * 8 * 1024;
+        CHRRomSize = size_t(chrPages) * 8 * 1024;
         if (chrPages == 0) {
             uint8_t zeros[0x2000] = {};
             ppu.LoadCHRROM(zeros, 0x2000);
         } else {
-            ppu.LoadCHRROM(&data[offset], totalChrSize);
+            ppu.LoadCHRROM(&data[offset], CHRRomSize);
         }
-        offset += totalChrSize;
-
-        std::cerr << "Loaded ROM:\nPRG pages = " << int(prgPages) << "\n"
-                << "CHR pages = " << int(chrPages) << "\n"
-                << "CHR size = " << int(totalChrSize) << "\n"
-                << "mapper = " << int(mapper) << "\n\n";
+        offset += CHRRomSize;
         return true;
     }
 };

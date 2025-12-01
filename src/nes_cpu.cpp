@@ -1887,8 +1887,8 @@ void CPU::SetZN(uint8_t value)
 
 uint8_t CPU::read(uint16_t addr)
 {
-    if (addr < 0x2000) {
-        return RAM[addr & 0x07FF];
+    if (addr < RAM_SIZE) {
+        return RAM[addr];
     }
 
     if (addr >= 0x2000 && addr < 0x4000) {
@@ -1917,7 +1917,7 @@ uint8_t CPU::read(uint16_t addr)
                         ppu.ReadBuffer = ppu.ChrData[vaddr];
                     else {
                         if (globalROM.Header[6] & 1) nt &= 0x7FF;
-                        else nt = (nt & 0x800) ? (nt - 0x400) : nt;
+                        else nt = (nt & VRAM_SIZE) ? (nt - 0x400) : nt;
                         ppu.ReadBuffer = ppu.VRAM[nt];
                     }
                 } else {
@@ -1955,10 +1955,6 @@ uint8_t CPU::read(uint16_t addr)
         }
     }
 
-    if (addr >= 0x6000 && addr < 0x8000) {
-        return prgRam[addr - 0x6000];
-    }
-
     if (addr >= 0x8000) {
         return globalROM.ROM[addr-0x8000];
     }
@@ -1967,8 +1963,8 @@ uint8_t CPU::read(uint16_t addr)
 
 void CPU::write(uint16_t addr, uint8_t value)
 {
-    if (addr < 0x2000) {
-        RAM[addr & 0x07FF] = value;
+    if (addr < RAM_SIZE) {
+        RAM[addr] = value;
         return;
     }
 
@@ -2072,11 +2068,6 @@ void CPU::write(uint16_t addr, uint8_t value)
             }
             case 0x4017: break; // apu framecnt
         }
-        return;
-    }
-
-    if (addr >= 0x6000 && addr < 0x8000) {
-        prgRam[addr] = value;
         return;
     }
 }
