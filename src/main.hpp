@@ -13,6 +13,9 @@
 #include "nes_cpu.hpp"
 #include "nes_controller.hpp"
 
+#include "mapper.hpp"
+#include "mmc1.hpp"
+
 extern bool romIsLoaded;
 class NesROM;
 extern NesROM globalROM;
@@ -24,7 +27,8 @@ public:
     std::string Name = "";
     size_t PRGRomSize = 0;
     size_t CHRRomSize = 0;
-    uint16_t Mapper = 0;
+    uint16_t MapperID = 0;
+    Mapper* mapper = nullptr;
 
     bool LoadNES(const std::string &filename) {
         std::ifstream rom(filename, std::ios::binary | std::ios::ate);
@@ -64,7 +68,7 @@ public:
 
         bool hasTrainer = (flags6 & 0x04) != 0;
 
-        Mapper = (flags7 & 0xF0) | (flags6 >> 4);
+        MapperID = (flags7 & 0xF0) | (flags6 >> 4);
         size_t offset = 16;
         if (hasTrainer) {
             if (data.size() < offset + 512) {
@@ -96,6 +100,18 @@ public:
             ppu.LoadCHRROM(&data[offset], CHRRomSize);
         }
         offset += CHRRomSize;
+
+        if (mapper) { delete mapper; mapper = nullptr; }
+
+        if (MapperID == 1) {
+            mapper = new MMC1();
+        } else {
+            mapper = nullptr;
+        }
+
+        if (mapper) {
+            mapper->reset();
+        }
         return true;
     }
 };

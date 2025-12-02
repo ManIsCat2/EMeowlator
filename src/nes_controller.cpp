@@ -5,7 +5,7 @@ Controller controllers[2];
 void UpdateControllers(void) {
     const uint8_t* Keystate = SDL_GetKeyboardState(nullptr);
 
-    for (unsigned char i=0;i<2;i++) {
+    for (uint8_t i=0;i<2;i++) {
         Controller *ControllerP = &controllers[i];
         ControllerP->state = 0;
         if (Keystate[SDL_SCANCODE_Z]) ControllerP->state |= A_BUTTON;

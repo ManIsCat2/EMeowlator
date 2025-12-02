@@ -62,6 +62,9 @@ void DrawMemoryView() {
 
     StartShowHex("PPU Palette RAM");
     DrawHex(PALRAM_SIZE, ppu.paletteRAM.data(), 0x3F00);
+
+    StartShowHex("PRG RAM");
+    DrawHex(0x2000, cpu.PrgRAM, 0x6000);
     ImGui::End();
 }
 
@@ -77,8 +80,8 @@ void DrawROMInfo() {
     }
 
     ImGui::Text("Header: %s", HeaderHex.c_str());
-    ImGui::Text("PRG Size: 0x%x (%zu), CHR Size: 0x%x (%zu)", globalROM.PRGRomSize, globalROM.PRGRomSize, globalROM.CHRRomSize, globalROM.CHRRomSize);
-    ImGui::Text("Mapper: %u", globalROM.Mapper);
+    ImGui::Text("PRG Size: 0x%zx (%zu), CHR Size: 0x%zx (%zu)", globalROM.PRGRomSize, globalROM.PRGRomSize, globalROM.CHRRomSize, globalROM.CHRRomSize);
+    ImGui::Text("Mapper: %u", globalROM.MapperID);
     ImGui::End();
 }
 

@@ -96,10 +96,22 @@ void PPU::Render(SDL_Renderer* renderer) {
             int vramAddr = (nametableBase + tileY * 32 + tileX) & 0x0FFF;
             uint8_t tileIndex = VRAM[vramAddr];
 
-            int patternBase = BGPatternTable ? 0x1000 : 0x0000;
-            int tileAddr = patternBase + tileIndex * 16;
-            uint8_t lo = ChrData[tileAddr + fineY];
-            uint8_t hi = ChrData[tileAddr + fineY + 8];
+            int tileAddrBase = 0;
+            if (ppu.BGPatternTable) {
+                uint16_t vaddr = 0x1000 + tileIndex * 16 + fineY;
+                if (vaddr < 0x2000) {
+                    if (vaddr < 0x1000) {
+                        tileAddrBase = ppu.ChrBankOffset[0] + (vaddr & 0x0FFF);
+                    } else {
+                        tileAddrBase = ppu.ChrBankOffset[1] + (vaddr - 0x1000);
+                    }
+                }
+            } else {
+                uint16_t vaddr = 0x0000 + tileIndex * 16 + fineY;
+                tileAddrBase = (vaddr < 0x1000) ? (ppu.ChrBankOffset[0] + vaddr) : (ppu.ChrBankOffset[1] + (vaddr - 0x1000));
+            }
+            uint8_t lo = ppu.ChrData[tileAddrBase];
+            uint8_t hi = ppu.ChrData[tileAddrBase + 8];
 
             int attrX = tileX / 4;
             int attrY = tileY / 4;
@@ -128,8 +140,14 @@ void PPU::Render(SDL_Renderer* renderer) {
         bool flipH = attr & 0x40;
         bool flipV = attr & 0x80;
         uint8_t paletteIndex = attr & 0x03;
-        uint16_t spriteTable = spritePatternTable ? 0x1000 : 0x0000;
-        const uint8_t* tileData = &ChrData[spriteTable + tile * 16];
+        uint16_t vaddrBase = (spritePatternTable ? 0x1000 : 0x0000) + tile * 16;
+        uint16_t mappedBase;
+        if (vaddrBase < 0x1000) {
+            mappedBase = ppu.ChrBankOffset[0] + vaddrBase;
+        } else {
+            mappedBase = ppu.ChrBankOffset[1] + (vaddrBase - 0x1000);
+        }
+        const uint8_t* tileData = &ChrData[mappedBase];
 
         for (int row = 0; row < 8; row++) {
             int tileRow = flipV ? 7 - row : row;

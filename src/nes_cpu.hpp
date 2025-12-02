@@ -14,6 +14,8 @@ public:
 
     bool CPUPaused = false;
     uint8_t RAM[RAM_SIZE];
+    uint8_t PrgRAM[0x2000];
+    size_t prgBankOffset[2] = { 0x0000, 0x4000 };
 
     void reset() {
         A = X = Y = 0;
@@ -21,6 +23,8 @@ public:
         P = 0x24;
         PC = read16(0xFFFC);
         cycles = 0;
+        ppu.ChrBankOffset[0] = 0;
+        ppu.ChrBankOffset[1] = 0x1000;
     }
 
     bool NMIDetector = false;
