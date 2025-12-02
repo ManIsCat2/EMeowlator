@@ -48,6 +48,7 @@ public:
     void Step();
 
     void LoadCHRROM(const uint8_t* chrData, int chrSize);
+    uint8_t readCHR(uint16_t addr);
 
     bool InitSDL(SDL_Renderer * renderer);
     void ShutdownSDL();

@@ -19,8 +19,19 @@ void PPU::Step() {
 
 void PPU::LoadCHRROM(const uint8_t* chrData, int chrSize) {
     ChrData.resize(chrSize);
-    std::memcpy(&ChrData[0x0000], chrData, chrSize);
+    memcpy(ChrData.data(), chrData, chrSize);
 }
+
+uint8_t PPU::readCHR(uint16_t addr) {
+    addr &= 0x1FFF;
+
+    if (addr < 0x1000) {
+        return ChrData[ ChrBankOffset[0] + addr ];
+    } else {
+        return ChrData[ ChrBankOffset[1] + (addr - 0x1000) ];
+    }
+}
+
 
 SDL_Texture* texture = nullptr;
 
@@ -96,22 +107,9 @@ void PPU::Render(SDL_Renderer* renderer) {
             int vramAddr = (nametableBase + tileY * 32 + tileX) & 0x0FFF;
             uint8_t tileIndex = VRAM[vramAddr];
 
-            int tileAddrBase = 0;
-            if (ppu.BGPatternTable) {
-                uint16_t vaddr = 0x1000 + tileIndex * 16 + fineY;
-                if (vaddr < 0x2000) {
-                    if (vaddr < 0x1000) {
-                        tileAddrBase = ppu.ChrBankOffset[0] + (vaddr & 0x0FFF);
-                    } else {
-                        tileAddrBase = ppu.ChrBankOffset[1] + (vaddr - 0x1000);
-                    }
-                }
-            } else {
-                uint16_t vaddr = 0x0000 + tileIndex * 16 + fineY;
-                tileAddrBase = (vaddr < 0x1000) ? (ppu.ChrBankOffset[0] + vaddr) : (ppu.ChrBankOffset[1] + (vaddr - 0x1000));
-            }
-            uint8_t lo = ppu.ChrData[tileAddrBase];
-            uint8_t hi = ppu.ChrData[tileAddrBase + 8];
+            uint16_t vaddr = (BGPatternTable ? 0x1000 : 0x0000) + tileIndex * 16 + fineY;
+            uint8_t lo = readCHR(vaddr);
+            uint8_t hi = readCHR(vaddr + 8);
 
             int attrX = tileX / 4;
             int attrY = tileY / 4;
@@ -141,18 +139,12 @@ void PPU::Render(SDL_Renderer* renderer) {
         bool flipV = attr & 0x80;
         uint8_t paletteIndex = attr & 0x03;
         uint16_t vaddrBase = (spritePatternTable ? 0x1000 : 0x0000) + tile * 16;
-        uint16_t mappedBase;
-        if (vaddrBase < 0x1000) {
-            mappedBase = ppu.ChrBankOffset[0] + vaddrBase;
-        } else {
-            mappedBase = ppu.ChrBankOffset[1] + (vaddrBase - 0x1000);
-        }
-        const uint8_t* tileData = &ChrData[mappedBase];
 
         for (int row = 0; row < 8; row++) {
             int tileRow = flipV ? 7 - row : row;
-            uint8_t plane0 = tileData[tileRow];
-            uint8_t plane1 = tileData[tileRow + 8];
+
+            uint8_t plane0 = readCHR(vaddrBase + tileRow);
+            uint8_t plane1 = readCHR(vaddrBase + tileRow + 8);
 
             for (int col = 0; col < 8; col++) {
                 int tileCol = flipH ? 7 - col : col;
