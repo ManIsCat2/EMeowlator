@@ -44,7 +44,6 @@ bool PPU::InitSDL(SDL_Renderer * renderer) {
 
 void PPU::ShutdownSDL() {
     if (texture) SDL_DestroyTexture(texture);
-    SDL_Quit();
 }
 
 uint32_t nesPaletteDefault[64] = {
@@ -128,37 +127,38 @@ void PPU::Render(SDL_Renderer* renderer) {
             pixels[screenY * NES_WIDTH + screenX] = color;
         }
     }
+    if (!DisableSprites || !maskRenderSprites) {
+        for (int i = 0; i < MaxSprites; i++) {
+            int spriteY = OAM[i * 4 + 0] + 1;
+            int tile = OAM[i * 4 + 1];
+            int attr = OAM[i * 4 + 2];
+            int spriteX = OAM[i * 4 + 3];
 
-    for (int i = 0; i < 64; i++) {
-        int spriteY = OAM[i * 4 + 0] + 1;
-        int tile = OAM[i * 4 + 1];
-        int attr = OAM[i * 4 + 2];
-        int spriteX = OAM[i * 4 + 3];
+            bool flipH = attr & 0x40;
+            bool flipV = attr & 0x80;
+            uint8_t paletteIndex = attr & 0x03;
+            uint16_t vaddrBase = (spritePatternTable ? 0x1000 : 0x0000) + tile * 16;
 
-        bool flipH = attr & 0x40;
-        bool flipV = attr & 0x80;
-        uint8_t paletteIndex = attr & 0x03;
-        uint16_t vaddrBase = (spritePatternTable ? 0x1000 : 0x0000) + tile * 16;
+            for (int row = 0; row < 8; row++) {
+                int tileRow = flipV ? 7 - row : row;
 
-        for (int row = 0; row < 8; row++) {
-            int tileRow = flipV ? 7 - row : row;
+                uint8_t plane0 = readCHR(vaddrBase + tileRow);
+                uint8_t plane1 = readCHR(vaddrBase + tileRow + 8);
 
-            uint8_t plane0 = readCHR(vaddrBase + tileRow);
-            uint8_t plane1 = readCHR(vaddrBase + tileRow + 8);
+                for (int col = 0; col < 8; col++) {
+                    int tileCol = flipH ? 7 - col : col;
+                    uint8_t colorLow  = (plane0 >> (7 - tileCol)) & 1;
+                    uint8_t colorHigh = (plane1 >> (7 - tileCol)) & 1;
+                    uint8_t colorId = (colorHigh << 1) | colorLow;
+                    if (colorId == 0) continue;
 
-            for (int col = 0; col < 8; col++) {
-                int tileCol = flipH ? 7 - col : col;
-                uint8_t colorLow  = (plane0 >> (7 - tileCol)) & 1;
-                uint8_t colorHigh = (plane1 >> (7 - tileCol)) & 1;
-                uint8_t colorId = (colorHigh << 1) | colorLow;
-                if (colorId == 0) continue;
+                    int px = spriteX + col;
+                    int py = spriteY + row;
+                    if (px < 0 || px >= NES_WIDTH || py < 0 || py >= NES_HEIGHT) continue;
 
-                int px = spriteX + col;
-                int py = spriteY + row;
-                if (px < 0 || px >= NES_WIDTH || py < 0 || py >= NES_HEIGHT) continue;
-
-                uint8_t palEntry = paletteRAM[(palOffset * 4) + (paletteIndex * 4) + colorId] & 0x3F;
-                pixels[py * NES_WIDTH + px] = nesPalette[palEntry];
+                    uint8_t palEntry = paletteRAM[(palOffset * 4) + (paletteIndex * 4) + colorId] & 0x3F;
+                    pixels[py * NES_WIDTH + px] = nesPalette[palEntry];
+                }
             }
         }
     }

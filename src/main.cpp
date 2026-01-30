@@ -14,6 +14,7 @@ NesROM globalROM;
 
 bool romIsLoaded = false;
 static bool fullscreen = false;
+static float CPUSpeed = 1.f;
 static bool unlimitFPS = false;
 static bool showMemview = false;
 static bool showROMInfo = false;
@@ -82,6 +83,7 @@ void DrawROMInfo() {
     ImGui::Text("Header: %s", HeaderHex.c_str());
     ImGui::Text("PRG Size: 0x%zx (%zu), CHR Size: 0x%zx (%zu)", globalROM.PRGRomSize, globalROM.PRGRomSize, globalROM.CHRRomSize, globalROM.CHRRomSize);
     ImGui::Text("Mapper: %u", globalROM.MapperID);
+    ImGui::Text("Has CHR-RAM: %s", globalROM.CHRRomSize == 0 ? "Yes" : "No");
     ImGui::End();
 }
 
@@ -168,6 +170,8 @@ int main(int argc, char* argv[]) {
                 if (ImGui::MenuItem("Continue")) {
                     cpu.CPUPaused = false;
                 }
+                ImGui::SetNextItemWidth(120.f);
+                ImGui::SliderFloat("Speed", &CPUSpeed, 0, 16, "%.3f", ImGuiSliderFlags_ClampOnInput);
                 if (ImGui::MenuItem("Reset")) {
                     cpu.reset();
                 }
@@ -216,6 +220,10 @@ int main(int argc, char* argv[]) {
                     }
                     ImGui::EndMenu();
                 }
+                ImGui::Checkbox("VRAM Corruption", &ppu.VRAMCorruption);
+                ImGui::Checkbox("Disable Sprites", &ppu.DisableSprites);
+                ImGui::SetNextItemWidth(70.f);
+                ImGui::InputInt("Max Sprites", &ppu.MaxSprites);
                 ImGui::EndMenu();
             }
 
@@ -294,7 +302,7 @@ int main(int argc, char* argv[]) {
         if (romIsLoaded) {
             UpdateControllers();
             ppu.Render(renderer);
-            cpu.run(89342);
+            cpu.run((uint32_t)(89342*CPUSpeed));
         }
 
         ImGui::Render();

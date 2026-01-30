@@ -1622,25 +1622,25 @@ void CPU::execute(uint8_t opcode)
     case 0x9B: { // SHS absolute,Y
         fetch16();
         cycles += 6;
-        DEBUG_LOG("SHS Y abs 0x%02X\n", zp);
+        //DEBUG_LOG("SHS Y abs 0x%02X\n", zp);
         break;
     }
     case 0x9C: { // SHY absolute,X
         fetch16();
         cycles += 6;
-        DEBUG_LOG("SHY X abs 0x%02X\n", zp);
+        //DEBUG_LOG("SHY X abs 0x%02X\n", zp);
         break;
     }
     case 0x9E: { // SHX absolute,Y
         fetch16();
         cycles += 6;
-        DEBUG_LOG("SHY Y abs 0x%02X\n", zp);
+        //DEBUG_LOG("SHY Y abs 0x%02X\n", zp);
         break;
     }
     case 0xBB: { // LAE absolute,Y
         fetch16();
         cycles += 6;
-        DEBUG_LOG("LAE Y abs 0x%02X\n", zp);
+        //DEBUG_LOG("LAE Y abs 0x%02X\n", zp);
         break;
     }
 
@@ -2038,8 +2038,12 @@ void CPU::write(uint16_t addr, uint8_t value)
                 uint16_t vaddr = ppu.VRAMAddr & 0x3FFF;
 
                 if (vaddr < 0x2000) {
-                    if (globalROM.Header[5] == 0)
+                    if (globalROM.Header[5] == 0) {
                         ppu.ChrData[vaddr] = value;
+                      //  printf("chrram write\n");
+                    } else {
+                      // printf("ignored chrram write\n");
+                    }
                 }
                 else if (vaddr < 0x3F00) {
                     uint16_t nt = vaddr & 0x0FFF;
@@ -2058,6 +2062,9 @@ void CPU::write(uint16_t addr, uint8_t value)
 
                 ppu.VRAMAddr += ppu.VRAMInc32Mode ? 32 : 1;
                 ppu.VRAMAddr &= 0x3FFF;
+                if (ppu.VRAMCorruption && (rand() & 7) == 0) {
+                    ppu.VRAMAddr ^= 55 << rand() & 7;
+                }
                 break;
             }
         }

@@ -44,6 +44,9 @@ public:
     int PaletteMode = 0;
     bool UseRandPalIndex = false;
     uint8_t RanPalIndex = 4;
+    bool DisableSprites = false;
+    int MaxSprites = 64;
+    bool VRAMCorruption = false;
 
     void Step();
 
