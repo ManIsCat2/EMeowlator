@@ -83,12 +83,8 @@ public:
         if (prgPages == 0) {
             std::cerr << "ROM has zero PRG pages.\n";
             return false;
-        } else if (prgPages == 1) {
-            std::memcpy(&ROM[0], &data[offset], 0x4000);
-            std::memcpy(&ROM[0x4000], &data[offset], 0x4000);
         } else {
-            std::memcpy(&ROM[0], &data[offset], 0x4000);
-            std::memcpy(&ROM[0x4000], &data[offset + 0x4000], 0x4000);
+            std::memcpy(&ROM[0], &data[offset], PRGRomSize);
         }
         offset += PRGRomSize;
 
