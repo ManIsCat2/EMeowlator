@@ -23,7 +23,7 @@ extern NesROM globalROM;
 class NesROM {
 public:
     uint8_t Header[8];
-    uint8_t ROM[0x40000];
+    uint8_t ROM[0x200000];
     std::string Name = "";
     size_t PRGRomSize = 0;
     size_t CHRRomSize = 0;

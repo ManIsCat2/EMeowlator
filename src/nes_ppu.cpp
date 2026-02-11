@@ -4,10 +4,27 @@
 
 PPU ppu;
 
+//#define PPU_FUCKEDUP_TIMING
+
 void PPU::Step() {
+#ifndef PPU_FUCKEDUP_TIMING
     if (Dot == 1 && ScanLine == 241) Vblank = true;
     if (Dot == 1 && ScanLine == 261) Vblank = false;
+#endif
     Dot++;
+#ifdef PPU_FUCKEDUP_TIMING
+    if (Dot > 340) {
+            Dot = 0;
+            ScanLine++;
+            if (ScanLine > 241) {
+                Vblank = true;
+            }
+            if (ScanLine > 261) {
+                ScanLine = 0;
+                Vblank = false;
+            }
+        }
+#else
     if (Dot > 341) {
         Dot = 0;
         ScanLine++;
@@ -15,6 +32,7 @@ void PPU::Step() {
             ScanLine = 0;
         }
     }
+#endif
 }
 
 void PPU::LoadCHRROM(const uint8_t* chrData, int chrSize) {

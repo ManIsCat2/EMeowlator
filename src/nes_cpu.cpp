@@ -1896,7 +1896,9 @@ uint8_t CPU::read(uint16_t addr)
             case 2: { // PPUSTATUS
                 uint8_t status = 0;
                 status |= (ppu.Vblank ? 0x80 : 0);
-                if (ppu.ScanLine < 240) status |= 0x40;
+                if (ppu.ScanLine < 240) {
+                    status |= 0x40;
+                }
 
                 ppu.Vblank = false;
                 ppu.WriteLatch = false;
