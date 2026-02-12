@@ -80,11 +80,20 @@ public:
 
         PRGRomSize = size_t(prgPages) * 16 * 1024;
 
-        if (prgPages == 0) {
+        if (!prgPages) {
             std::cerr << "ROM has zero PRG pages.\n";
             return false;
-        } else {
+        }
+        if (MapperID) {
             std::memcpy(&ROM[0], &data[offset], PRGRomSize);
+        } else {
+            if (prgPages == 1) {
+                std::memcpy(&ROM[0], &data[offset], 0x4000);
+                std::memcpy(&ROM[0x4000], &data[offset], 0x4000);
+            } else {
+                std::memcpy(&ROM[0], &data[offset], 0x4000);
+                std::memcpy(&ROM[0x4000], &data[offset + 0x4000], 0x4000);
+            }
         }
         offset += PRGRomSize;
 

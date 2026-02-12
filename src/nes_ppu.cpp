@@ -85,11 +85,7 @@ uint8_t PPU::readCHR(uint16_t addr) {
 
     // nrom
     addr &= 0x1FFF;
-    if (addr < 0x1000) {
-        return ChrData[ 0 + addr ];
-    } else {
-        return ChrData[ 0x1000 + (addr - 0x1000) ];
-    }
+    return ChrData[addr];
 }
 
 void PPU::Render(SDL_Renderer* renderer) {

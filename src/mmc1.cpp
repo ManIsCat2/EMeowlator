@@ -92,15 +92,15 @@ void MMC1::updateBanks() {
 
     if (PrgMode == 0 || PrgMode == 1) {
         uint32_t bank = (PrgBank & 0x0E);
-        cpu.prgBankOffset[0] = bank16(bank);
-        cpu.prgBankOffset[1] = bank16(bank + 1);
+        prgBankOffset[0] = bank16(bank);
+        prgBankOffset[1] = bank16(bank + 1);
     } else if (PrgMode == 2) {
-        cpu.prgBankOffset[0] = bank16(0);
-        cpu.prgBankOffset[1] = bank16(PrgBank & 0x0F);
+        prgBankOffset[0] = bank16(0);
+        prgBankOffset[1] = bank16(PrgBank & 0x0F);
     } else {
-        cpu.prgBankOffset[0] = bank16(PrgBank & 0x0F);
+        prgBankOffset[0] = bank16(PrgBank & 0x0F);
         size_t last = (prgSize == 0) ? 0 : (prgSize - 0x4000);
-        cpu.prgBankOffset[1] = last;
+        prgBankOffset[1] = last;
     }
 
     if (globalROM.CHRRomSize == 0) {

@@ -21,7 +21,6 @@ private:
     uint8_t ChrBank0;
     uint8_t ChrBank1;
     uint8_t PrgBank;
-    int ChrBankOffset[2] = {0, 0x1000};
 
     int PrgMode;
     int ChrMode;

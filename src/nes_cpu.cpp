@@ -1,7 +1,7 @@
 #include "nes_cpu.hpp"
 #include "nes_controller.hpp"
 
-#define NES_DEBUG
+//#define NES_DEBUG
 
 #ifdef  NES_DEBUG
 #define DEBUG_LOG(...) printf(__VA_ARGS__);
@@ -1967,7 +1967,7 @@ uint8_t CPU::read(uint16_t addr)
     if (addr >= 0x8000) {
         if (globalROM.mapper) {
             int Slot = (addr < 0xC000) ? 0 : 1;
-            size_t base = prgBankOffset[Slot];
+            size_t base = globalROM.mapper->prgBankOffset[Slot];
             size_t index = base + (addr & 0x3FFF);
             if (index >= globalROM.PRGRomSize) index %= globalROM.PRGRomSize;
             return globalROM.ROM[index];
