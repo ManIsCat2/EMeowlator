@@ -1967,7 +1967,7 @@ uint8_t CPU::read(uint16_t addr)
     if (addr >= 0x8000) {
         if (globalROM.mapper) {
             int Slot = (addr < 0xC000) ? 0 : 1;
-            size_t base = globalROM.mapper->prgBankOffset[Slot];
+            size_t base = globalROM.mapper->PRGBankOffset[Slot];
             size_t index = base + (addr & 0x3FFF);
             if (index >= globalROM.PRGRomSize) index %= globalROM.PRGRomSize;
             return globalROM.ROM[index];
