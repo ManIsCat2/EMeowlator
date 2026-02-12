@@ -71,13 +71,7 @@ uint32_t nesPalette[64] = {
 //ppu implementation that is incredibly fucked
 
 uint8_t PPU::readCHR(uint16_t addr) {
-    if (globalROM.mapper) {
-        return globalROM.mapper->ppuRead(addr);
-    }
-
-    // nrom
-    addr &= 0x1FFF;
-    return ChrData[addr];
+    return globalROM.mapper ? globalROM.mapper->ppuRead(addr) : 0xff;
 }
 
 void PPU::Render(SDL_Renderer* renderer) {

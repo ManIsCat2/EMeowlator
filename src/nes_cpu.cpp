@@ -1958,22 +1958,11 @@ uint8_t CPU::read(uint16_t addr)
     }
 
     if (addr >= 0x6000 && addr < 0x8000) {
-        if (globalROM.mapper) { 
-            return globalROM.mapper->cpuRead(addr);
-        }
-        return PrgRAM[addr - 0x6000];
+        return globalROM.mapper ? globalROM.mapper->cpuRead(addr) : 0xff;
     }
 
     if (addr >= 0x8000) {
-        if (globalROM.mapper) {
-            int Slot = (addr < 0xC000) ? 0 : 1;
-            size_t base = globalROM.mapper->PRGBankOffset[Slot];
-            size_t index = base + (addr & 0x3FFF);
-            if (index >= globalROM.PRGRomSize) index %= globalROM.PRGRomSize;
-            return globalROM.ROM[index];
-        } else {
-            return globalROM.ROM[addr - 0x8000];
-        }
+        return globalROM.mapper ? globalROM.mapper->cpuReadAfter0x8000(addr) : 0xff;
     }
     return 0;
 }
@@ -2095,15 +2084,7 @@ void CPU::write(uint16_t addr, uint8_t value)
         return;
     }
     if (addr >= 0x6000 && addr <= 0xFFFF) {
-        if (globalROM.mapper) {
-            globalROM.mapper->cpuWrite(addr, value);
-            return;
-        } else {
-            if (addr >= 0x6000 && addr < 0x8000) {
-                PrgRAM[addr - 0x6000] = value;
-            }
-            return;
-        }
+        if (globalROM.mapper) globalROM.mapper->cpuWrite(addr, value);
     }
 }
 

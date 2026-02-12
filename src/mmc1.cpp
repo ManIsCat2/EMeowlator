@@ -20,10 +20,15 @@ void MMC1::reset() {
 }
 
 uint8_t MMC1::cpuRead(uint16_t addr) {
-    if (addr >= 0x6000 && addr < 0x8000) {
-        return cpu.PrgRAM[addr - 0x6000];
-    }
-    return 0;
+    return cpu.PrgRAM[addr - 0x6000];
+}
+
+uint8_t MMC1::cpuReadAfter0x8000(uint16_t addr) {
+    int Slot = (addr < 0xC000) ? 0 : 1;
+    size_t base = globalROM.mapper->PRGBankOffset[Slot];
+    size_t index = base + (addr & 0x3FFF);
+    if (index >= globalROM.PRGRomSize) index %= globalROM.PRGRomSize;
+    return globalROM.ROM[index];
 }
 
 uint8_t MMC1::ppuRead(uint16_t addr) {

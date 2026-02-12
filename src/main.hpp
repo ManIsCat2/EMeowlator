@@ -14,7 +14,9 @@
 #include "nes_controller.hpp"
 
 #include "mapper.hpp"
+#include "nrom.hpp"
 #include "mmc1.hpp"
+#include "cnrom.hpp"
 
 extern bool romIsLoaded;
 class NesROM;
@@ -108,15 +110,18 @@ public:
 
         if (mapper) { delete mapper; mapper = nullptr; }
 
-        if (MapperID == 1) {
+        if (MapperID == 0) {
+            mapper = new NROM();
+        } else if (MapperID == 1) {
             mapper = new MMC1();
+        } else if (MapperID == 3) {
+            mapper = new CNROM();
         } else {
-            mapper = nullptr;
+            //hope for the best
+            mapper = new MMC1();
         }
 
-        if (mapper) {
-            mapper->reset();
-        }
+        mapper->reset();
         return true;
     }
 };
