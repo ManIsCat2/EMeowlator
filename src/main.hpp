@@ -35,6 +35,7 @@ public:
             case 1: return new MMC1();
             case 2: return new UxROM();
             case 3: return new CNROM();
+            case 9: return new MMC2();
             //hope for the best
             default: return new MMC1();
         }
