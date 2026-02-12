@@ -9,7 +9,6 @@
 #define VRAM_MIRRORED_SIZE 0x4000
 #define PALRAM_SIZE 0x20
 
-
 #define A_BUTTON        (1 << 0)
 #define B_BUTTON        (1 << 1)
 #define SELECT_BUTTON   (1 << 2)

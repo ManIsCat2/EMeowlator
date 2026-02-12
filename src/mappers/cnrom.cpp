@@ -1,6 +1,6 @@
 #include "cnrom.hpp"
-#include "nes_cpu.hpp"
-#include "nes_ppu.hpp"
+#include "../nes_cpu.hpp"
+#include "../nes_ppu.hpp"
 
 CNROM::CNROM() {
     reset();

@@ -1,6 +1,6 @@
 #include "nrom.hpp"
-#include "nes_cpu.hpp"
-#include "nes_ppu.hpp"
+#include "../nes_cpu.hpp"
+#include "../nes_ppu.hpp"
 
 NROM::NROM() {
     reset();

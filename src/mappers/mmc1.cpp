@@ -1,7 +1,6 @@
 #include "mmc1.hpp"
-#include "nes_cpu.hpp"
-#include "nes_ppu.hpp"
-#include <algorithm>
+#include "../nes_cpu.hpp"
+#include "../nes_ppu.hpp"
 
 MMC1::MMC1() {
     reset();

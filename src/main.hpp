@@ -13,10 +13,7 @@
 #include "nes_cpu.hpp"
 #include "nes_controller.hpp"
 
-#include "mapper.hpp"
-#include "nrom.hpp"
-#include "mmc1.hpp"
-#include "cnrom.hpp"
+#include "mappers/mappers.hpp"
 
 extern bool romIsLoaded;
 class NesROM;
@@ -30,7 +27,18 @@ public:
     size_t PRGRomSize = 0;
     size_t CHRRomSize = 0;
     uint16_t MapperID = 0;
-    Mapper* mapper = nullptr;
+    MapperBase *mapper = nullptr;
+
+    MapperBase *GetMapper(void) {
+        switch (MapperID) {
+            case 0: return new NROM();
+            case 1: return new MMC1();
+            case 2: return new UxROM();
+            case 3: return new CNROM();
+            //hope for the best
+            default: return new MMC1();
+        }
+    }
 
     bool LoadNES(const std::string &filename) {
         std::ifstream rom(filename, std::ios::binary | std::ios::ate);
@@ -110,16 +118,7 @@ public:
 
         if (mapper) { delete mapper; mapper = nullptr; }
 
-        if (MapperID == 0) {
-            mapper = new NROM();
-        } else if (MapperID == 1) {
-            mapper = new MMC1();
-        } else if (MapperID == 3) {
-            mapper = new CNROM();
-        } else {
-            //hope for the best
-            mapper = new MMC1();
-        }
+        mapper = GetMapper();
 
         mapper->reset();
         return true;

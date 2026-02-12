@@ -1,4 +1,4 @@
-COMPILE_FOLDERS := src src/imgui src/imgui/backends
+COMPILE_FOLDERS := src src/mappers src/imgui src/imgui/backends
 TARGET := MeowNES
 BUILD_DIR := build
 CXX := clang++

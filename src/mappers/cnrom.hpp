@@ -1,11 +1,11 @@
 #pragma once
-#include "mapper.hpp"
+#include "mapper_base.hpp"
 #include <stdint.h>
 
-class MMC1 : public Mapper {
+class CNROM : public MapperBase {
 public:
-    MMC1();
-    ~MMC1() override = default;
+    CNROM();
+    ~CNROM() override = default;
 
     uint8_t cpuRead(uint16_t addr) override;
     uint8_t cpuReadAfter0x8000(uint16_t addr) override;
@@ -14,18 +14,7 @@ public:
     const char *getName(void) override;
     void reset() override;
 
-
 private:
-    uint8_t ShiftReg;
-    uint8_t ShiftCount;
-    uint8_t Ctrl;
-    uint8_t ChrBank0;
-    uint8_t ChrBank1;
-    uint8_t PrgBank;
-
-    int PrgMode;
-    int ChrMode;
-
-    void modifyRegister(uint16_t addr, uint8_t data);
+    uint8_t ChrBank;
     void updateBanks();
 };
