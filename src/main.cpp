@@ -82,7 +82,7 @@ void DrawROMInfo() {
 
     ImGui::Text("Header: %s", HeaderHex.c_str());
     ImGui::Text("PRG Size: 0x%zx (%zu), CHR Size: 0x%zx (%zu)", globalROM.PRGRomSize, globalROM.PRGRomSize, globalROM.CHRRomSize, globalROM.CHRRomSize);
-    ImGui::Text("Mapper: %u", globalROM.MapperID);
+    ImGui::Text("Mapper: %s (Mapper %u)", globalROM.mapper ? globalROM.mapper->getName() : "NROM", globalROM.MapperID);
     ImGui::Text("Has CHR-RAM: %s", globalROM.CHRRomSize == 0 ? "Yes" : "No");
     ImGui::End();
 }

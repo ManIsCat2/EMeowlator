@@ -26,6 +26,18 @@ uint8_t MMC1::cpuRead(uint16_t addr) {
     return 0;
 }
 
+uint8_t MMC1::ppuRead(uint16_t addr) {
+    addr &= 0x1FFF; 
+    
+    if (addr < 0x1000) {
+        size_t offset = ChrBankOffset[0] + addr;
+        return ppu.ChrData[offset]; 
+    } else {
+        size_t offset = ChrBankOffset[1] + (addr - 0x1000);
+        return ppu.ChrData[offset];
+    }
+}
+
 void MMC1::cpuWrite(uint16_t addr, uint8_t value) {
     if (addr >= 0x6000 && addr < 0x8000) {
         cpu.PrgRAM[addr - 0x6000] = value;
@@ -52,6 +64,10 @@ void MMC1::cpuWrite(uint16_t addr, uint8_t value) {
         ChrMode = (Ctrl >> 4) & 1;
         updateBanks();
     }
+}
+
+const char *MMC1::getName(void) {
+    return "MMC1";
 }
 
 void MMC1::modifyRegister(uint16_t addr, uint8_t data) {
@@ -88,21 +104,21 @@ void MMC1::updateBanks() {
     }
 
     if (globalROM.CHRRomSize == 0) {
-        ppu.ChrBankOffset[0] = 0;
-        ppu.ChrBankOffset[1] = 0x1000;
+        ChrBankOffset[0] = 0;
+        ChrBankOffset[1] = 0x1000;
     } else {
         if (ChrMode == 0) {
             size_t bank = (size_t)(ChrBank0 & 0x1E) * 0x1000;
             bank %= globalROM.CHRRomSize;
-            ppu.ChrBankOffset[0] = bank;
-            ppu.ChrBankOffset[1] = bank + 0x1000;
+            ChrBankOffset[0] = bank;
+            ChrBankOffset[1] = bank + 0x1000;
         } else {
             size_t b0 = (size_t)(ChrBank0 & 0x1F) * 0x1000;
             size_t b1 = (size_t)(ChrBank1 & 0x1F) * 0x1000;
             b0 %= globalROM.CHRRomSize;
             b1 %= globalROM.CHRRomSize;
-            ppu.ChrBankOffset[0] = b0;
-            ppu.ChrBankOffset[1] = b1;
+            ChrBankOffset[0] = b0;
+            ChrBankOffset[1] = b1;
         }
     }
 

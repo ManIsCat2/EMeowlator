@@ -23,8 +23,7 @@ public:
         P = 0x24;
         PC = read16(0xFFFC);
         cycles = 0;
-        ppu.ChrBankOffset[0] = 0;
-        ppu.ChrBankOffset[1] = 0x1000;
+        printf("RESET 0x%x\n", PC);
     }
 
     bool NMIDetector = false;

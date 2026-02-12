@@ -40,16 +40,6 @@ void PPU::LoadCHRROM(const uint8_t* chrData, int chrSize) {
     memcpy(ChrData.data(), chrData, chrSize);
 }
 
-uint8_t PPU::readCHR(uint16_t addr) {
-    addr &= 0x1FFF;
-
-    if (addr < 0x1000) {
-        return ChrData[ ChrBankOffset[0] + addr ];
-    } else {
-        return ChrData[ ChrBankOffset[1] + (addr - 0x1000) ];
-    }
-}
-
 
 SDL_Texture* texture = nullptr;
 
@@ -87,6 +77,20 @@ uint32_t nesPalette[64] = {
 };
 
 //ppu implementation that is incredibly fucked
+
+uint8_t PPU::readCHR(uint16_t addr) {
+    if (globalROM.mapper) {
+        return globalROM.mapper->ppuRead(addr);
+    }
+
+    // nrom
+    addr &= 0x1FFF;
+    if (addr < 0x1000) {
+        return ChrData[ 0 + addr ];
+    } else {
+        return ChrData[ 0x1000 + (addr - 0x1000) ];
+    }
+}
 
 void PPU::Render(SDL_Renderer* renderer) {
     uint32_t pixels[NES_WIDTH * NES_HEIGHT];

@@ -1,7 +1,7 @@
 #include "nes_cpu.hpp"
 #include "nes_controller.hpp"
 
-//#define NES_DEBUG
+#define NES_DEBUG
 
 #ifdef  NES_DEBUG
 #define DEBUG_LOG(...) printf(__VA_ARGS__);
@@ -2065,7 +2065,7 @@ void CPU::write(uint16_t addr, uint8_t value)
                 ppu.VRAMAddr += ppu.VRAMInc32Mode ? 32 : 1;
                 ppu.VRAMAddr &= 0x3FFF;
                 if (ppu.VRAMCorruption && (rand() & 7) == 0) {
-                    ppu.VRAMAddr ^= 55 << rand() & 7;
+                    ppu.VRAMAddr ^= 2 << rand() & 7;
                 }
                 break;
             }

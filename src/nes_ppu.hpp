@@ -13,7 +13,6 @@ public:
     std::array<uint8_t, VRAM_MIRRORED_SIZE> VRAM{};
     std::array<uint8_t, PALRAM_SIZE> paletteRAM{};
     std::array<uint8_t, 0x100> OAM{};
-    size_t ChrBankOffset[2] = { 0, 0x1000 };
 
     bool WriteLatch = false;
     unsigned short TransferAddr = 0;
