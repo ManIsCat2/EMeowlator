@@ -205,10 +205,10 @@ void JyCompany::updateState() {
 
 void JyCompany::updateMirroring() {
     switch(mirroringReg) {
-        case 0: ppu.Mirroring = 0; break;
-        case 1: ppu.Mirroring = 1; break;
-        case 2: ppu.Mirroring = 2; break;
-        case 3: ppu.Mirroring = 3; break;
+        case 0: ppu.Mirroring = MirrorMode::VERTICAL; break;
+        case 1: ppu.Mirroring = MirrorMode::HORIZONTAL; break;
+        case 2: ppu.Mirroring = MirrorMode::SCREEN_A; break;
+        case 3: ppu.Mirroring = MirrorMode::SCREEN_B; break;
     }
 }
 

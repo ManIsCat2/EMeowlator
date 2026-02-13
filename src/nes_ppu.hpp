@@ -7,6 +7,14 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
+enum class MirrorMode {
+    HORIZONTAL,
+    VERTICAL,
+    SCREEN_A,
+    SCREEN_B,
+    FOURSCREEN
+};
+
 class PPU {
 public:
     std::vector<uint8_t> ChrData{};
@@ -14,7 +22,7 @@ public:
     std::array<uint8_t, PALRAM_SIZE> paletteRAM{};
     std::array<uint8_t, 0x100> OAM{};
 
-    int Mirroring;
+    MirrorMode Mirroring;
     bool WriteLatch = false;
     unsigned short TransferAddr = 0;
     unsigned short VRAMAddr = 0;

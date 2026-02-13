@@ -1,0 +1,135 @@
+#include "sunsoft_fme7.hpp"
+#include "../nes_cpu.hpp"
+#include "../nes_ppu.hpp"
+
+SunSoftFME7::SunSoftFME7() {
+    reset();
+}
+
+void SunSoftFME7::reset() {
+    command = 0;
+    workRamValue = 0;
+
+    irqEnabled = false;
+    irqCounterEnabled = false;
+    irqCounter = 0;
+
+    for(int i = 0; i < 8; i++)
+        chrRegs[i] = 0;
+
+    for(int i = 0; i < 3; i++)
+        prgRegs[i] = 0;
+
+    updateChr();
+    updatePrg();
+}
+
+uint8_t SunSoftFME7::cpuRead(uint16_t addr) {
+    if(addr < 0x8000) {
+        if (addr >= 0x6000) {
+            if (workRamValue & 0x40) {
+                if(workRamValue & 0x80)
+                    return cpu.PrgRAM[addr - 0x6000];
+                return 0xFF;
+            }
+
+            size_t offset = (workRamValue & 0x3F) * 0x2000;
+            return globalROM.ROM[offset + (addr & 0x1FFF)];
+        }
+    } else {
+        int bank = (addr - 0x8000) >> 13;
+        return globalROM.ROM[PRGBankOffset[bank] + (addr & 0x1FFF)];
+    }
+
+    return 0xff;
+}
+
+void SunSoftFME7::cpuWrite(uint16_t addr, uint8_t value) {
+    switch(addr & 0xE000) {
+        case 0x8000:
+            command = value & 0x0F;
+            break;
+        case 0xA000:
+            switch(command) {
+                case 0: case 1: case 2: case 3:
+                case 4: case 5: case 6: case 7:
+                    chrRegs[command] = value;
+                    updateChr();
+                    break;
+
+                case 8:
+                    workRamValue = value;
+                    break;
+
+                case 9: case 0xA: case 0xB:
+                    prgRegs[command - 9] = value & 0x3F;
+                    updatePrg();
+                    break;
+
+                case 0xC:
+                    switch(value & 3) {
+                        case 0: ppu.Mirroring = MirrorMode::VERTICAL; break;
+                        case 1: ppu.Mirroring = MirrorMode::HORIZONTAL; break;
+                        case 2: ppu.Mirroring = MirrorMode::SCREEN_A; break;
+                        case 3: ppu.Mirroring = MirrorMode::SCREEN_B; break;
+                    }
+                    break;
+
+                case 0xD:
+                    irqEnabled = value & 1;
+                    irqCounterEnabled = value & 0x80;
+                    cpu.doIRQ = false;
+                    break;
+                case 0xE:
+                    irqCounter = (irqCounter & 0xFF00) | value;
+                    break;
+                case 0xF:
+                    irqCounter = (irqCounter & 0x00FF) | (value << 8);
+                    break;
+            }
+            break;
+    }
+}
+
+const char* SunSoftFME7::getName(void) {
+    return "SunSoft FME-7";
+}
+
+uint8_t SunSoftFME7::ppuRead(uint16_t addr) {
+    addr &= 0x1FFF;
+
+    int bank = addr >> 10;
+    return ppu.ChrData[CHRBankOffset[bank] + (addr & 0x3FF)];
+}
+
+void SunSoftFME7::updateChr() {
+    if(globalROM.CHRRomSize == 0) {
+        for(int i = 0; i < 8; i++)
+            CHRBankOffset[i] = (chrRegs[i] & 7) * 0x400;
+        return;
+    }
+
+    size_t chrCount = globalROM.CHRRomSize / 0x400;
+    for(int i = 0; i < 8; i++)
+        CHRBankOffset[i] = (chrRegs[i] % chrCount) * 0x400;
+}
+
+void SunSoftFME7::updatePrg() {
+    size_t prgCount = globalROM.PRGRomSize / 0x2000;
+
+    PRGBankOffset[0] = (prgRegs[0] % prgCount) * 0x2000;
+    PRGBankOffset[1] = (prgRegs[1] % prgCount) * 0x2000;
+    PRGBankOffset[2] = (prgRegs[2] % prgCount) * 0x2000;
+    PRGBankOffset[3] = (prgCount - 1) * 0x2000;
+}
+
+void SunSoftFME7::clockIRQ() {
+    if(!irqCounterEnabled)
+        return;
+
+    irqCounter--;
+
+    if(irqCounter == 0xFFFF) {
+        if(irqEnabled) cpu.doIRQ = true;
+    }
+}

@@ -51,7 +51,7 @@ void MMC3::cpuWrite(uint16_t addr, uint8_t value) {
         }
     } else if (addr >= 0xA000 && addr <= 0xBFFF) {
         if ((addr & 1) == 0) {
-            ppu.Mirroring = (value & 1) ? 0 : 1;
+            ppu.Mirroring = (value & 1) ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL;
         }
     } else if (addr >= 0xC000 && addr <= 0xDFFF) {
         if ((addr & 1) == 0) {

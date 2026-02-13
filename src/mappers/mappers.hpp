@@ -5,4 +5,5 @@
 #include "cnrom.hpp"
 #include "mmc3.hpp"
 #include "mmc2.hpp"
+#include "sunsoft_fme7.hpp"
 #include "jycompany.hpp"
