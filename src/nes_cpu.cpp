@@ -1918,7 +1918,7 @@ uint8_t CPU::read(uint16_t addr)
                     if (vaddr < 0x2000)
                         ppu.ReadBuffer = ppu.ChrData[vaddr];
                     else {
-                        if (globalROM.Header[6] & 1) nt &= 0x7FF;
+                        if (ppu.Mirroring & 1) nt &= 0x7FF;
                         else nt = (nt & VRAM_SIZE) ? (nt - 0x400) : nt;
                         ppu.ReadBuffer = ppu.VRAM[nt];
                     }
@@ -2038,7 +2038,7 @@ void CPU::write(uint16_t addr, uint8_t value)
                 }
                 else if (vaddr < 0x3F00) {
                     uint16_t nt = vaddr & 0x0FFF;
-                    if (globalROM.Header[6] & 1) { // vertical mirroring
+                    if (ppu.Mirroring & 1) { // vertical mirroring
                         nt &= 0x7FF;
                     } else { // horizontal
                         nt = (nt & 0x800) ? (nt - 0x400) : nt;

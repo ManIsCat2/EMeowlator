@@ -14,6 +14,7 @@ public:
     std::array<uint8_t, PALRAM_SIZE> paletteRAM{};
     std::array<uint8_t, 0x100> OAM{};
 
+    int Mirroring;
     bool WriteLatch = false;
     unsigned short TransferAddr = 0;
     unsigned short VRAMAddr = 0;

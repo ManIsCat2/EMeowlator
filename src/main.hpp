@@ -35,6 +35,7 @@ public:
             case 1: return new MMC1();
             case 2: return new UxROM();
             case 3: return new CNROM();
+            case 4: return new MMC3();
             case 9: return new MMC2();
             //hope for the best
             default: return new MMC1();
@@ -71,6 +72,8 @@ public:
         }
 
         std::memcpy(Header, data.data(), 8);
+
+        ppu.Mirroring = Header[6];
 
         uint8_t prgPages = data[4];
         uint8_t chrPages = data[5];

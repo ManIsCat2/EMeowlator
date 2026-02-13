@@ -26,6 +26,7 @@ public:
 
     bool NMIDetector = false;
     bool doNMI = false;
+    bool doIRQ = false;
 
     void GetInfo(uint8_t *AReg, uint8_t *XReg, uint8_t *YReg, uint16_t *PCPtr, uint8_t *SPPtr, uint8_t *PPtr) {
         *AReg = A;

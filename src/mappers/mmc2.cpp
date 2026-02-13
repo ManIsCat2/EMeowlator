@@ -37,20 +37,16 @@ void MMC2::cpuWrite(uint16_t addr, uint8_t value) {
     if (addr >= 0xA000 && addr <= 0xAFFF) {
         PrgBank = value;
         updatePRG();
-    }
-    else if (addr >= 0xB000 && addr <= 0xBFFF) {
+    } else if (addr >= 0xB000 && addr <= 0xBFFF) {
         ChrBankFD[0] = value;
         updateCHR();
-    }
-    else if (addr >= 0xC000 && addr <= 0xCFFF) {
+    } else if (addr >= 0xC000 && addr <= 0xCFFF) {
         ChrBankFE[0] = value;
         updateCHR();
-    }
-    else if (addr >= 0xD000 && addr <= 0xDFFF) {
+    } else if (addr >= 0xD000 && addr <= 0xDFFF) {
         ChrBankFD[1] = value;
         updateCHR();
-    }
-    else if (addr >= 0xE000 && addr <= 0xEFFF) {
+    } else if (addr >= 0xE000 && addr <= 0xEFFF) {
         ChrBankFE[1] = value;
         updateCHR();
     }
@@ -61,22 +57,18 @@ const char* MMC2::getName(void) {
 }
 
 uint8_t MMC2::ppuRead(uint16_t addr) {
-
     addr &= 0x1FFF;
 
     if (addr == 0x0FD8) {
         Latch[0] = 0;
         updateCHR();
-    }
-    else if (addr == 0x0FE8) {
+    } else if (addr == 0x0FE8) {
         Latch[0] = 1;
         updateCHR();
-    }
-    else if (addr == 0x1FD8) {
+    } else if (addr == 0x1FD8) {
         Latch[1] = 0;
         updateCHR();
-    }
-    else if (addr == 0x1FE8) {
+    } else if (addr == 0x1FE8) {
         Latch[1] = 1;
         updateCHR();
     }
