@@ -11,11 +11,14 @@ void NROM::reset() {
 }
 
 uint8_t NROM::cpuRead(uint16_t addr) {
-    return cpu.PrgRAM[addr - 0x6000];
-}
-
-uint8_t NROM::cpuReadAfter0x8000(uint16_t addr) {
-    return globalROM.ROM[addr - 0x8000];
+    if (addr < 0x8000) {
+        if (addr >= 0x6000) {
+            return cpu.PrgRAM[addr - 0x6000];
+        }
+    } else {
+        return globalROM.ROM[addr - 0x8000];
+    }
+    return 0xff;
 }
 
 void NROM::cpuWrite(uint16_t addr, uint8_t value) {

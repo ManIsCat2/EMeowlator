@@ -9,6 +9,8 @@
 #include <cstring>
 #include <filesystem>
 
+#include <SDL2/SDL.h>
+
 #include "nes.hpp"
 #include "nes_cpu.hpp"
 #include "nes_controller.hpp"
@@ -37,8 +39,12 @@ public:
             case 3: return new CNROM();
             case 4: return new MMC3();
             case 9: return new MMC2();
+            case 90: return new JyCompany();
             //hope for the best
-            default: return new MMC1();
+            default: {
+                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING , "Warning", ("Mapper " + std::to_string(MapperID) + " is Unimplemented, Using MMC1 instead.").c_str(), NULL);
+                return new MMC1();
+            }
         }
     }
 

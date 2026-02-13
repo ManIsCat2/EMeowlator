@@ -1,7 +1,6 @@
 #define PFD_USING_IMPLEMENTATION
 #include "portable-file-dialogs.h"
 
-#include <SDL2/SDL.h>
 #include "imgui/imgui.h"
 #include "imgui/backends/imgui_impl_sdl2.h"
 #include "imgui/backends/imgui_impl_sdlrenderer2.h"

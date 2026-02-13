@@ -1957,14 +1957,7 @@ uint8_t CPU::read(uint16_t addr)
         }
     }
 
-    if (addr >= 0x6000 && addr < 0x8000) {
-        return globalROM.mapper ? globalROM.mapper->cpuRead(addr) : 0xff;
-    }
-
-    if (addr >= 0x8000) {
-        return globalROM.mapper ? globalROM.mapper->cpuReadAfter0x8000(addr) : 0xff;
-    }
-    return 0;
+    return globalROM.mapper ? globalROM.mapper->cpuRead(addr) : 0xff;
 }
 
 void CPU::write(uint16_t addr, uint8_t value)
@@ -2083,9 +2076,7 @@ void CPU::write(uint16_t addr, uint8_t value)
         }
         return;
     }
-    if (addr >= 0x6000 && addr <= 0xFFFF) {
-        if (globalROM.mapper) globalROM.mapper->cpuWrite(addr, value);
-    }
+    if (globalROM.mapper) globalROM.mapper->cpuWrite(addr, value);
 }
 
 uint16_t CPU::read16(uint16_t addr)

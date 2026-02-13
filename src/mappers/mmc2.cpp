@@ -22,15 +22,18 @@ void MMC2::reset() {
 }
 
 uint8_t MMC2::cpuRead(uint16_t addr) {
-    return cpu.PrgRAM[addr - 0x6000];
-}
-
-uint8_t MMC2::cpuReadAfter0x8000(uint16_t addr) {
-    if (addr < 0xA000) {
-        return globalROM.ROM[PRGBankOffset[0] + (addr - 0x8000)];
+    if (addr < 0x8000) {
+        if (addr >= 0x6000) {
+            return cpu.PrgRAM[addr - 0x6000];
+        }
     } else {
-        return globalROM.ROM[PRGBankOffset[1] + (addr - 0xA000)];
+        if (addr < 0xA000) {
+            return globalROM.ROM[PRGBankOffset[0] + (addr - 0x8000)];
+        } else {
+            return globalROM.ROM[PRGBankOffset[1] + (addr - 0xA000)];
+        }
     }
+    return 0xff;
 }
 
 void MMC2::cpuWrite(uint16_t addr, uint8_t value) {
