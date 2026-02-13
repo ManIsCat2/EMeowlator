@@ -35,16 +35,15 @@ void JyCompany::reset() {
     multiplyValue2 = 0;
     regRamValue = 0;
 
-    updatePrg();
-    updateChr();
-    updateMirroring();
+    updateState();
 }
 
 uint8_t JyCompany::cpuRead(uint16_t addr) {
     if(addr < 0x8000) {
         switch(addr & 0xF803) {
-            case 0x5800: return 0x19; // this makes shit work in smw bootleg idk why
-            case 0x5801: return multiplyValue2;
+            case 0x5000: return 0;
+            case 0x5800: return (multiplyValue1 * multiplyValue2) & 0xFF;
+			case 0x5801: return ((multiplyValue1 * multiplyValue2) >> 8) & 0xFF;
             case 0x5803: return regRamValue;
         }
         if (addr >= 0x6000 && enablePrgAt6000) {
@@ -71,17 +70,14 @@ void JyCompany::cpuWrite(uint16_t addr, uint8_t value) {
         switch(addr & 0xF007) {
             case 0x8000: case 0x8001: case 0x8002: case 0x8003:
                 prgRegs[addr & 0x03] = value & 0x7F;
-                updatePrg();
                 break;
             case 0x9000: case 0x9001: case 0x9002: case 0x9003:
             case 0x9004: case 0x9005: case 0x9006: case 0x9007:
                 chrLowRegs[addr & 0x07] = value;
-                updateChr();
                 break;
             case 0xA000: case 0xA001: case 0xA002: case 0xA003:
             case 0xA004: case 0xA005: case 0xA006: case 0xA007:
-                chrHighRegs[addr & 0x07] = value;
-                updateChr();
+                chrHighRegs[addr & 0x07] = value;;
                 break;
             case 0xC000: irqEnabled = value & 0x01; if(!irqEnabled) cpu.doIRQ = false; break;
             case 0xC004: irqPrescaler = value ^ irqXorReg; break;
@@ -91,23 +87,21 @@ void JyCompany::cpuWrite(uint16_t addr, uint8_t value) {
             case 0xD000:
                 prgMode = value & 0x07;
                 chrMode = (value >> 3) & 0x03;
+				advancedNtControl = (value & 0x20) == 0x20;
                 enablePrgAt6000 = (value & 0x80) != 0;
-                updatePrg();
-                updateChr();
                 break;
             case 0xD001:
                 mirroringReg = value & 0x03;
-                updateMirroring();
                 break;
 
             case 0xD003:
                 mirrorChr = (value & 0x80) != 0;
                 chrBlockMode = (value & 0x20) == 0;
                 chrBlock = ((value & 0x18) >> 2) | (value & 0x01);
-                updateChr();
                 break;
         }
     }
+    updateState();
 }
 
 const char* JyCompany::getName() {
@@ -140,16 +134,73 @@ void JyCompany::updatePrg() {
 }
 
 uint16_t JyCompany::getChrReg(int index) {
+    if(chrMode >= 2 && mirrorChr && (index == 2 || index == 3)) {
+        index -= 2;
+    }
+    
     if(chrBlockMode) {
-        return (chrLowRegs[index] & 0x1F) | (chrBlock << 5);
+        uint8_t mask = 0;
+        uint8_t shift = 0;
+        switch(chrMode) {
+            default:
+            case 0: mask = 0x1F; shift = 5; break;
+            case 1: mask = 0x3F; shift = 6; break;
+            case 2: mask = 0x7F; shift = 7; break;
+            case 3: mask = 0xFF; shift = 8; break;
+        }
+        return (chrLowRegs[index] & mask) | (chrBlock << shift);
     } else {
         return chrLowRegs[index] | (chrHighRegs[index] << 8);
     }
 }
 
 void JyCompany::updateChr() {
-    for(int i=0;i<8;i++)
-        CHRBankOffset[i] = getChrReg(i)*0x400;
+    size_t chrCount = globalROM.CHRRomSize / 0x400;
+    uint16_t chrRegs[8] = {
+        getChrReg(0), getChrReg(1), getChrReg(2), getChrReg(3),
+        getChrReg(4), getChrReg(5), getChrReg(6), getChrReg(7)
+    };
+
+    switch(chrMode) {
+        case 0: {
+            size_t base = (chrRegs[0] << 3) % chrCount;
+            for(int i = 0; i < 8; i++)
+                CHRBankOffset[i] = (base + i) % chrCount * 0x400;
+            break;
+        }
+
+        case 1: {
+            size_t bank0 = (chrRegs[chrLatch[0]] << 2) % chrCount;
+            size_t bank1 = (chrRegs[chrLatch[1]] << 2) % chrCount;
+            for(int i = 0; i < 4; i++)
+                CHRBankOffset[i] = (bank0 + i) % chrCount * 0x400;
+            for(int i = 4; i < 8; i++)
+                CHRBankOffset[i] = (bank1 + (i - 4)) % chrCount * 0x400;
+            break;
+        }
+
+        case 2: {
+            for(int block = 0; block < 4; block++) {
+                size_t base = (chrRegs[block * 2] << 1) % chrCount;
+                CHRBankOffset[block * 2 + 0] = (base + 0) % chrCount * 0x400;
+                CHRBankOffset[block * 2 + 1] = (base + 1) % chrCount * 0x400;
+            }
+            break;
+        }
+
+        case 3:
+        default: {
+            for(int i = 0; i < 8; i++)
+                CHRBankOffset[i] = (chrRegs[i] % chrCount) * 0x400;
+            break;
+        }
+    }
+}
+
+void JyCompany::updateState() {
+    updatePrg();
+    updateChr();
+    updateMirroring();
 }
 
 void JyCompany::updateMirroring() {

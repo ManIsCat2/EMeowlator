@@ -21,6 +21,7 @@ private:
     uint8_t chrHighRegs[8];
     uint8_t chrLatch[2];
     uint8_t chrMode;
+    bool advancedNtControl;
     bool chrBlockMode;
     uint8_t chrBlock;
     bool mirrorChr;
@@ -42,5 +43,6 @@ private:
     void updatePrg();
     void updateChr();
     void updateMirroring();
+    void updateState();
     uint16_t getChrReg(int index);
 };
