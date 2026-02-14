@@ -15,5 +15,5 @@ public:
 
 private:
     uint8_t ChrBank;
-    void updateBanks();
+    void updateCHR();
 };

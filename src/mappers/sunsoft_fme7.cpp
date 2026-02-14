@@ -12,15 +12,11 @@ void SunSoftFME7::reset() {
 
     irqEnabled = false;
     irqCounterEnabled = false;
-    irqCounter = 0;
-
-    for(int i = 0; i < 8; i++)
-        chrRegs[i] = 0;
+    irqCounter = 0;;
 
     for(int i = 0; i < 3; i++)
         prgRegs[i] = 0;
 
-    updateChr();
     updatePrg();
 }
 
@@ -53,8 +49,7 @@ void SunSoftFME7::cpuWrite(uint16_t addr, uint8_t value) {
             switch(command) {
                 case 0: case 1: case 2: case 3:
                 case 4: case 5: case 6: case 7:
-                    chrRegs[command] = value;
-                    updateChr();
+                    setCHRSlot(command, value);
                     break;
 
                 case 8:
@@ -100,18 +95,6 @@ uint8_t SunSoftFME7::ppuRead(uint16_t addr) {
 
     int bank = addr >> 10;
     return ppu.ChrData[CHRBankOffset[bank] + (addr & 0x3FF)];
-}
-
-void SunSoftFME7::updateChr() {
-    if(globalROM.CHRRomSize == 0) {
-        for(int i = 0; i < 8; i++)
-            CHRBankOffset[i] = (chrRegs[i] & 7) * 0x400;
-        return;
-    }
-
-    size_t chrCount = globalROM.CHRRomSize / 0x400;
-    for(int i = 0; i < 8; i++)
-        CHRBankOffset[i] = (chrRegs[i] % chrCount) * 0x400;
 }
 
 void SunSoftFME7::updatePrg() {

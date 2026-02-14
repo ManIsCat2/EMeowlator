@@ -128,25 +128,24 @@ void MMC3::updateCHR() {
         }
         return;
     }
-    size_t chrCount = globalROM.CHRRomSize / 0x400;
 
     if (ChrMode == 0) {
-        CHRBankOffset[0] = (BankRegisters[0] & ~1) % chrCount * 0x400;
-        CHRBankOffset[1] = (BankRegisters[0] | 1) % chrCount * 0x400;
-        CHRBankOffset[2] = (BankRegisters[1] & ~1) % chrCount * 0x400;
-        CHRBankOffset[3] = (BankRegisters[1] | 1) % chrCount * 0x400;
-        CHRBankOffset[4] = (BankRegisters[2] % chrCount) * 0x400;
-        CHRBankOffset[5] = (BankRegisters[3] % chrCount) * 0x400;
-        CHRBankOffset[6] = (BankRegisters[4] % chrCount) * 0x400;
-        CHRBankOffset[7] = (BankRegisters[5] % chrCount) * 0x400;
+        setCHRSlot(0, BankRegisters[0] & 0xFE);
+		setCHRSlot(1, BankRegisters[0] | 0x01);
+		setCHRSlot(2, BankRegisters[1] & 0xFE);
+		setCHRSlot(3, BankRegisters[1] | 0x01);
+		setCHRSlot(4, BankRegisters[2]);
+		setCHRSlot(5, BankRegisters[3]);
+		setCHRSlot(6, BankRegisters[4]);
+		setCHRSlot(7, BankRegisters[5]);
     } else {
-        CHRBankOffset[4] = (BankRegisters[0] & ~1) % chrCount * 0x400;
-        CHRBankOffset[5] = (BankRegisters[0] | 1) % chrCount * 0x400;
-        CHRBankOffset[6] = (BankRegisters[1] & ~1) % chrCount * 0x400;
-        CHRBankOffset[7] = (BankRegisters[1] | 1) % chrCount * 0x400;
-        CHRBankOffset[0] = (BankRegisters[2] % chrCount) * 0x400;
-        CHRBankOffset[1] = (BankRegisters[3] % chrCount) * 0x400;
-        CHRBankOffset[2] = (BankRegisters[4] % chrCount) * 0x400;
-        CHRBankOffset[3] = (BankRegisters[5] % chrCount) * 0x400;
+        setCHRSlot(0, BankRegisters[2]);
+		setCHRSlot(1, BankRegisters[3]);
+		setCHRSlot(2, BankRegisters[4]);
+		setCHRSlot(3, BankRegisters[5]);
+		setCHRSlot(4, BankRegisters[0] & 0xFE);
+		setCHRSlot(5, BankRegisters[0] | 0x01);
+		setCHRSlot(6, BankRegisters[1] & 0xFE);
+		setCHRSlot(7, BankRegisters[1] | 0x01);
     }
 }

@@ -13,6 +13,9 @@ public:
     const char *getName(void) override;
     void reset() override;
 
+    uint16_t getCHRSlotSize() override {
+        return 0x400;
+    }
 private:
     uint8_t BankSelect;
     uint8_t BankRegisters[8];

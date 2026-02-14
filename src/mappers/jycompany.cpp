@@ -154,52 +154,40 @@ uint16_t JyCompany::getChrReg(int index) {
     }
 }
 
-void JyCompany::updateChr() {
-    size_t chrCount = globalROM.CHRRomSize / 0x400;
+void JyCompany::updateCHR() {
     uint16_t chrRegs[8] = {
         getChrReg(0), getChrReg(1), getChrReg(2), getChrReg(3),
         getChrReg(4), getChrReg(5), getChrReg(6), getChrReg(7)
     };
 
     switch(chrMode) {
-        case 0: {
-            size_t base = (chrRegs[0] << 3) % chrCount;
-            for(int i = 0; i < 8; i++)
-                CHRBankOffset[i] = (base + i) % chrCount * 0x400;
+        case 0:
+            setCHRSlot8(0, chrRegs[0] << 3);
             break;
-        }
 
-        case 1: {
-            size_t bank0 = (chrRegs[chrLatch[0]] << 2) % chrCount;
-            size_t bank1 = (chrRegs[chrLatch[1]] << 2) % chrCount;
-            for(int i = 0; i < 4; i++)
-                CHRBankOffset[i] = (bank0 + i) % chrCount * 0x400;
-            for(int i = 4; i < 8; i++)
-                CHRBankOffset[i] = (bank1 + (i - 4)) % chrCount * 0x400;
+        case 1:
+            setCHRSlot4(0, chrRegs[chrLatch[0]] << 2);
+            setCHRSlot4(1, chrRegs[chrLatch[1]] << 2);
             break;
-        }
 
-        case 2: {
-            for(int block = 0; block < 4; block++) {
-                size_t base = (chrRegs[block * 2] << 1) % chrCount;
-                CHRBankOffset[block * 2 + 0] = (base + 0) % chrCount * 0x400;
-                CHRBankOffset[block * 2 + 1] = (base + 1) % chrCount * 0x400;
-            }
+        case 2:
+            setCHRSlot2(0, chrRegs[0] << 1);
+            setCHRSlot2(1, chrRegs[2] << 1);
+            setCHRSlot2(2, chrRegs[4] << 1);
+            setCHRSlot2(3, chrRegs[6] << 1);
             break;
-        }
 
         case 3:
-        default: {
-            for(int i = 0; i < 8; i++)
-                CHRBankOffset[i] = (chrRegs[i] % chrCount) * 0x400;
+            for (int i = 0; i < 8; i++) {
+                setCHRSlot(i, chrRegs[i]);
+            }
             break;
-        }
     }
 }
 
 void JyCompany::updateState() {
     updatePrg();
-    updateChr();
+    updateCHR();
     updateMirroring();
 }
 

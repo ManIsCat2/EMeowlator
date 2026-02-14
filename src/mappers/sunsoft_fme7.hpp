@@ -13,6 +13,10 @@ public:
     void reset() override;
     const char* getName(void) override;
 
+    uint16_t getCHRSlotSize() override {
+        return 0x400;
+    }
+
     void clockIRQ();
 private:
     uint8_t command;
@@ -22,9 +26,7 @@ private:
     bool irqCounterEnabled;
     uint16_t irqCounter;
 
-    uint8_t chrRegs[8];
     uint8_t prgRegs[3];
 
-    void updateChr();
     void updatePrg();
 };

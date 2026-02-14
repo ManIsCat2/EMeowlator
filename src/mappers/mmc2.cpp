@@ -18,7 +18,6 @@ void MMC2::reset() {
     Latch[1] = 0;
 
     updatePRG();
-    updateCHR();
 }
 
 uint8_t MMC2::cpuRead(uint16_t addr) {
@@ -41,17 +40,17 @@ void MMC2::cpuWrite(uint16_t addr, uint8_t value) {
         PrgBank = value;
         updatePRG();
     } else if (addr >= 0xB000 && addr <= 0xBFFF) {
-        ChrBankFD[0] = value;
-        updateCHR();
+        ChrBankFD[0] = value & 0x1f;
+        setCHRSlot(0, ChrBankFD[Latch[0]]);
     } else if (addr >= 0xC000 && addr <= 0xCFFF) {
-        ChrBankFE[0] = value;
-        updateCHR();
+        ChrBankFD[1] = value & 0x1f;
+        setCHRSlot(0, ChrBankFD[Latch[0]]);
     } else if (addr >= 0xD000 && addr <= 0xDFFF) {
-        ChrBankFD[1] = value;
-        updateCHR();
+        ChrBankFE[0] = value & 0x1f;
+        setCHRSlot(1, ChrBankFE[Latch[1]]);
     } else if (addr >= 0xE000 && addr <= 0xEFFF) {
-        ChrBankFE[1] = value;
-        updateCHR();
+        ChrBankFE[1] = value & 0x1f;
+        setCHRSlot(1, ChrBankFE[Latch[1]]);
     }
 }
 
@@ -62,18 +61,24 @@ const char* MMC2::getName(void) {
 uint8_t MMC2::ppuRead(uint16_t addr) {
     addr &= 0x1FFF;
 
+    if (ChrUpdate) {
+        setCHRSlot(0, ChrBankFD[Latch[0]]);
+		setCHRSlot(1, ChrBankFE[Latch[1]]);
+		ChrUpdate = false;
+    }
+
     if (addr == 0x0FD8) {
         Latch[0] = 0;
-        updateCHR();
+        ChrUpdate = true;
     } else if (addr == 0x0FE8) {
         Latch[0] = 1;
-        updateCHR();
-    } else if (addr == 0x1FD8) {
+        ChrUpdate = true;
+    } else if (addr >= 0x1FD8 && addr <= 0x1FDF) {
         Latch[1] = 0;
-        updateCHR();
-    } else if (addr == 0x1FE8) {
+        ChrUpdate = true;
+    } else if(addr >= 0x1FE8 && addr <= 0x1FEF) {
         Latch[1] = 1;
-        updateCHR();
+        ChrUpdate = true;
     }
 
     if (addr < 0x1000) {
@@ -89,16 +94,4 @@ void MMC2::updatePRG() {
 
     PRGBankOffset[0] = bank * 0x2000;
     PRGBankOffset[1] = (bankCount - 3) * 0x2000;
-}
-
-void MMC2::updateCHR() {
-    uint8_t bank0 = (Latch[0] == 0) ? ChrBankFD[0] : ChrBankFE[0];
-    uint8_t bank1 = (Latch[1] == 0) ? ChrBankFD[1] : ChrBankFE[1];
-
-    size_t chrCount = globalROM.CHRRomSize / 0x1000;
-
-    bank0 %= chrCount;
-    bank1 %= chrCount;
-    CHRBankOffset[0] = bank0 * 0x1000;
-    CHRBankOffset[1] = bank1 * 0x1000;
 }

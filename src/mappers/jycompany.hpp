@@ -12,6 +12,10 @@ public:
     void cpuWrite(uint16_t addr, uint8_t value) override;
     const char* getName(void) override;
     void reset() override;
+
+    uint16_t getCHRSlotSize() override {
+        return 0x400;
+    }
 private:
     uint8_t prgRegs[4];
     uint8_t prgMode;
@@ -41,7 +45,7 @@ private:
     uint8_t regRamValue;
 
     void updatePrg();
-    void updateChr();
+    void updateCHR();
     void updateMirroring();
     void updateState();
     uint16_t getChrReg(int index);

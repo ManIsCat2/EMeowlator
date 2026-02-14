@@ -1,4 +1,4 @@
-NES emulator made by a Cat using SDL2 and ImGui.
+NES emulator made by a cat using SDL2 and ImGui, inspired by Mesen2.
 
 Supported mappers:
 - NROM (Mapper 0)

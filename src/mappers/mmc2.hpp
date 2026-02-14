@@ -13,8 +13,12 @@ public:
     const char *getName(void) override;
     void reset() override;
 
+    uint16_t getCHRSlotSize() override {
+        return 0x1000;
+    }
 private:
     uint8_t PrgBank;
+    bool ChrUpdate;
 
     uint8_t ChrBankFD[2];
     uint8_t ChrBankFE[2];
@@ -22,5 +26,4 @@ private:
     uint8_t Latch[2];
 
     void updatePRG();
-    void updateCHR();
 };

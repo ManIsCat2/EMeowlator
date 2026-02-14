@@ -115,17 +115,15 @@ void MMC1::updateBanks() {
         CHRBankOffset[1] = 0x1000;
     } else {
         if (ChrMode == 0) {
-            size_t bank = (size_t)(ChrBank0 & 0x1E) * 0x1000;
-            bank %= globalROM.CHRRomSize;
-            CHRBankOffset[0] = bank;
-            CHRBankOffset[1] = bank + 0x1000;
+            size_t bank = (ChrBank0 & 0x1E);
+
+            setCHRSlot(0, bank);
+            setCHRSlot(1, bank + 1);
         } else {
-            size_t b0 = (size_t)(ChrBank0 & 0x1F) * 0x1000;
-            size_t b1 = (size_t)(ChrBank1 & 0x1F) * 0x1000;
-            b0 %= globalROM.CHRRomSize;
-            b1 %= globalROM.CHRRomSize;
-            CHRBankOffset[0] = b0;
-            CHRBankOffset[1] = b1;
+            size_t b0 = (ChrBank0 & 0x1F);
+            size_t b1 = (ChrBank1 & 0x1F);
+            setCHRSlot(0, b0);
+            setCHRSlot(1, b1);
         }
     }
 

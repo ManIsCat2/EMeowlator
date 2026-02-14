@@ -141,13 +141,35 @@ void PPU::Render(SDL_Renderer* renderer) {
             bool flipH = attr & 0x40;
             bool flipV = attr & 0x80;
             uint8_t paletteIndex = attr & 0x03;
-            uint16_t vaddrBase = (spritePatternTable ? 0x1000 : 0x0000) + tile * 16;
 
-            for (int row = 0; row < 8; row++) {
-                int tileRow = flipV ? 7 - row : row;
+            int spriteHeight = use8x16Sprites ? 16 : 8;
 
-                uint8_t plane0 = readCHR(vaddrBase + tileRow);
-                uint8_t plane1 = readCHR(vaddrBase + tileRow + 8);
+            uint16_t vaddrBase;
+            if (use8x16Sprites) {
+                uint16_t patternTable = (tile & 0x01) ? 0x1000 : 0x0000;
+                int tileIndex = (tile & 0xFE);
+                vaddrBase = patternTable + tileIndex * 16;
+            } else {
+                vaddrBase = (spritePatternTable ? 0x1000 : 0x0000) + tile * 16;
+            }
+
+            for (int row = 0; row < spriteHeight; row++) {
+                int tileRow = row;
+                uint16_t vaddr = vaddrBase;
+
+                if (use8x16Sprites) {
+                    if ((!flipV && row >= 8) || (flipV && row < 8)) {
+                        vaddr += 16;
+                    }
+                    int inTileRow = flipV ? 7 - (row & 7) : (row & 7);
+                    vaddr += inTileRow;
+                } else {
+                    int inTileRow = flipV ? 7 - row : row;
+                    vaddr += inTileRow;
+                }
+
+                uint8_t plane0 = readCHR(vaddr);
+                uint8_t plane1 = readCHR(vaddr + 8);
 
                 for (int col = 0; col < 8; col++) {
                     int tileCol = flipH ? 7 - col : col;

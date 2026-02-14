@@ -26,7 +26,7 @@ uint8_t CNROM::cpuRead(uint16_t addr) {
 void CNROM::cpuWrite(uint16_t addr, uint8_t value) {
     if (addr >= 0x8000) {
         ChrBank = value & 0x03;
-        updateBanks();
+        updateCHR();
     }
 }
 
@@ -43,10 +43,7 @@ uint8_t CNROM::ppuRead(uint16_t addr) {
     }
 }
 
-void CNROM::updateBanks() {
-    size_t base = (size_t)ChrBank * 0x2000;
-    base %= globalROM.CHRRomSize;
-
-    CHRBankOffset[0] = base;
-    CHRBankOffset[1] = base + 0x1000;
+void CNROM::updateCHR() {
+    setCHRSlot(0, ChrBank);
+    setCHRSlot(1, ChrBank, 0x1000);
 }

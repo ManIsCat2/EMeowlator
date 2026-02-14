@@ -13,7 +13,9 @@ public:
     const char *getName(void) override;
     void reset() override;
 
-
+    uint16_t getCHRSlotSize() override {
+        return 0x1000;
+    }
 private:
     uint8_t ShiftReg;
     uint8_t ShiftCount;
