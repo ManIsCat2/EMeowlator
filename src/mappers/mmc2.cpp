@@ -7,8 +7,6 @@ MMC2::MMC2() {
 }
 
 void MMC2::reset() {
-    PrgBank = 0;
-
     ChrBankFD[0] = 0;
     ChrBankFD[1] = 0;
     ChrBankFE[0] = 0;
@@ -17,7 +15,9 @@ void MMC2::reset() {
     Latch[0] = 0;
     Latch[1] = 0;
 
-    updatePRG();
+    setPRGSlot(1, -3);
+	setPRGSlot(2, -2);
+	setPRGSlot(3, -1);
 }
 
 uint8_t MMC2::cpuRead(uint16_t addr) {
@@ -37,8 +37,7 @@ uint8_t MMC2::cpuRead(uint16_t addr) {
 
 void MMC2::cpuWrite(uint16_t addr, uint8_t value) {
     if (addr >= 0xA000 && addr <= 0xAFFF) {
-        PrgBank = value;
-        updatePRG();
+        setPRGSlot(0, value & 0x0F);
     } else if (addr >= 0xB000 && addr <= 0xBFFF) {
         ChrBankFD[0] = value & 0x1f;
         setCHRSlot(0, ChrBankFD[Latch[0]]);
@@ -51,6 +50,8 @@ void MMC2::cpuWrite(uint16_t addr, uint8_t value) {
     } else if (addr >= 0xE000 && addr <= 0xEFFF) {
         ChrBankFE[1] = value & 0x1f;
         setCHRSlot(1, ChrBankFE[Latch[1]]);
+    } else if (addr >= 0xF000) {
+        ppu.Mirroring = ((value & 0x01) == 0x01) ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL;
     }
 }
 
@@ -86,12 +87,4 @@ uint8_t MMC2::ppuRead(uint16_t addr) {
     } else {
         return ppu.ChrData[CHRBankOffset[1] + (addr - 0x1000)];
     }
-}
-
-void MMC2::updatePRG() {
-    size_t bankCount = globalROM.PRGRomSize / 0x2000;
-    size_t bank = PrgBank % bankCount;
-
-    PRGBankOffset[0] = bank * 0x2000;
-    PRGBankOffset[1] = (bankCount - 3) * 0x2000;
 }

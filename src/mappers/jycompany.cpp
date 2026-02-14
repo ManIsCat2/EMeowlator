@@ -109,28 +109,22 @@ const char* JyCompany::getName() {
 }
 
 void JyCompany::updatePrg() {
-    size_t prgCount = globalROM.PRGRomSize / 0x2000;
-
     switch(prgMode & 0x03) {
         case 0:
-            PRGBankOffset[0] = 0; 
-            PRGBankOffset[1] = 1 * 0x2000;
-            PRGBankOffset[2] = 2 * 0x2000;
-            PRGBankOffset[3] = (prgCount - 1) * 0x2000;
+            setPRGSlot4(0, (prgMode & 0x04) ? prgRegs[3] : 0x3C);
             break;
         case 1:
-            PRGBankOffset[0] = prgRegs[0] * 0x2000;
-            PRGBankOffset[1] = prgRegs[1] * 0x2000;
-            PRGBankOffset[2] = prgRegs[2] * 0x2000;
-            PRGBankOffset[3] = (prgCount - 1) * 0x2000;
+            setPRGSlot2(0, prgRegs[1] << 1);
+			setPRGSlot2(1, (prgMode & 0x04) ? prgRegs[3] : 0x3E);
             break;
         case 2:
         case 3:
-            for(int i=0;i<3;i++) PRGBankOffset[i] = prgRegs[i]*0x2000;
-            PRGBankOffset[3] = (prgCount - 1) * 0x2000;
+            setPRGSlot(0, prgRegs[0]);
+		    setPRGSlot(1, prgRegs[1]);
+			setPRGSlot(2, prgRegs[2]);
+			setPRGSlot(3, (prgMode & 0x04) ? prgRegs[3] : 0x3F);
             break;
     }
-    if(enablePrgAt6000) PRGBankOffset[0] = prgRegs[0]*0x2000;
 }
 
 uint16_t JyCompany::getChrReg(int index) {

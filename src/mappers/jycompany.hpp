@@ -16,6 +16,9 @@ public:
     uint16_t getCHRSlotSize() override {
         return 0x400;
     }
+    uint16_t getPRGSlotSize() override {
+        return 0x2000;
+    }
 private:
     uint8_t prgRegs[4];
     uint8_t prgMode;

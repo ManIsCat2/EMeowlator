@@ -16,7 +16,7 @@ public:
     uint16_t getCHRSlotSize() override {
         return 0x2000;
     }
-private:
-    uint8_t PrgBank;
-    void updateBanks();
+    uint16_t getPRGSlotSize() override {
+        return 0x4000;
+    }
 };

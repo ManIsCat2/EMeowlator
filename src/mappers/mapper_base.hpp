@@ -16,24 +16,17 @@ public:
     virtual uint16_t getCHRSlotSize() {
         return 0x2000;
     }
-
-    void setCHRSlot(uint16_t slot, uint16_t val, uint32_t offset=0) {
-        uint16_t chrSlotSize = getCHRSlotSize();
-        CHRBankOffset[slot] = ((val * chrSlotSize) + offset) % ppu.ChrData.size();
+	virtual uint16_t getPRGSlotSize() {
+        return 0x4000;
     }
 
-    void setCHRSlot8(uint16_t slot, uint16_t val, uint32_t offset=0) {
-        setCHRSlot4(slot, val, offset);
-        setCHRSlot4(slot*2+1, val+4, offset);
-    }
+    void setCHRSlot(uint16_t slot, uint16_t val, uint32_t offset=0);
+    void setCHRSlot8(uint16_t slot, uint16_t val, uint32_t offset=0);
+    void setCHRSlot4(uint16_t slot, uint16_t val, uint32_t offset=0);
+    void setCHRSlot2(uint16_t slot, uint16_t val, uint32_t offset=0);
 
-    void setCHRSlot4(uint16_t slot, uint16_t val, uint32_t offset=0) {
-        setCHRSlot2(slot*2, val, offset);
-        setCHRSlot2(slot*2+1, val+2, offset);
-    }
-
-    void setCHRSlot2(uint16_t slot, uint16_t val, uint32_t offset=0) {
-        setCHRSlot(slot*2, val, offset);
-        setCHRSlot(slot*2+1, val+1, offset);
-    }
+    void setPRGSlot(uint16_t slot, uint16_t val, uint32_t offset=0);
+    void setPRGSlot8(uint16_t slot, uint16_t val, uint32_t offset=0);
+    void setPRGSlot4(uint16_t slot, uint16_t val, uint32_t offset=0);
+    void setPRGSlot2(uint16_t slot, uint16_t val, uint32_t offset=0);
 };

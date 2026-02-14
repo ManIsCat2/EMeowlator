@@ -14,10 +14,7 @@ void SunSoftFME7::reset() {
     irqCounterEnabled = false;
     irqCounter = 0;;
 
-    for(int i = 0; i < 3; i++)
-        prgRegs[i] = 0;
-
-    updatePrg();
+    setPRGSlot(3, -1);
 }
 
 uint8_t SunSoftFME7::cpuRead(uint16_t addr) {
@@ -57,8 +54,7 @@ void SunSoftFME7::cpuWrite(uint16_t addr, uint8_t value) {
                     break;
 
                 case 9: case 0xA: case 0xB:
-                    prgRegs[command - 9] = value & 0x3F;
-                    updatePrg();
+                    setPRGSlot(command - 9, value & 0x3F);
                     break;
 
                 case 0xC:
@@ -95,15 +91,6 @@ uint8_t SunSoftFME7::ppuRead(uint16_t addr) {
 
     int bank = addr >> 10;
     return ppu.ChrData[CHRBankOffset[bank] + (addr & 0x3FF)];
-}
-
-void SunSoftFME7::updatePrg() {
-    size_t prgCount = globalROM.PRGRomSize / 0x2000;
-
-    PRGBankOffset[0] = (prgRegs[0] % prgCount) * 0x2000;
-    PRGBankOffset[1] = (prgRegs[1] % prgCount) * 0x2000;
-    PRGBankOffset[2] = (prgRegs[2] % prgCount) * 0x2000;
-    PRGBankOffset[3] = (prgCount - 1) * 0x2000;
 }
 
 void SunSoftFME7::clockIRQ() {

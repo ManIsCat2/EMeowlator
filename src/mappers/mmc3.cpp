@@ -103,21 +103,16 @@ void MMC3::clockIRQ(bool a12) {
 }
 
 void MMC3::updatePRG() {
-    size_t bankCount = globalROM.PRGRomSize / 0x2000;
-
-    size_t lastBank = bankCount - 1;
-    size_t secondLast = bankCount - 2;
-
     if (PrgMode == 0) {
-        PRGBankOffset[0] = (BankRegisters[6] % bankCount) * 0x2000;
-        PRGBankOffset[1] = (BankRegisters[7] % bankCount) * 0x2000;
-        PRGBankOffset[2] = secondLast * 0x2000;
-        PRGBankOffset[3] = lastBank * 0x2000;
+        setPRGSlot(0, BankRegisters[6]);
+		setPRGSlot(1, BankRegisters[7]);
+        setPRGSlot(2, -2);
+		setPRGSlot(3, -1);
     } else {
-        PRGBankOffset[0] = secondLast * 0x2000;
-        PRGBankOffset[1] = (BankRegisters[7] % bankCount) * 0x2000;
-        PRGBankOffset[2] = (BankRegisters[6] % bankCount) * 0x2000;
-        PRGBankOffset[3] = lastBank * 0x2000;
+        setPRGSlot(0, -2);
+        setPRGSlot(1, BankRegisters[7]);
+		setPRGSlot(2, BankRegisters[6]);
+        setPRGSlot(3, -1);
     }
 }
 

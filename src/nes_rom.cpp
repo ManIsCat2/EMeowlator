@@ -74,6 +74,8 @@ bool NesROM::LoadNES(const std::string &filename) {
         std::cerr << "ROM has zero PRG pages.\n";
         return false;
     }
+
+    // i have no idea wtf happend here
     if (MapperID) {
         std::memcpy(&ROM[0], &data[offset], PRGRomSize);
     } else {

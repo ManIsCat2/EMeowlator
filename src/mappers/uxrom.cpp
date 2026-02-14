@@ -7,8 +7,8 @@ UxROM::UxROM() {
 }
 
 void UxROM::reset() {
-    PrgBank = 0;
-    updateBanks();
+    setPRGSlot(0, 0);
+	setPRGSlot(1, -1);
 }
 
 uint8_t UxROM::cpuRead(uint16_t addr) {
@@ -28,8 +28,7 @@ uint8_t UxROM::cpuRead(uint16_t addr) {
 
 void UxROM::cpuWrite(uint16_t addr, uint8_t value) {
     if (addr >= 0x8000) {
-        PrgBank = value & 0x0f;
-        updateBanks();
+        setPRGSlot(0, value);
     }
 }
 
@@ -40,12 +39,4 @@ const char* UxROM::getName(void) {
 uint8_t UxROM::ppuRead(uint16_t addr) {
     addr &= 0x1FFF;
     return ppu.ChrData[addr];
-}
-
-void UxROM::updateBanks() {
-    size_t bankCount = globalROM.PRGRomSize / 0x4000;
-
-    size_t bank = PrgBank % bankCount;
-    PRGBankOffset[0] = bank * 0x4000;
-    PRGBankOffset[1] = (bankCount - 1) * 0x4000;
 }

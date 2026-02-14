@@ -16,6 +16,9 @@ public:
     uint16_t getCHRSlotSize() override {
         return 0x400;
     }
+    uint16_t getPRGSlotSize() override {
+        return 0x2000;
+    }
 
     void clockIRQ();
 private:
@@ -24,9 +27,5 @@ private:
 
     bool irqEnabled;
     bool irqCounterEnabled;
-    uint16_t irqCounter;
-
-    uint8_t prgRegs[3];
-
-    void updatePrg();
+    uint16_t irqCounter; 
 };

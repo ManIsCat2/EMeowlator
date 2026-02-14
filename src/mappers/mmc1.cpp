@@ -91,21 +91,14 @@ void MMC1::modifyRegister(uint16_t addr, uint8_t data) {
 
 void MMC1::updateBanks() {
     size_t prgSize = globalROM.PRGRomSize;
-    auto bank16 = [&](uint32_t bankNum) -> size_t {
-        size_t off = (size_t)bankNum * 0x4000;
-        if (prgSize > 0) off %= prgSize;
-        return off;
-    };
 
     if (PrgMode == 0 || PrgMode == 1) {
-        uint32_t bank = (PrgBank & 0x0E);
-        PRGBankOffset[0] = bank16(bank);
-        PRGBankOffset[1] = bank16(bank + 1);
+        setPRGSlot2(0, PrgBank & 0x0E);
     } else if (PrgMode == 2) {
-        PRGBankOffset[0] = bank16(0);
-        PRGBankOffset[1] = bank16(PrgBank & 0x0F);
+        setPRGSlot(0, 0);
+        setPRGSlot(1, PrgBank & 0x0F);
     } else {
-        PRGBankOffset[0] = bank16(PrgBank & 0x0F);
+        setPRGSlot(0, PrgBank & 0x0F);
         size_t last = (prgSize == 0) ? 0 : (prgSize - 0x4000);
         PRGBankOffset[1] = last;
     }
