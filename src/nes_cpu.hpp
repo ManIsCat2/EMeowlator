@@ -10,7 +10,7 @@
 
 class CPU {
 public:
-    CPU() { reset(); }
+    CPU() { }
 
     bool CPUPaused = false;
     uint8_t RAM[RAM_SIZE];

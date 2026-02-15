@@ -25,7 +25,7 @@ uint8_t MMC1::cpuRead(uint16_t addr) {
         }
     } else {
         int Slot = (addr < 0xC000) ? 0 : 1;
-        size_t base = globalROM.mapper->PRGBankOffset[Slot];
+        size_t base = PRGBankOffset[Slot];
         size_t index = base + (addr & 0x3FFF);
         if (index >= globalROM.PRGRomSize) index %= globalROM.PRGRomSize;
         return globalROM.ROM[index];
@@ -70,7 +70,9 @@ void MMC1::cpuWrite(uint16_t addr, uint8_t value) {
         PrgMode = (Ctrl >> 2) & 3;
         ChrMode = (Ctrl >> 4) & 1;
         updateBanks();
+        return;
     }
+    MapperBase::cpuWrite(addr, value);
 }
 
 const char *MMC1::getName(void) {

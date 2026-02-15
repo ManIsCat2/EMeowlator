@@ -154,7 +154,6 @@ void PPU::Render(SDL_Renderer* renderer) {
             }
 
             for (int row = 0; row < spriteHeight; row++) {
-                int tileRow = row;
                 uint16_t vaddr = vaddrBase;
 
                 if (use8x16Sprites) {

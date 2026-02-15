@@ -4,14 +4,22 @@
 
 class MapperBase {
 public:
-    int PRGBankOffset[4] = {0, 0, 0, 0};
     int CHRBankOffset[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    struct {
+        uint8_t *ptr;
+        bool write;
+    } PRGPages[256];
+
     virtual ~MapperBase() = default;
-    virtual uint8_t cpuRead(uint16_t addr) { (void)addr; return 0; }
-    virtual void cpuWrite(uint16_t addr, uint8_t value) { (void)addr; (void)value; }
+    virtual uint8_t cpuRead(uint16_t addr);
+    virtual void cpuWrite(uint16_t addr, uint8_t value);
     virtual uint8_t ppuRead(uint16_t addr) { (void)addr; return 0; }
     virtual const char *getName(void) { return ""; }
     virtual void reset() {}
+    void initialize() {
+
+        reset();
+    }
 
     virtual uint16_t getCHRSlotSize() {
         return 0x2000;
@@ -29,4 +37,6 @@ public:
     void setPRGSlot8(uint16_t slot, uint16_t val, uint32_t offset=0);
     void setPRGSlot4(uint16_t slot, uint16_t val, uint32_t offset=0);
     void setPRGSlot2(uint16_t slot, uint16_t val, uint32_t offset=0);
+
+    void mapCPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable, uint8_t pageNum);
 };

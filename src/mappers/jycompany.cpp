@@ -49,11 +49,8 @@ uint8_t JyCompany::cpuRead(uint16_t addr) {
         if (addr >= 0x6000 && enablePrgAt6000) {
             return cpu.PrgRAM[addr - 0x6000];
         }
-    } else {
-        int bank = (addr - 0x8000) >> 13;
-        return globalROM.ROM[PRGBankOffset[bank] + (addr & 0x1FFF)];
     }
-    return 0xff;
+    return MapperBase::cpuRead(addr);
 }
 
 void JyCompany::cpuWrite(uint16_t addr, uint8_t value) {
@@ -88,7 +85,7 @@ void JyCompany::cpuWrite(uint16_t addr, uint8_t value) {
                 prgMode = value & 0x07;
                 chrMode = (value >> 3) & 0x03;
 				advancedNtControl = (value & 0x20) == 0x20;
-                enablePrgAt6000 = (value & 0x80) != 0;
+                enablePrgAt6000 = (value & 0x80) == 0x80;
                 break;
             case 0xD001:
                 mirroringReg = value & 0x03;
@@ -101,6 +98,7 @@ void JyCompany::cpuWrite(uint16_t addr, uint8_t value) {
                 break;
         }
     }
+    MapperBase::cpuWrite(addr, value);
     updateState();
 }
 

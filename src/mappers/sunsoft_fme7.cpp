@@ -30,8 +30,7 @@ uint8_t SunSoftFME7::cpuRead(uint16_t addr) {
             return globalROM.ROM[offset + (addr & 0x1FFF)];
         }
     } else {
-        int bank = (addr - 0x8000) >> 13;
-        return globalROM.ROM[PRGBankOffset[bank] + (addr & 0x1FFF)];
+        return MapperBase::cpuRead(addr);
     }
 
     return 0xff;

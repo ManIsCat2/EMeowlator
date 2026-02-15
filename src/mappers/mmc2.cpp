@@ -20,21 +20,6 @@ void MMC2::reset() {
 	setPRGSlot(3, -1);
 }
 
-uint8_t MMC2::cpuRead(uint16_t addr) {
-    if (addr < 0x8000) {
-        if (addr >= 0x6000) {
-            return cpu.PrgRAM[addr - 0x6000];
-        }
-    } else {
-        if (addr < 0xA000) {
-            return globalROM.ROM[PRGBankOffset[0] + (addr - 0x8000)];
-        } else {
-            return globalROM.ROM[PRGBankOffset[1] + (addr - 0xA000)];
-        }
-    }
-    return 0xff;
-}
-
 void MMC2::cpuWrite(uint16_t addr, uint8_t value) {
     if (addr >= 0xA000 && addr <= 0xAFFF) {
         setPRGSlot(0, value & 0x0F);
@@ -52,6 +37,8 @@ void MMC2::cpuWrite(uint16_t addr, uint8_t value) {
         setCHRSlot(1, ChrBankFE[Latch[1]]);
     } else if (addr >= 0xF000) {
         ppu.Mirroring = ((value & 0x01) == 0x01) ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL;
+    } else {
+        MapperBase::cpuWrite(addr, value);
     }
 }
 

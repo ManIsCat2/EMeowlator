@@ -7,27 +7,16 @@ CNROM::CNROM() {
 }
 
 void CNROM::reset() {
-    ChrBank = 0;
-    CHRBankOffset[0] = 0;
-    CHRBankOffset[1] = 0x1000;
-}
-
-uint8_t CNROM::cpuRead(uint16_t addr) {
-    if (addr < 0x8000) {
-        if (addr >= 0x6000) {
-            return cpu.PrgRAM[addr - 0x6000];
-        }
-    } else {
-        return globalROM.ROM[addr - 0x8000];
-    }
-    return 0xff;
+    setPRGSlot(0, 0);
 }
 
 void CNROM::cpuWrite(uint16_t addr, uint8_t value) {
     if (addr >= 0x8000) {
-        ChrBank = value & 0x03;
-        updateCHR();
+        setCHRSlot(0, value);
+        setCHRSlot(1, value, 0x1000); // without this, star force breaks???
+        return;
     }
+    MapperBase::cpuWrite(addr, value);
 }
 
 const char* CNROM::getName(void) {
@@ -41,9 +30,4 @@ uint8_t CNROM::ppuRead(uint16_t addr) {
     } else {
         return ppu.ChrData[CHRBankOffset[1] + (addr - 0x1000)];
     }
-}
-
-void CNROM::updateCHR() {
-    setCHRSlot(0, ChrBank);
-    setCHRSlot(1, ChrBank, 0x1000);
 }

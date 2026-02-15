@@ -101,6 +101,6 @@ bool NesROM::LoadNES(const std::string &filename) {
     if (mapper) { delete mapper; mapper = nullptr; }
         
     mapper = GetMapper();
-    mapper->reset();
+    mapper->initialize();
     return true;
 }
