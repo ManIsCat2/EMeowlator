@@ -55,6 +55,8 @@ public:
     bool DisableSprites = false;
     int MaxSprites = 64;
     bool VRAMCorruption = false;
+    bool DisableXScroll = false;
+    bool DisableYScroll = false;
 
     void Step();
 

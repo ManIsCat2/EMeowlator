@@ -42,11 +42,7 @@ void MapperBase::setPRGSlot2(uint16_t slot, uint16_t val, uint32_t offset) {
 
 uint8_t MapperBase::cpuRead(uint16_t addr) {
     if (!PRGPages[addr >> 8].ptr) {
-        char error[512];
-        sprintf(error, "Tried to read unmapped memory at address 0x%x", addr);
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR , "Fatal error", error, NULL);
-        romIsLoaded = false;
-        cpu.reset();
+        printf("WARNING: tried reading from unmapped memory at address 0x%x\n", addr);
         return 0xff;
     }
     return PRGPages[addr >> 8].ptr[addr & 0xFF];

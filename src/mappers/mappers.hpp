@@ -7,3 +7,5 @@
 #include "mmc2.hpp"
 #include "sunsoft_fme7.hpp"
 #include "jycompany.hpp"
+#include "nina01.hpp"
+#include "bnrom.hpp"

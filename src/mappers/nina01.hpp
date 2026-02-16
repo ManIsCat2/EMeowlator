@@ -1,0 +1,21 @@
+#pragma once
+#include "mapper_base.hpp"
+#include <stdint.h>
+
+class NINA01 : public MapperBase {
+public:
+    NINA01();
+    ~NINA01() override = default;
+
+    uint8_t ppuRead(uint16_t addr) override;
+    void cpuWrite(uint16_t addr, uint8_t value) override;
+    const char *getName(void) override;
+    void reset() override;
+
+    uint16_t getCHRSlotSize() override {
+        return 0x1000;
+    }
+    uint16_t getPRGSlotSize() override {
+        return 0x8000;
+    }
+};

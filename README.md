@@ -7,6 +7,7 @@ Supported mappers:
 - CNROM (Mapper 3)
 - MMC3 (Mapper 4) (WIP)
 - MMC2 (Mapper 9) (WIP)
+- Nina01 and BNROM (Mapper 34)
 - SunSoft FME-7 (Mapper 69) (WIP)
 - J.Y. Company ASIC (Mapper 90, 209 and 211) (WIP)
 

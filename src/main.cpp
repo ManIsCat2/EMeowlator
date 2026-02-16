@@ -83,6 +83,7 @@ void DrawROMInfo() {
     ImGui::Text("PRG Size: 0x%zx (%zu), CHR Size: 0x%zx (%zu)", globalROM.PRGRomSize, globalROM.PRGRomSize, globalROM.CHRRomSize, globalROM.CHRRomSize);
     ImGui::Text("Mapper: %s (Mapper %u)", globalROM.mapper ? globalROM.mapper->getName() : (globalROM.MapperID ? "Unknown" : "NROM"), globalROM.MapperID);
     ImGui::Text("Has CHR-RAM: %s", globalROM.CHRRomSize == 0 ? "Yes" : "No");
+    ImGui::Text("Header Version: %s", globalROM.Version == HeaderVersion::NES2_0 ? "NES2.0" : "INES");
     ImGui::End();
 }
 
@@ -220,6 +221,8 @@ int main(int argc, char* argv[]) {
                     ImGui::EndMenu();
                 }
                 ImGui::Checkbox("VRAM Corruption", &ppu.VRAMCorruption);
+                ImGui::Checkbox("Disable X Scroll", &ppu.DisableXScroll);
+                ImGui::Checkbox("Disable Y Scroll", &ppu.DisableYScroll);
                 ImGui::Checkbox("Disable Sprites", &ppu.DisableSprites);
                 ImGui::SetNextItemWidth(70.f);
                 ImGui::InputInt("Max Sprites", &ppu.MaxSprites);

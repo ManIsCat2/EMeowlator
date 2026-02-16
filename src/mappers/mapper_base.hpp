@@ -5,6 +5,7 @@
 class MapperBase {
 public:
     int CHRBankOffset[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    uint16_t subMapper = 0;
     struct {
         uint8_t *ptr;
         bool write;

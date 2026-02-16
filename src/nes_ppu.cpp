@@ -95,8 +95,8 @@ void PPU::Render(SDL_Renderer* renderer) {
 
     for (int screenY = 0; screenY < NES_HEIGHT; screenY++) {
         for (int screenX = 0; screenX < NES_WIDTH; screenX++) {
-            int absX = screenX + scrollX;
-            int absY = screenY + scrollY;
+            int absX = screenX + (ppu.DisableXScroll ? 0 : scrollX);
+            int absY = screenY + (ppu.DisableYScroll ? 0 : scrollY);
             int ntH = (absX / NES_WIDTH) & 1;
             int ntV = (absY / NES_HEIGHT) & 1;
             int nametable = nametableSelect ^ ntH ^ (ntV << 1);

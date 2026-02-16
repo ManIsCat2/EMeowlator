@@ -1,5 +1,11 @@
 #pragma once
 
+enum class HeaderVersion {
+    NES2_0,
+    INES,
+    OLD_INES
+};
+
 #include <SDL2/SDL.h>
 #include <cstdint>
 #include <iostream>
@@ -16,11 +22,13 @@
 class NesROM {
 public:
     uint8_t Header[8];
-    uint8_t ROM[0x200000];
+    HeaderVersion Version = HeaderVersion::INES;
+    uint8_t *ROM = nullptr;
     std::string Name = "";
     size_t PRGRomSize = 0;
     size_t CHRRomSize = 0;
     uint16_t MapperID = 0;
+    uint16_t SubMapperID = 0;
     MapperBase *mapper = nullptr;
 
     MapperBase *GetMapper(void);

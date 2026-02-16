@@ -8,6 +8,18 @@ MapperBase *NesROM::GetMapper(void) {
         case 3: return new CNROM();
         case 4: return new MMC3();
         case 9: return new MMC2();
+        case 34: 
+            switch(SubMapperID) {
+                case 0: 
+                    if (CHRRomSize > 0) {
+                        return new NINA01();
+                    } else {
+                        return new BNROM();
+                    }
+                case 1: return new NINA01();
+                case 2: default: return new BNROM();
+            }
+			break;
         case 69: return new SunSoftFME7();
         case 90: case 209: case 211: return new JyCompany();
         //hope for the best
@@ -43,7 +55,7 @@ bool NesROM::LoadNES(const std::string &filename) {
     
     // header
     if (data.size() < 16 || data[0] != 'N' || data[1] != 'E' || data[2] != 'S' || data[3] != 0x1A) {
-        std::cerr << "Invalid iNES header\n";
+        std::cerr << "Invalid NES header\n";
         return false;
     }
         
@@ -55,10 +67,37 @@ bool NesROM::LoadNES(const std::string &filename) {
     uint8_t chrPages = data[5];
     uint8_t flags6 = data[6];
     uint8_t flags7 = data[7];
+    uint8_t flags8 = data[8];
+    uint8_t flags9 = data[9];
         
     bool hasTrainer = (flags6 & 0x04) != 0;
-        
-    MapperID = (flags7 & 0xF0) | (flags6 >> 4);
+    
+    if ((flags7 & 0x0C) == 0x08) {
+        Version = HeaderVersion::NES2_0;
+    } else {
+        Version = HeaderVersion::INES;
+    }
+    
+    if (Version == HeaderVersion::NES2_0) {
+        MapperID = ((flags8 & 0x0F) << 8) | (flags7 & 0xF0) | (flags6 >> 4);
+        SubMapperID = flags8 >> 8;
+
+        uint16_t prgNewVal = flags9 & 0x0F;
+        uint16_t chrNewVal = flags9 >> 4;
+
+        PRGRomSize = ((prgNewVal << 8) | prgPages) * 16 * 1024;
+        CHRRomSize = ((chrNewVal << 8) | chrPages) * 8 * 1024;
+    } else {
+        MapperID = (flags7 & 0xF0) | (flags6 >> 4);
+        SubMapperID = 0;
+
+        PRGRomSize = size_t(prgPages) * 16 * 1024;
+        CHRRomSize = size_t(chrPages) * 8 * 1024;
+    }
+
+    if (ROM) { delete[] ROM; ROM = nullptr; }
+    ROM = new uint8_t[PRGRomSize];
+
     size_t offset = 16;
     if (hasTrainer) {
         if (data.size() < offset + 512) {
@@ -67,8 +106,6 @@ bool NesROM::LoadNES(const std::string &filename) {
         }
         offset += 512;
     }
-        
-    PRGRomSize = size_t(prgPages) * 16 * 1024;
         
     if (!prgPages) {
         std::cerr << "ROM has zero PRG pages.\n";
@@ -89,7 +126,6 @@ bool NesROM::LoadNES(const std::string &filename) {
     }
     offset += PRGRomSize;
         
-    CHRRomSize = size_t(chrPages) * 8 * 1024;
     if (chrPages == 0) {
         uint8_t zeros[0x2000] = {};
         ppu.LoadCHRROM(zeros, 0x2000);
@@ -101,6 +137,7 @@ bool NesROM::LoadNES(const std::string &filename) {
     if (mapper) { delete mapper; mapper = nullptr; }
         
     mapper = GetMapper();
+    mapper->subMapper = SubMapperID;
     mapper->initialize();
     return true;
 }
