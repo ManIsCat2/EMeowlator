@@ -2024,7 +2024,7 @@ void CPU::write(uint16_t addr, uint8_t value)
                 if (vaddr < 0x2000) {
                     if (globalROM.Header[5] == 0) {
                         ppu.ChrData[vaddr] = value;
-                      //  printf("chrram write\n");
+                        // printf("chrram write\n");
                     } else {
                       // printf("ignored chrram write\n");
                     }

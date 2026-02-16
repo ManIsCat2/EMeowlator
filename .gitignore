@@ -10,3 +10,4 @@ imgui.ini
 *.txt
 *.nya
 *.xml
+tests/*

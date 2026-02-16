@@ -1,4 +1,4 @@
-NES emulator made by a cat using SDL2 and ImGui, inspired by Mesen2.
+MeowNES is a completely broken emulator made by a cat using SDL2 and ImGui, inspired by Mesen2.
 
 Supported mappers:
 - NROM (Mapper 0)
@@ -7,7 +7,8 @@ Supported mappers:
 - CNROM (Mapper 3)
 - MMC3 (Mapper 4) (WIP)
 - MMC2 (Mapper 9) (WIP)
-- Nina01 and BNROM (Mapper 34)
+- Nina01 (Mapper 34, SubMapper 1) (WIP)
+- BNROM (Mapper 34, SubMapper 2)
 - SunSoft FME-7 (Mapper 69) (WIP)
 - J.Y. Company ASIC (Mapper 90, 209 and 211) (WIP)
 
