@@ -22,8 +22,3 @@ void UxROM::cpuWrite(uint16_t addr, uint8_t value) {
 const char* UxROM::getName(void) {
     return "UxROM";
 }
-
-uint8_t UxROM::ppuRead(uint16_t addr) {
-    addr &= 0x1FFF;
-    return ppu.ChrData[addr];
-}

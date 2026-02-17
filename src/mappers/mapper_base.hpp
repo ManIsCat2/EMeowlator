@@ -8,13 +8,13 @@ public:
     uint16_t subMapper = 0;
     struct {
         uint8_t *ptr;
-        bool write;
+        bool write = false;
     } PRGPages[256];
 
     virtual ~MapperBase() = default;
     virtual uint8_t cpuRead(uint16_t addr);
     virtual void cpuWrite(uint16_t addr, uint8_t value);
-    virtual uint8_t ppuRead(uint16_t addr) { (void)addr; return 0; }
+    virtual uint8_t ppuRead(uint16_t addr);
     virtual const char *getName(void) { return ""; }
     virtual void reset() {}
     void initialize() {

@@ -48,7 +48,14 @@ uint8_t MapperBase::cpuRead(uint16_t addr) {
     return PRGPages[addr >> 8].ptr[addr & 0xFF];
 }
 void MapperBase::cpuWrite(uint16_t addr, uint8_t val) {
-    if (PRGPages[addr >> 8].write) PRGPages[addr >> 8].ptr[addr & 0xFF] = val;
+    if (PRGPages[addr >> 8].write) {
+        PRGPages[addr >> 8].ptr[addr & 0xFF] = val;
+    }
+}
+
+uint8_t MapperBase::ppuRead(uint16_t addr) {
+    addr &= 0x1fff;
+    return ppu.ChrData[addr];
 }
 
 void MapperBase::mapCPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable, uint8_t pageNum) {

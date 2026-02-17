@@ -80,10 +80,11 @@ void DrawROMInfo() {
     }
 
     ImGui::Text("Header: %s", HeaderHex.c_str());
+    ImGui::Text("Header Version: %s", globalROM.Version == HeaderVersion::NES2_0 ? "NES2.0" : "INES");
     ImGui::Text("PRG Size: 0x%zx (%zu), CHR Size: 0x%zx (%zu)", globalROM.PRGRomSize, globalROM.PRGRomSize, globalROM.CHRRomSize, globalROM.CHRRomSize);
     ImGui::Text("Mapper: %s (Mapper %u)", globalROM.mapper ? globalROM.mapper->getName() : (globalROM.MapperID ? "Unknown" : "NROM"), globalROM.MapperID);
+    ImGui::Text("Sub Mapper: %u", globalROM.SubMapperID);
     ImGui::Text("Has CHR-RAM: %s", globalROM.CHRRomSize == 0 ? "Yes" : "No");
-    ImGui::Text("Header Version: %s", globalROM.Version == HeaderVersion::NES2_0 ? "NES2.0" : "INES");
     ImGui::End();
 }
 

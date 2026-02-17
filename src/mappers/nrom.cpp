@@ -14,8 +14,3 @@ void NROM::reset() {
 const char* NROM::getName(void) {
     return "NROM";
 }
-
-uint8_t NROM::ppuRead(uint16_t addr) {
-    addr &= 0x1FFF;
-    return ppu.ChrData[addr];
-}

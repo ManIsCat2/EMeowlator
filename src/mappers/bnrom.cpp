@@ -21,8 +21,3 @@ void BNROM::cpuWrite(uint16_t addr, uint8_t value) {
 const char* BNROM::getName(void) {
     return "BNROM";
 }
-
-uint8_t BNROM::ppuRead(uint16_t addr) {
-    addr &= 0x1FFF;
-    return ppu.ChrData[addr];
-}
