@@ -21,3 +21,4 @@
 
 extern bool romIsLoaded;
 extern NesROM globalROM;
+extern bool showDebugLogs;

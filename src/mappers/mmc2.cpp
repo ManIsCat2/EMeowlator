@@ -69,9 +69,5 @@ uint8_t MMC2::ppuRead(uint16_t addr) {
         ChrUpdate = true;
     }
 
-    if (addr < 0x1000) {
-        return ppu.ChrData[CHRBankOffset[0] + addr];
-    } else {
-        return ppu.ChrData[CHRBankOffset[1] + (addr - 0x1000)];
-    }
+    return MapperBase::ppuRead(addr);
 }

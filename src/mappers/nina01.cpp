@@ -23,9 +23,3 @@ void NINA01::cpuWrite(uint16_t addr, uint8_t value) {
 const char* NINA01::getName(void) {
     return "NINA01";
 }
-
-uint8_t NINA01::ppuRead(uint16_t addr) {
-    addr &= 0x1FFF;
-    int bank = addr >> 10;
-    return ppu.ChrData[CHRBankOffset[bank] + (addr & 0xfff)];
-}

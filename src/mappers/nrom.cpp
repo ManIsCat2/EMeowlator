@@ -9,6 +9,7 @@ NROM::NROM() {
 void NROM::reset() {
     setPRGSlot(0, 0);
 	setPRGSlot(1, 1);
+    setCHRSlot(0, 0);
 }
 
 const char* NROM::getName(void) {

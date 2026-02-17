@@ -13,6 +13,15 @@
 
 CPU cpu;
 
+void CPU::reset() {
+    A = X = Y = 0;
+    SP = 0xFD;
+    P = 0x24;
+    PC = read16(0xFFFC);
+    cycles = 0;
+    globalROM.ResetVec = PC;
+}
+
 void CPU::run(uint32_t maxCycles) {
     uint32_t cycles_run = 0;
     //uint32_t frame_ppu_counter = 0;
@@ -2022,12 +2031,7 @@ void CPU::write(uint16_t addr, uint8_t value)
                 uint16_t vaddr = ppu.VRAMAddr & 0x3FFF;
 
                 if (vaddr < 0x2000) {
-                    if (globalROM.Header[5] == 0) {
-                        ppu.ChrData[vaddr] = value;
-                        // printf("chrram write\n");
-                    } else {
-                      // printf("ignored chrram write\n");
-                    }
+                    globalROM.mapper->ppuWrite(vaddr, value);
                 }
                 else if (vaddr < 0x3F00) {
                     uint16_t nt = vaddr & 0x0FFF;

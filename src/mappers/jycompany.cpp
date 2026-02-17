@@ -191,9 +191,3 @@ void JyCompany::updateMirroring() {
         case 3: ppu.Mirroring = MirrorMode::SCREEN_B; break;
     }
 }
-
-uint8_t JyCompany::ppuRead(uint16_t addr) {
-    addr &= 0x1FFF;
-    int bank = addr >> 10;
-    return ppu.ChrData[CHRBankOffset[bank] + (addr & 0x3FF)];
-}

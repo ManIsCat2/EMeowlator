@@ -16,13 +16,7 @@ public:
     uint8_t RAM[RAM_SIZE];
     uint8_t PrgRAM[0x2000];
 
-    void reset() {
-        A = X = Y = 0;
-        SP = 0xFD;
-        P = 0x24;
-        PC = read16(0xFFFC);
-        cycles = 0;
-    }
+    void reset();
 
     bool NMIDetector = false;
     bool doNMI = false;

@@ -25,6 +25,7 @@ public:
     HeaderVersion Version = HeaderVersion::INES;
     uint8_t *ROM = nullptr;
     std::string Name = "";
+    uint16_t ResetVec = 0;
     size_t PRGRomSize = 0;
     size_t CHRRomSize = 0;
     uint16_t MapperID = 0;

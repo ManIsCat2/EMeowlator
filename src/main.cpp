@@ -12,6 +12,7 @@
 NesROM globalROM;
 
 bool romIsLoaded = false;
+bool showDebugLogs = false;
 static bool fullscreen = false;
 static float CPUSpeed = 1.f;
 static bool unlimitFPS = false;
@@ -81,6 +82,7 @@ void DrawROMInfo() {
 
     ImGui::Text("Header: %s", HeaderHex.c_str());
     ImGui::Text("Header Version: %s", globalROM.Version == HeaderVersion::NES2_0 ? "NES2.0" : "INES");
+    ImGui::Text("RESET Vector: 0x%x", globalROM.ResetVec);
     ImGui::Text("PRG Size: 0x%zx (%zu), CHR Size: 0x%zx (%zu)", globalROM.PRGRomSize, globalROM.PRGRomSize, globalROM.CHRRomSize, globalROM.CHRRomSize);
     ImGui::Text("Mapper: %s (Mapper %u)", globalROM.mapper ? globalROM.mapper->getName() : (globalROM.MapperID ? "Unknown" : "NROM"), globalROM.MapperID);
     ImGui::Text("Sub Mapper: %u", globalROM.SubMapperID);
@@ -267,6 +269,7 @@ int main(int argc, char* argv[]) {
                 if (ImGui::MenuItem("ROM Info")) {
                     showROMInfo = true;
                 }
+                ImGui::Checkbox("Show Debug Logs", &showDebugLogs);
                 ImGui::EndMenu();
             }
 

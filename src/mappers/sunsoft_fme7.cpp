@@ -85,13 +85,6 @@ const char* SunSoftFME7::getName(void) {
     return "SunSoft FME-7";
 }
 
-uint8_t SunSoftFME7::ppuRead(uint16_t addr) {
-    addr &= 0x1FFF;
-
-    int bank = addr >> 10;
-    return ppu.ChrData[CHRBankOffset[bank] + (addr & 0x3FF)];
-}
-
 void SunSoftFME7::clockIRQ() {
     if(!irqCounterEnabled)
         return;

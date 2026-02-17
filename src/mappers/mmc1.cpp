@@ -7,133 +7,107 @@ MMC1::MMC1() {
 }
 
 void MMC1::reset() {
-    ShiftReg = 0;
-    ShiftCount = 0;
-    Ctrl = 0x0C;
-    ChrBank0 = 0;
-    ChrBank1 = 0;
-    PrgBank = 0;
-    PrgMode = (Ctrl >> 2) & 3;
-    ChrMode = (Ctrl >> 4) & 1;
+    shiftCount  = 0;
+    WriteBuffer = 0;
+
+    control = 0x0C;
+    chrReg0 = 0;
+    chrReg1 = 0;
+    prgReg  = 0;
+
+    modifyRegister(0x8000, control);
     updateBanks();
 }
 
-uint8_t MMC1::cpuRead(uint16_t addr) {
-    if (addr < 0x8000) {
-        if (addr >= 0x6000) {
-            return cpu.PrgRAM[addr - 0x6000];
-        }
-    } else {
-        int Slot = (addr < 0xC000) ? 0 : 1;
-        size_t base = PRGBankOffset[Slot];
-        size_t index = base + (addr & 0x3FFF);
-        if (index >= globalROM.PRGRomSize) index %= globalROM.PRGRomSize;
-        return globalROM.ROM[index];
-    }
-    return 0xff;
-}
-
-uint8_t MMC1::ppuRead(uint16_t addr) {
-    addr &= 0x1FFF; 
-    
-    if (addr < 0x1000) {
-        size_t offset = CHRBankOffset[0] + addr;
-        return ppu.ChrData[offset]; 
-    } else {
-        size_t offset = CHRBankOffset[1] + (addr - 0x1000);
-        return ppu.ChrData[offset];
-    }
-}
-
 void MMC1::cpuWrite(uint16_t addr, uint8_t value) {
-    if (addr >= 0x6000 && addr < 0x8000) {
-        cpu.PrgRAM[addr - 0x6000] = value;
+    if (addr < 0x8000) {
+        MapperBase::cpuWrite(addr, value);
         return;
     }
-    if (addr >= 0x8000) {
-        if (value & 0x80) {
-            ShiftReg = 0;
-            ShiftCount = 0;
-            Ctrl |= 0x0C;
-            PrgMode = (Ctrl >> 2) & 3;
-            updateBanks();
-            return;
-        }
-        ShiftReg >>= 1;
-        ShiftReg |= (value & 1) << 4;
-        ShiftCount++;
-        if (ShiftCount < 5) return;
-        uint8_t data = ShiftReg & 0x1F;
-        modifyRegister(addr, data);
-        ShiftReg = 0;
-        ShiftCount = 0;
-        PrgMode = (Ctrl >> 2) & 3;
-        ChrMode = (Ctrl >> 4) & 1;
+
+    if (value & 0x80) {
+        shiftCount  = 0;
+        WriteBuffer = 0;
+
+        control |= 0x0C;
+        modifyRegister(0x8000, control);
         updateBanks();
         return;
     }
-    MapperBase::cpuWrite(addr, value);
+
+    WriteBuffer >>= 1;
+    WriteBuffer |= (value & 1) << 4;
+
+    shiftCount++;
+
+    if (shiftCount == 5) {
+        modifyRegister(addr, WriteBuffer);
+        updateBanks();
+
+        shiftCount  = 0;
+        WriteBuffer = 0;
+    }
 }
 
 const char *MMC1::getName(void) {
     return "MMC1";
 }
 
-void MMC1::modifyRegister(uint16_t addr, uint8_t data) {
-    if (addr <= 0x9FFF) {
-        Ctrl = data;
-    } else if (addr <= 0xBFFF) {
-        ChrBank0 = data;
-    } else if (addr <= 0xDFFF) {
-        ChrBank1 = data;
-    } else {
-        PrgBank = data;
+void MMC1::modifyRegister(uint16_t addr, uint8_t val) {
+    switch (addr & 0xE000) {
+        case 0x8000:
+            control = val;
+            switch (val & 0x03) {
+                case 0: ppu.Mirroring = MirrorMode::SCREEN_A; break;
+                case 1: ppu.Mirroring = MirrorMode::SCREEN_B; break;
+                case 2: ppu.Mirroring = MirrorMode::VERTICAL; break;
+                case 3: ppu.Mirroring = MirrorMode::HORIZONTAL; break;
+            }
+
+            slotSelect = (val & 0x04) != 0;
+            PrgMode = (val & 0x08) != 0;
+            ChrMode = (val & 0x10) != 0;
+            break;
+
+        case 0xA000:
+            chrReg0 = val & 0x1F;
+            break;
+
+        case 0xC000:
+            chrReg1 = val & 0x1F;
+            break;
+
+        case 0xE000:
+            prgReg = val & 0x0F;
+            break;
     }
 }
 
 void MMC1::updateBanks() {
-    size_t prgSize = globalROM.PRGRomSize;
+    mapCPUMemory(0x6000, 0x7FFF, cpu.PrgRAM, 0, true, 0x60);
+    uint8_t prgBankSelect = 0;
 
-    if (PrgMode == 0 || PrgMode == 1) {
-        setPRGSlot2(0, PrgBank & 0x0E);
-    } else if (PrgMode == 2) {
-        setPRGSlot(0, 0);
-        setPRGSlot(1, PrgBank & 0x0F);
-    } else {
-        setPRGSlot(0, PrgBank & 0x0F);
-        size_t last = (prgSize == 0) ? 0 : (prgSize - 0x4000);
-        PRGBankOffset[1] = last;
+    if (globalROM.PRGRomSize == 0x80000) {
+        prgBankSelect = (chrReg0 & 0x10);
     }
 
-    if (globalROM.CHRRomSize == 0) {
-        CHRBankOffset[0] = 0;
-        CHRBankOffset[1] = 0x1000;
-    } else {
-        if (ChrMode == 0) {
-            size_t bank = (ChrBank0 & 0x1E);
-
-            setCHRSlot(0, bank);
-            setCHRSlot(1, bank + 1);
+    if (PrgMode) {
+        if (slotSelect) {
+            setPRGSlot(0, prgReg | prgBankSelect);
+            setPRGSlot(1, 0x0F | prgBankSelect);
         } else {
-            size_t b0 = (ChrBank0 & 0x1F);
-            size_t b1 = (ChrBank1 & 0x1F);
-            setCHRSlot(0, b0);
-            setCHRSlot(1, b1);
+            setPRGSlot(0, 0x00 | prgBankSelect);
+            setPRGSlot(1, prgReg | prgBankSelect);
         }
+    } else {
+        setPRGSlot2(0, (prgReg & 0xFE) | prgBankSelect);
     }
 
-    switch (Ctrl & 3) {
-        case 0:
-            ppu.nametableSelect = 0; 
-            break;
-        case 1:
-            ppu.nametableSelect = 1;
-            break;
-        case 2:
-            ppu.nametableSelect = 0;
-            break;
-        case 3:
-            ppu.nametableSelect = 2;
-            break;
+    if (ChrMode) {
+        setCHRSlot(0, chrReg0);
+        setCHRSlot(1, chrReg1);
+    } else {
+        setCHRSlot(0, chrReg0 & 0x1E);
+        setCHRSlot(1, (chrReg0 & 0x1E) + 1);
     }
 }

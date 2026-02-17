@@ -62,16 +62,10 @@ const char* MMC3::getName(void) {
 }
 
 uint8_t MMC3::ppuRead(uint16_t addr) {
-    addr &= 0x1FFF;
-
-    bool a12 = addr & 0x1000;
-
+    bool a12 = (addr & 0x1fff) & 0x1000;
     clockIRQ(a12);
 
-    size_t bank = addr / 0x400;
-    size_t offset = addr % 0x400;
-
-    return ppu.ChrData[CHRBankOffset[bank] + offset];
+    return MapperBase::ppuRead(addr);
 }
 
 void MMC3::clockIRQ(bool a12) {

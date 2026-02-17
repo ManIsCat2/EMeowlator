@@ -9,6 +9,7 @@ UxROM::UxROM() {
 void UxROM::reset() {
     setPRGSlot(0, 0);
 	setPRGSlot(1, -1);
+    setCHRSlot(0, 0);
 }
 
 void UxROM::cpuWrite(uint16_t addr, uint8_t value) {
