@@ -6,6 +6,7 @@
 #include "imgui/backends/imgui_impl_sdlrenderer2.h"
 
 #include "main.hpp"
+#include "gui.hpp"
 
 #include "savestate.hpp"
 
@@ -16,80 +17,11 @@ bool showDebugLogs = false;
 static bool fullscreen = false;
 static float CPUSpeed = 1.f;
 static bool unlimitFPS = false;
-static bool showMemview = false;
-static bool showROMInfo = false;
 
 static const char* NesPalettes[] = { "NTSC", "PAL" };
 
-SDL_Surface* icon = IMG_Load("gui/ico.png");
-
-void DrawHex(size_t Size, uint8_t *Buf, int Start=0) {
-    const int bytesPerRow = 16;
-    for (size_t offset = 0; offset < Size; offset += bytesPerRow) {
-        ImGui::Text("%04X: ", (unsigned int)offset+Start);
-        ImGui::SameLine();
-        for (size_t i = 0; i < bytesPerRow; ++i) {
-            if (offset + i < Size) {
-                ImGui::Text("%02X ", Buf[offset + i]);
-                ImGui::SameLine();
-            }
-        }
-        ImGui::SameLine();
-        for (size_t i = 0; i < bytesPerRow; ++i) {
-            if (offset + i < Size) {
-                uint8_t c = Buf[offset + i];
-                ImGui::Text("%c", (c >= 32 && c < 127) ? c : '.');
-                ImGui::SameLine();
-            }
-        }
-        ImGui::NewLine();
-    }
-}
-
-void StartShowHex(const char *Name) {
-    ImGui::Separator();
-    ImGui::Text("%s", Name);
-    ImGui::Separator();
-}
-
-void DrawMemoryView() {
-    ImGui::Begin("Memory View", &showMemview);
-    ImGui::Text("CPU RAM");
-    ImGui::Separator();
-    DrawHex(RAM_SIZE, cpu.RAM);
-    
-    StartShowHex("PPU VRAM");
-    DrawHex(VRAM_SIZE, ppu.VRAM.data(), 0x2000);
-
-    StartShowHex("PPU Palette RAM");
-    DrawHex(PALRAM_SIZE, ppu.paletteRAM.data(), 0x3F00);
-
-    StartShowHex("PRG RAM");
-    DrawHex(0x2000, cpu.PrgRAM, 0x6000);
-    ImGui::End();
-}
-
-void DrawROMInfo() {
-    ImGui::Begin("ROM Info", &showROMInfo);
-    ImGui::Text("File: %s", globalROM.Name.c_str());
-    std::string HeaderHex;
-    for (int i = 0; i < 8; i++) {
-        char Buf[4];
-        snprintf(Buf, sizeof(Buf), "%02X", globalROM.Header[i]);
-        HeaderHex += Buf;
-        if (i < 7) HeaderHex += " ";
-    }
-
-    ImGui::Text("Header: %s", HeaderHex.c_str());
-    ImGui::Text("Header Version: %s", globalROM.Version == HeaderVersion::NES2_0 ? "NES2.0" : "INES");
-    ImGui::Text("RESET Vector: 0x%x", globalROM.ResetVec);
-    ImGui::Text("PRG Size: 0x%zx (%zu), CHR Size: 0x%zx (%zu)", globalROM.PRGRomSize, globalROM.PRGRomSize, globalROM.CHRRomSize, globalROM.CHRRomSize);
-    ImGui::Text("Mapper: %s (Mapper %u)", globalROM.mapper ? globalROM.mapper->getName() : (globalROM.MapperID ? "Unknown" : "NROM"), globalROM.MapperID);
-    ImGui::Text("Sub Mapper: %u", globalROM.SubMapperID);
-    ImGui::Text("Has CHR-RAM: %s", globalROM.CHRRomSize == 0 ? "Yes" : "No");
-    ImGui::End();
-}
-
+SDL_Surface *icon = IMG_Load("gui/ico.png");
+TTF_Font *gSDLFont = nullptr;
 
 int main(int argc, char* argv[]) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) != 0) {
@@ -97,20 +29,22 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    SDL_Window* window = SDL_CreateWindow("MeowNES", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, NES_WIDTH*3, NES_HEIGHT*3, SDL_WINDOW_SHOWN);
+    TTF_Init();
 
+    SDL_Window* window = SDL_CreateWindow("MeowNES", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, NES_WIDTH*3, NES_HEIGHT*3, SDL_WINDOW_SHOWN);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!icon) {
         std::cout << "Failed to set window icon\n";
     } else {
        SDL_SetWindowIcon(window, icon);
-       SDL_FreeSurface(icon);
     }
 
     if (!ppu.InitSDL(renderer)) return 1;
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    gSDLFont = TTF_OpenFont("gui/ProggyClean.ttf", 16);
     ImGui::StyleColorsDark();
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer2_Init(renderer);
@@ -129,6 +63,7 @@ int main(int argc, char* argv[]) {
     while (running) {
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
+            MeowGUI::ProcessSDLEvents(&event);
             if (event.type == SDL_QUIT) running = false;
         }
         ImGui_ImplSDLRenderer2_NewFrame();
@@ -263,22 +198,13 @@ int main(int argc, char* argv[]) {
             }
 
             if (ImGui::BeginMenu("Debug")) {
-                if (ImGui::MenuItem("View Memory")) {
-                    showMemview = true;
-                }
                 if (ImGui::MenuItem("ROM Info")) {
-                    showROMInfo = true;
+                    MeowGUI::CreateWin("ROM Info", 290, 200, UpdRomInfoWin);
                 }
                 ImGui::Checkbox("Show Debug Logs", &showDebugLogs);
                 ImGui::EndMenu();
             }
 
-            if (showMemview) {
-                DrawMemoryView();
-            }
-            if (showROMInfo) {
-                DrawROMInfo();
-            }
 
             if (ImGui::BeginMenu("Settings")) {
                 if (ImGui::BeginMenu("Graphics")) {
@@ -301,6 +227,8 @@ int main(int argc, char* argv[]) {
 
             ImGui::EndMainMenuBar();
         }
+
+        MeowGUI::ProcessWindows();
 
         SDL_SetRenderDrawColor(renderer, 0x20, 0x20, 0x20, 0xff);
         SDL_RenderClear(renderer);
@@ -325,6 +253,7 @@ int main(int argc, char* argv[]) {
     ImGui::DestroyContext();
 
     ppu.ShutdownSDL();
+    SDL_FreeSurface(icon);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();

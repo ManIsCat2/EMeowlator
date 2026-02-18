@@ -2,8 +2,8 @@ COMPILE_FOLDERS := src src/mappers src/imgui src/imgui/backends
 TARGET := MeowNES
 BUILD_DIR := build
 CXX := clang++
-CXXFLAGS := -Wall -Wextra -O3 -Iinclude #-fsanitize=address -fsanitize=undefined
-LDFLAGS := -lSDL2 -lSDL2_image #-fsanitize=address -fsanitize=undefined
+CXXFLAGS := -Wall -Wextra -g -Iinclude -fsanitize=address -fsanitize=undefined
+LDFLAGS := -lSDL2 -lSDL2_image -lSDL2_ttf -fsanitize=address -fsanitize=undefined
 ifeq ($(OS),Windows_NT)
 	LDFLAGS += -lmingw32 -lSDL2main -lSDL2
 endif

@@ -10,6 +10,7 @@
 #include <filesystem>
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
 #include "nes.hpp"
 #include "nes_cpu.hpp"

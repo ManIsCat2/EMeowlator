@@ -13,7 +13,7 @@ void MMC1::reset() {
     control = 0x0C;
     chrReg0 = 0;
     chrReg1 = 0;
-    prgReg  = 0;
+    prgReg = 0;
 
     modifyRegister(0x8000, control);
     updateBanks();
@@ -26,7 +26,7 @@ void MMC1::cpuWrite(uint16_t addr, uint8_t value) {
     }
 
     if (value & 0x80) {
-        shiftCount  = 0;
+        shiftCount = 0;
         WriteBuffer = 0;
 
         control |= 0x0C;
@@ -44,7 +44,7 @@ void MMC1::cpuWrite(uint16_t addr, uint8_t value) {
         modifyRegister(addr, WriteBuffer);
         updateBanks();
 
-        shiftCount  = 0;
+        shiftCount = 0;
         WriteBuffer = 0;
     }
 }

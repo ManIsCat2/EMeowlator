@@ -8,7 +8,7 @@ public:
     uint16_t subMapper = 0;
 
     struct MemPage {
-        uint8_t *ptr;
+        uint8_t *ptr = nullptr;
         bool write = false;
     };
     struct MemPage PRGPages[256];

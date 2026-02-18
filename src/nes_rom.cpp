@@ -36,48 +36,48 @@ bool NesROM::LoadNES(const std::string &filename) {
         std::cerr << "Failed to open ROM: " << filename << "\n";
         return false;
     }
-    
+
     std::filesystem::path Path(filename);
     Name = Path.filename().string();
-    
+
     std::streamsize fsize = rom.tellg();
     if (fsize < 16) {
         std::cerr << "ROM too small\n";
         return false;
     }
     rom.seekg(0, std::ios::beg);
-    
+
     std::vector<uint8_t> data((size_t)fsize);
     if (!rom.read(reinterpret_cast<char*>(data.data()), fsize)) {
         std::cerr << "Failed to read ROM\n";
         return false;
     }
-    
+
     // header
     if (data.size() < 16 || data[0] != 'N' || data[1] != 'E' || data[2] != 'S' || data[3] != 0x1A) {
         std::cerr << "Invalid NES header\n";
         return false;
     }
-        
+
     std::memcpy(Header, data.data(), 8);
-        
+
     ppu.Mirroring = (Header[6] & 1) ? MirrorMode::VERTICAL :  MirrorMode::HORIZONTAL;
-        
+
     uint8_t prgPages = data[4];
     uint8_t chrPages = data[5];
     uint8_t flags6 = data[6];
     uint8_t flags7 = data[7];
     uint8_t flags8 = data[8];
     uint8_t flags9 = data[9];
-        
+
     bool hasTrainer = (flags6 & 0x04) != 0;
-    
+
     if ((flags7 & 0x0C) == 0x08) {
         Version = HeaderVersion::NES2_0;
     } else {
         Version = HeaderVersion::INES;
     }
-    
+
     if (Version == HeaderVersion::NES2_0) {
         MapperID = ((flags8 & 0x0F) << 8) | (flags7 & 0xF0) | (flags6 >> 4);
         SubMapperID = flags8 >> 8;
@@ -112,18 +112,7 @@ bool NesROM::LoadNES(const std::string &filename) {
         return false;
     }
 
-    // i have no idea wtf happend here
-    if (MapperID) {
-        std::memcpy(&ROM[0], &data[offset], PRGRomSize);
-    } else {
-        if (prgPages == 1) {
-            std::memcpy(&ROM[0], &data[offset], 0x4000);
-            std::memcpy(&ROM[0x4000], &data[offset], 0x4000);
-        } else {
-            std::memcpy(&ROM[0], &data[offset], 0x4000);
-            std::memcpy(&ROM[0x4000], &data[offset + 0x4000], 0x4000);
-        }
-    }
+    std::memcpy(ROM, &data[offset], PRGRomSize);
     offset += PRGRomSize;
         
     if (chrPages == 0) {
