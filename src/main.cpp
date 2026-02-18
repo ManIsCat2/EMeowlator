@@ -199,7 +199,7 @@ int main(int argc, char* argv[]) {
 
             if (ImGui::BeginMenu("Debug")) {
                 if (ImGui::MenuItem("ROM Info")) {
-                    MeowGUI::CreateWin("ROM Info", 290, 200, UpdRomInfoWin);
+                    if (romIsLoaded) MeowGUI::CreateWin("ROM Info", 290, 200, UpdRomInfoWin);
                 }
                 ImGui::Checkbox("Show Debug Logs", &showDebugLogs);
                 ImGui::EndMenu();
