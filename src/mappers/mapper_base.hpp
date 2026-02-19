@@ -44,5 +44,6 @@ public:
     void setPRGSlot2(uint16_t slot, uint16_t val, uint32_t offset=0);
 
     void mapCPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable, uint8_t pageNum);
+    void unmapCPUMemory(uint16_t start, uint16_t end, uint8_t pageNum);
     void mapPPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable);
 };

@@ -8,6 +8,7 @@ MapperBase *NesROM::GetMapper(void) {
         case 3: return new CNROM();
         case 4: return new MMC3();
         case 9: return new MMC2();
+        case 19: return new Namco163();
         case 34: 
             switch(SubMapperID) {
                 case 0: 

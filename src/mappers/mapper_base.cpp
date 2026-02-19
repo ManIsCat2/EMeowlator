@@ -82,6 +82,15 @@ void MapperBase::mapCPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uin
         page++;
     }
 }
+void MapperBase::unmapCPUMemory(uint16_t start, uint16_t end, uint8_t pageNum) {
+    uint8_t page = pageNum;
+    
+    for (uint32_t addr = start; addr <= end; addr += 0x100) {
+        PRGPages[page].ptr = nullptr;
+        PRGPages[page].write = false;
+        page++;
+    }
+}
 
 void MapperBase::mapPPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable) {
     uint8_t page = start >> 8;

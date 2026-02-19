@@ -18,7 +18,7 @@ void MMC3::reset() {
     IRQEnabled = false;
     LastA12 = false;
 
-    mapCPUMemory(0x6000, 0x7fff, cpu.PrgRAM, 0, true, 0x6000 >> 8);
+    mapCPUMemory(0x6000, 0x7fff, cpu.PrgRAM, 0, true, 0x60);
 
     updatePRG();
     updateCHR();

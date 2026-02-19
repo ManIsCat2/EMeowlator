@@ -7,5 +7,6 @@
 #include "mmc2.hpp"
 #include "sunsoft_fme7.hpp"
 #include "jycompany.hpp"
+#include "namco_163.hpp"
 #include "nina01.hpp"
 #include "bnrom.hpp"
