@@ -1,11 +1,11 @@
 COMPILE_FOLDERS := src src/mappers
 TARGET := MeowNES
 BUILD_DIR := build
-CXX := clang++
+CXX := g++
 CXXFLAGS := -Wall -Wextra -O3 -Iinclude $(shell pkg-config --cflags Qt6Widgets) #-fsanitize=address -fsanitize=undefined
 LDFLAGS := $(shell pkg-config --libs Qt6Widgets) #-fsanitize=address -fsanitize=undefined
 ifeq ($(OS),Windows_NT)
-	LDFLAGS += -lmingw32
+	LDFLAGS += -static
 endif
 
 SOURCES := $(wildcard $(addsuffix /*.cpp,$(COMPILE_FOLDERS)))

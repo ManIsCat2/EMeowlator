@@ -1,0 +1,41 @@
+name: Build Lua
+
+on:
+    workflow_dispatch:
+    push:
+
+jobs:
+    build-windows:
+        strategy:
+          matrix:
+            arch:
+              - name: Win64
+                sys: mingw64
+                env: x86_64
+
+        name: Windows ${{ matrix.arch.name }}
+        runs-on: windows-latest
+        defaults:
+            run:
+                shell: msys2 {0}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Install dependencies
+              uses: msys2/setup-msys2@v2
+              with:
+                msystem: ${{ matrix.arch.sys }}
+                update: true
+                install: >
+                    make
+                    mingw-w64-${{ matrix.arch.env }}-gcc
+                    mingw-w64-${{ matrix.arch.env }}-qt6-static
+            - name: Build library
+              run: make -j12
+
+            - name: Upload
+              uses: actions/upload-artifact@v4
+              with:
+                name: MeowNES-${{ matrix.arch.name }}
+                path: ./build/MeowNES.exe
