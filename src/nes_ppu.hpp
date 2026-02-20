@@ -4,8 +4,6 @@
 #include <vector>
 
 #include "nes.hpp"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
 
 enum class MirrorMode {
     HORIZONTAL,

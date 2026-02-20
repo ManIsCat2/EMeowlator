@@ -1,4 +1,5 @@
 #include "nes_rom.hpp"
+#include "main.hpp"
 
 MapperBase *NesROM::GetMapper(void) {
     switch (MapperID) {
@@ -25,7 +26,7 @@ MapperBase *NesROM::GetMapper(void) {
         case 90: case 209: case 211: return new JyCompany();
         //hope for the best
         default: {
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING , "Warning", ("Mapper " + std::to_string(MapperID) + " is Unimplemented, Using MMC1 instead.").c_str(), NULL);
+            QMessageBox::information((QMainWindow*)globalQTWin, "Warning", ("Mapper " + std::to_string(MapperID) + " is Unimplemented, Using MMC1 instead.").c_str());
             return new MMC1();
         }
     }

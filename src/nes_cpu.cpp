@@ -314,12 +314,11 @@ void CPU::execute(uint8_t opcode)
     };
 
 
-    switch (opcode)
-    {
+    switch (opcode) {
     case 0x02:
         romIsLoaded = false;
         reset();
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR , "Fatal error", "CPU reached a HLT instruction", NULL);
+        QMessageBox::critical((QMainWindow*)globalQTWin, "Fatal error", "CPU reached a HLT instruction");
         break;
     // lda
     case 0xA9: // LDA immediate
@@ -1882,7 +1881,7 @@ void CPU::execute(uint8_t opcode)
         sprintf(errorMsg, "Unimplemented Opcode: 0x%02X\n", opcode);
         romIsLoaded = false;
         reset();
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR , "Fatal error", errorMsg, NULL);
+        QMessageBox::critical((QMainWindow*)globalQTWin, "Fatal error", errorMsg);
         break;
     }
     //  DEBUG_LOG("Proccessed 0x%x\n", opcode);

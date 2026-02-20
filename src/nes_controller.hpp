@@ -10,5 +10,3 @@ public:
 };
 
 extern Controller controllers[2];
-
-void UpdateControllers(void);

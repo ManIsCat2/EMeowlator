@@ -1,13 +1,3 @@
-#include <QApplication>
-#include <QMainWindow>
-#include <QMenuBar>
-#include <QMenu>
-#include <QAction>
-#include <QFileDialog>
-#include <QTimer>
-#include <QDebug>
-#include <QIcon>
-
 #include "nes_cpu.hpp"
 #include "nes_rom.hpp"
 
@@ -24,9 +14,12 @@ static bool fullscreen = false;
 static float CPUSpeed = 1.f;
 static bool unlimitFPS = false;
 
+void *globalQTWin;
+
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     QMainWindow window;
+    globalQTWin = (void*)&window;
 
     QMenuBar *menuBar = window.menuBar();
     QMenu *fileMenu = menuBar->addMenu("File");
@@ -81,7 +74,7 @@ int main(int argc, char *argv[]) {
     });
     cpuTimer.start(16);
 
-    window.resize(NES_WIDTH*3, NES_HEIGHT*3);
+    window.setFixedSize(NES_WIDTH*3, NES_HEIGHT*3);
     window.setWindowIcon(QIcon("gui/ico.png"));
     window.show();
 

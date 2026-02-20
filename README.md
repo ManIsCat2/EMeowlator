@@ -1,4 +1,4 @@
-MeowNES is a completely broken emulator made by a cat using SDL2 and ImGui, inspired by Mesen2.
+MeowNES is a completely broken emulator made by a cat using QT.
 
 Supported mappers:
 - NROM (Mapper 0)

@@ -3,9 +3,9 @@ TARGET := MeowNES
 BUILD_DIR := build
 CXX := clang++
 CXXFLAGS := -Wall -Wextra -O3 -Iinclude $(shell pkg-config --cflags Qt6Widgets) #-fsanitize=address -fsanitize=undefined
-LDFLAGS := -lSDL2 -lSDL2_image -lSDL2_ttf $(shell pkg-config --libs Qt6Widgets) #-fsanitize=address -fsanitize=undefined
+LDFLAGS := $(shell pkg-config --libs Qt6Widgets) #-fsanitize=address -fsanitize=undefined
 ifeq ($(OS),Windows_NT)
-	LDFLAGS += -lmingw32 -lSDL2main -lSDL2
+	LDFLAGS += -lmingw32
 endif
 
 SOURCES := $(wildcard $(addsuffix /*.cpp,$(COMPILE_FOLDERS)))

@@ -6,7 +6,6 @@ enum class HeaderVersion {
     OLD_INES
 };
 
-#include <SDL2/SDL.h>
 #include <cstdint>
 #include <iostream>
 #include <array>
