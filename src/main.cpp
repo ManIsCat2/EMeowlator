@@ -143,9 +143,9 @@ int main(int argc, char *argv[]) {
     inputMgr.install(&window);
 
     QTimer cpuTimer;
+    ppu.Init();
     QObject::connect(&cpuTimer, &QTimer::timeout, [&]() {
         if (romIsLoaded) {
-            ppu.Init();
             cpu.run((uint32_t)(89342 * CPUSpeed));
             ppu.Render();
             screen->update();

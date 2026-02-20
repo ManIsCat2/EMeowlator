@@ -44,6 +44,7 @@ bool PPU::Init() {
     PaletteMode = 0;
     
     memset(frameBuffer, 0, sizeof(frameBuffer));
+    return true;
 }
 
 uint32_t nesPaletteDefault[64] = {
@@ -60,7 +61,6 @@ uint32_t nesPalette[64] = {
     0xFFFEFFFF, 0xFFC0DEFF, 0xFFD2D1FF, 0xFFE7C7FF, 0xFFF8C2FF, 0xFFFFC3E9, 0xFFFFCBC4, 0xFFF5D7A5, 0xFFE2E394, 0xFFCEED96, 0xFFBCF2AA, 0xFFB3F1CB, 0xFFB4E9F0, 0xFFB6B6B6, 0xFF000000, 0xFF000000,
 };
 
-//ppu implementation that is incredibly fucked
 
 uint8_t PPU::readCHR(uint16_t addr) {
     return globalROM.mapper ? globalROM.mapper->ppuRead(addr) : addr;
@@ -83,97 +83,100 @@ void PPU::Render() {
             nesPalette[i] = (r << 16) | (g << 8) | b;
         }
     }
+    if (maskRenderBG) {
+        for (int screenY = 0; screenY < NES_HEIGHT; screenY++) {
+            for (int screenX = 0; screenX < NES_WIDTH; screenX++) {
+                int absX = screenX + (ppu.DisableXScroll ? 0 : scrollX);
+                int absY = screenY + (ppu.DisableYScroll ? 0 : scrollY);
+                int ntH = (absX / NES_WIDTH) & 1;
+                int ntV = (absY / NES_HEIGHT) & 1;
+                int nametable = nametableSelect ^ ntH ^ (ntV << 1);
+                int nametableBase = 0x2000 | (nametable << 10);
 
-    for (int screenY = 0; screenY < NES_HEIGHT; screenY++) {
-        for (int screenX = 0; screenX < NES_WIDTH; screenX++) {
-            int absX = screenX + (ppu.DisableXScroll ? 0 : scrollX);
-            int absY = screenY + (ppu.DisableYScroll ? 0 : scrollY);
-            int ntH = (absX / NES_WIDTH) & 1;
-            int ntV = (absY / NES_HEIGHT) & 1;
-            int nametable = nametableSelect ^ ntH ^ (ntV << 1);
-            int nametableBase = 0x2000 | (nametable << 10);
+                int tileX = (absX / 8) & 31;
+                int tileY = (absY / 8) % 30;
+                int fineX = absX % 8;
+                int fineY = absY % 8;
 
-            int tileX = (absX / 8) & 31;
-            int tileY = (absY / 8) % 30;
-            int fineX = absX % 8;
-            int fineY = absY % 8;
+                int vramAddr = (nametableBase + tileY * 32 + tileX) & 0x0FFF;
+                uint8_t tileIndex = VRAM[vramAddr];
 
-            int vramAddr = (nametableBase + tileY * 32 + tileX) & 0x0FFF;
-            uint8_t tileIndex = VRAM[vramAddr];
+                uint16_t vaddr = (BGPatternTable ? 0x1000 : 0x0000) + tileIndex * 16 + fineY;
+                uint8_t lo = readCHR(vaddr);
+                uint8_t hi = readCHR(vaddr + 8);
 
-            uint16_t vaddr = (BGPatternTable ? 0x1000 : 0x0000) + tileIndex * 16 + fineY;
-            uint8_t lo = readCHR(vaddr);
-            uint8_t hi = readCHR(vaddr + 8);
+                int attrX = tileX / 4;
+                int attrY = tileY / 4;
+                int attrAddr = (nametableBase + 0x3C0 + attrY * 8 + attrX) & 0x0FFF;
+                uint8_t attrByte = VRAM[attrAddr];
+                int quadrantX = (tileX % 4) / 2;
+                int quadrantY = (tileY % 4) / 2;
+                int attrShift = (quadrantY * 2 + quadrantX) * 2;
+                uint8_t paletteIndex = (attrByte >> attrShift) & 0x03;
 
-            int attrX = tileX / 4;
-            int attrY = tileY / 4;
-            int attrAddr = (nametableBase + 0x3C0 + attrY * 8 + attrX) & 0x0FFF;
-            uint8_t attrByte = VRAM[attrAddr];
-            int quadrantX = (tileX % 4) / 2;
-            int quadrantY = (tileY % 4) / 2;
-            int attrShift = (quadrantY * 2 + quadrantX) * 2;
-            uint8_t paletteIndex = (attrByte >> attrShift) & 0x03;
+                int bit = 7 - fineX;
+                int colorBits = ((hi >> bit) & 1) << 1 | ((lo >> bit) & 1);
+                uint8_t finalPal = colorBits ? paletteRAM[colorBits + paletteIndex * palOffset] : paletteRAM[0];
+                uint32_t color = nesPalette[finalPal & 0x3F];
 
-            int bit = 7 - fineX;
-            int colorBits = ((hi >> bit) & 1) << 1 | ((lo >> bit) & 1);
-            uint8_t finalPal = colorBits ? paletteRAM[colorBits + paletteIndex * palOffset] : paletteRAM[0];
-            uint32_t color = nesPalette[finalPal & 0x3F];
-
-            frameBuffer[screenY * NES_WIDTH + screenX] = color;
+                frameBuffer[screenY * NES_WIDTH + screenX] = color;
+            }
         }
     }
-    if (!DisableSprites || !maskRenderSprites) {
-        for (int i = 0; i < MaxSprites; i++) {
-            int spriteY = OAM[i * 4 + 0] + 1;
-            int tile = OAM[i * 4 + 1];
-            int attr = OAM[i * 4 + 2];
-            int spriteX = OAM[i * 4 + 3];
+    if (maskRenderSprites) {
+        if (!DisableSprites) {
+            for (int i = 0; i < MaxSprites; i++) {
+                int spriteY = OAM[i * 4 + 0] + 1;
+                int tile = OAM[i * 4 + 1];
+                int attr = OAM[i * 4 + 2];
+                int spriteX = OAM[i * 4 + 3];
 
-            bool flipH = attr & 0x40;
-            bool flipV = attr & 0x80;
-            uint8_t paletteIndex = attr & 0x03;
+                bool flipH = attr & 0x40;
+                bool flipV = attr & 0x80;
+                uint8_t paletteIndex = attr & 0x03;
 
-            int spriteHeight = use8x16Sprites ? 16 : 8;
+                int spriteHeight = use8x16Sprites ? 16 : 8;
 
-            uint16_t vaddrBase;
-            if (use8x16Sprites) {
-                uint16_t patternTable = (tile & 0x01) ? 0x1000 : 0x0000;
-                int tileIndex = (tile & 0xFE);
-                vaddrBase = patternTable + tileIndex * 16;
-            } else {
-                vaddrBase = (spritePatternTable ? 0x1000 : 0x0000) + tile * 16;
-            }
-
-            for (int row = 0; row < spriteHeight; row++) {
-                uint16_t vaddr = vaddrBase;
-
+                uint16_t vaddrBase;
                 if (use8x16Sprites) {
-                    if ((!flipV && row >= 8) || (flipV && row < 8)) {
-                        vaddr += 16;
-                    }
-                    int inTileRow = flipV ? 7 - (row & 7) : (row & 7);
-                    vaddr += inTileRow;
+                    uint16_t patternTable = (tile & 0x01) ? 0x1000 : 0x0000;
+                    int tileIndex = (tile & 0xFE);
+                    vaddrBase = patternTable + tileIndex * 16;
                 } else {
-                    int inTileRow = flipV ? 7 - row : row;
-                    vaddr += inTileRow;
+                    vaddrBase = (spritePatternTable ? 0x1000 : 0x0000) + tile * 16;
                 }
 
-                uint8_t plane0 = readCHR(vaddr);
-                uint8_t plane1 = readCHR(vaddr + 8);
+                for (int row = 0; row < spriteHeight; row++) {
+                    uint16_t vaddr = vaddrBase;
 
-                for (int col = 0; col < 8; col++) {
-                    int tileCol = flipH ? 7 - col : col;
-                    uint8_t colorLow  = (plane0 >> (7 - tileCol)) & 1;
-                    uint8_t colorHigh = (plane1 >> (7 - tileCol)) & 1;
-                    uint8_t colorId = (colorHigh << 1) | colorLow;
-                    if (colorId == 0) continue;
+                    if (use8x16Sprites) {
+                        if ((!flipV && row >= 8) || (flipV && row < 8)) {
+                            vaddr += 16;
+                        }
+                        int inTileRow = flipV ? 7 - (row & 7) : (row & 7);
+                        vaddr += inTileRow;
+                    } else {
+                        int inTileRow = flipV ? 7 - row : row;
+                        vaddr += inTileRow;
+                    }
 
-                    int px = spriteX + col;
-                    int py = spriteY + row;
-                    if (px < 0 || px >= NES_WIDTH || py < 0 || py >= NES_HEIGHT) continue;
+                    uint8_t plane0 = readCHR(vaddr);
+                    uint8_t plane1 = readCHR(vaddr + 8);
 
-                    uint8_t palEntry = paletteRAM[(palOffset * 4) + (paletteIndex * 4) + colorId] & 0x3F;
-                    frameBuffer[py * NES_WIDTH + px] = nesPalette[palEntry];
+                    for (int col = 0; col < 8; col++) {
+                        int tileCol = flipH ? 7 - col : col;
+                        uint8_t colorLow  = (plane0 >> (7 - tileCol)) & 1;
+                        uint8_t colorHigh = (plane1 >> (7 - tileCol)) & 1;
+                        uint8_t colorId = (colorHigh << 1) | colorLow;
+                        if (colorId == 0) continue;
+
+                        int px = spriteX + col;
+                        int py = spriteY + row;
+                        if (px < 0 || px >= NES_WIDTH || py < 0 || py >= NES_HEIGHT) continue;
+
+                        uint8_t palEntry = paletteRAM[(palOffset * 4) + (paletteIndex * 4) + colorId] & 0x3F;
+                        frameBuffer[py * NES_WIDTH + px] = nesPalette[palEntry];
+                    }
                 }
             }
         }
