@@ -28,6 +28,8 @@
 #include <QIcon>
 #include <QMessageBox>
 #include <QWidget>
+#include <QLabel>
+#include <QVBoxLayout>
 
 extern bool romIsLoaded;
 extern NesROM globalROM;
