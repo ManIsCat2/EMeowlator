@@ -1,4 +1,4 @@
-name: Build Lua
+name: Build MeowNES
 
 on:
     workflow_dispatch:
