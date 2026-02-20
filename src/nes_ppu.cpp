@@ -40,18 +40,10 @@ void PPU::LoadCHRROM(const uint8_t* chrData, int chrSize) {
     memcpy(ChrData.data(), chrData, chrSize);
 }
 
-
-SDL_Texture* texture = nullptr;
-
-bool PPU::InitSDL(SDL_Renderer * renderer) {
+bool PPU::Init() {
     PaletteMode = 0;
-    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
-                                SDL_TEXTUREACCESS_STREAMING, NES_WIDTH, NES_HEIGHT);
-    return texture != nullptr;
-}
-
-void PPU::ShutdownSDL() {
-    if (texture) SDL_DestroyTexture(texture);
+    
+    memset(frameBuffer, 0, sizeof(frameBuffer));
 }
 
 uint32_t nesPaletteDefault[64] = {
@@ -74,8 +66,7 @@ uint8_t PPU::readCHR(uint16_t addr) {
     return globalROM.mapper ? globalROM.mapper->ppuRead(addr) : addr;
 }
 
-void PPU::Render(SDL_Renderer* renderer) {
-    uint32_t pixels[NES_WIDTH * NES_HEIGHT];
+void PPU::Render() {
     uint8_t palOffset = 4;
 
     if (UseRandPalIndex)
@@ -128,7 +119,7 @@ void PPU::Render(SDL_Renderer* renderer) {
             uint8_t finalPal = colorBits ? paletteRAM[colorBits + paletteIndex * palOffset] : paletteRAM[0];
             uint32_t color = nesPalette[finalPal & 0x3F];
 
-            pixels[screenY * NES_WIDTH + screenX] = color;
+            frameBuffer[screenY * NES_WIDTH + screenX] = color;
         }
     }
     if (!DisableSprites || !maskRenderSprites) {
@@ -182,14 +173,9 @@ void PPU::Render(SDL_Renderer* renderer) {
                     if (px < 0 || px >= NES_WIDTH || py < 0 || py >= NES_HEIGHT) continue;
 
                     uint8_t palEntry = paletteRAM[(palOffset * 4) + (paletteIndex * 4) + colorId] & 0x3F;
-                    pixels[py * NES_WIDTH + px] = nesPalette[palEntry];
+                    frameBuffer[py * NES_WIDTH + px] = nesPalette[palEntry];
                 }
             }
         }
     }
-
-    SDL_UpdateTexture(texture, nullptr, pixels, NES_WIDTH * sizeof(uint32_t));
-    SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-    // SDL_RenderPresent(renderer);
 }

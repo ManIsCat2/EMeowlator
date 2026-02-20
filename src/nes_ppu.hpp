@@ -21,6 +21,7 @@ public:
     std::array<uint8_t, VRAM_MIRRORED_SIZE> VRAM{};
     std::array<uint8_t, PALRAM_SIZE> paletteRAM{};
     std::array<uint8_t, 0x100> OAM{};
+    uint32_t frameBuffer[NES_WIDTH * NES_HEIGHT];
 
     MirrorMode Mirroring;
     bool WriteLatch = false;
@@ -63,9 +64,8 @@ public:
     void LoadCHRROM(const uint8_t* chrData, int chrSize);
     uint8_t readCHR(uint16_t addr);
 
-    bool InitSDL(SDL_Renderer * renderer);
-    void ShutdownSDL();
-    void Render(SDL_Renderer * renderer);
+    bool Init();
+    void Render();
 };
 
 extern PPU ppu;
