@@ -142,6 +142,13 @@ int main(int argc, char *argv[]) {
     InputManager inputMgr;
     inputMgr.install(&window);
 
+    if (argc > 1) {
+        if (globalROM.LoadNES(argv[1])) {
+            cpu.reset();
+            romIsLoaded = true;
+        }
+    }
+
     QTimer cpuTimer;
     ppu.Init();
     QObject::connect(&cpuTimer, &QTimer::timeout, [&]() {
