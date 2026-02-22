@@ -5,6 +5,11 @@ CXX := clang++
 CXXFLAGS := -Wall -Wextra -O3 -Iinclude $(shell pkg-config --cflags Qt6Widgets) #-fsanitize=address -fsanitize=undefined
 LDFLAGS := $(shell pkg-config --libs Qt6Widgets) #-fsanitize=address -fsanitize=undefined
 
+ifeq ($(OS),Windows_NT)
+	LDFLAGS += -static-libstdc++ -static-libgcc
+	CXX := g++
+endif
+
 SOURCES := $(wildcard $(addsuffix /*.cpp,$(DIRS)))
 OBJECTS := $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 
