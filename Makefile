@@ -1,18 +1,11 @@
-COMPILE_FOLDERS := src src/mappers
+DIRS := src src/mappers
 TARGET := MeowNES
 BUILD_DIR := build
 CXX := clang++
 CXXFLAGS := -Wall -Wextra -O3 -Iinclude $(shell pkg-config --cflags Qt6Widgets) #-fsanitize=address -fsanitize=undefined
-LDFLAGS := #-fsanitize=address -fsanitize=undefined
-ifeq ($(OS),Windows_NT)
-	LDFLAGS += -Llib -lQt6CoreStatic -lQt6GuiStatic -lQt6WidgetsStatic -static
-	CXX := g++
-else
-	LDFLAGS += $(shell pkg-config --libs Qt6Widgets)
-endif
+LDFLAGS := $(shell pkg-config --libs Qt6Widgets) #-fsanitize=address -fsanitize=undefined
 
-SOURCES := $(wildcard $(addsuffix /*.cpp,$(COMPILE_FOLDERS)))
-
+SOURCES := $(wildcard $(addsuffix /*.cpp,$(DIRS)))
 OBJECTS := $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 
 all: $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)
