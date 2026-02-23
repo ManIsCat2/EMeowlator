@@ -101,3 +101,16 @@ void MapperBase::mapPPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uin
         page++;
     }
 }
+
+void MapperBase::saveSRAM(uint8_t *mem) {
+    FILE* f = fopen(("saves/"+globalROM.Name+".sav").c_str(), "wb");
+    if (!f) return;
+    fwrite(mem, 1, 0x2000, f);
+    fclose(f);
+}
+void MapperBase::loadSRAM(uint8_t *mem) {
+    FILE* f = fopen(("saves/"+globalROM.Name+".sav").c_str(), "rb");
+    if (!f) return;
+    fread(mem, 1, 0x2000, f);
+    fclose(f);
+}

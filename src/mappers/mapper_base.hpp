@@ -1,10 +1,10 @@
 #pragma once
 #include "../nes_ppu.hpp"
 #include <stdint.h>
+#include <string>
 
 class MapperBase {
 public:
-    int CHRBankOffset[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     uint16_t subMapper = 0;
 
     struct MemPage {
@@ -46,4 +46,7 @@ public:
     void mapCPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable, uint8_t pageNum);
     void unmapCPUMemory(uint16_t start, uint16_t end, uint8_t pageNum);
     void mapPPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable);
+
+    void saveSRAM(uint8_t *mem);
+    void loadSRAM(uint8_t *mem);
 };

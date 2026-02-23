@@ -99,13 +99,6 @@ void MMC3::updatePRG() {
 }
 
 void MMC3::updateCHR() {
-    if (globalROM.CHRRomSize == 0) {
-        for (int i = 0; i < 8; i++) {
-            CHRBankOffset[i] = (BankRegisters[i] % 8) * 0x400;
-        }
-        return;
-    }
-
     if (ChrMode == 0) {
         setCHRSlot(0, BankRegisters[0] & 0xFE);
 		setCHRSlot(1, BankRegisters[0] | 0x01);

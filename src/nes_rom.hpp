@@ -21,6 +21,7 @@ enum class HeaderVersion {
 class NesROM {
 public:
     uint8_t Header[8];
+    bool hasBattery = false;
     HeaderVersion Version = HeaderVersion::INES;
     uint8_t *ROM = nullptr;
     std::string Name = "";

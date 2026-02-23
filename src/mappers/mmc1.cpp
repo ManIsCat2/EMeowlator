@@ -16,7 +16,12 @@ void MMC1::reset() {
     prgReg = 0;
 
     modifyRegister(0x8000, control);
+    mapCPUMemory(0x6000, 0x7FFF, cpu.PrgRAM, 0, true, 0x60);
     updateBanks();
+
+    if (globalROM.hasBattery) {
+        loadSRAM(cpu.PrgRAM);
+    }
 }
 
 void MMC1::cpuWrite(uint16_t addr, uint8_t value) {
@@ -84,7 +89,6 @@ void MMC1::modifyRegister(uint16_t addr, uint8_t val) {
 }
 
 void MMC1::updateBanks() {
-    mapCPUMemory(0x6000, 0x7FFF, cpu.PrgRAM, 0, true, 0x60);
     uint8_t prgBankSelect = 0;
 
     if (globalROM.PRGRomSize == 0x80000) {

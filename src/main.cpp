@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
     QAction *disableXScrollAction = makeQBool("Disable X Scroll", &window, ppu.DisableXScroll);
     QAction *disableYScrollAction = makeQBool("Disable Y Scroll", &window, ppu.DisableYScroll);
     QAction *disableSpritesAction = makeQBool("Disable Sprites", &window, ppu.DisableSprites);
+    QAction *debugLogsAction = makeQBool("Show Debug Logs", &window, showDebugLogs);
     QAction *romInfoAction = new QAction("ROM Info", &window);
     QAction *exitAction = new QAction("Exit", &window);
 
@@ -62,6 +63,7 @@ int main(int argc, char *argv[]) {
     PPUMenu->addAction(disableXScrollAction);
     PPUMenu->addAction(disableYScrollAction);
     PPUMenu->addAction(disableSpritesAction);
+    debugMenu->addAction(debugLogsAction);
     debugMenu->addAction(romInfoAction);
     miscMenu->addAction(exitAction);
 
@@ -101,6 +103,9 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(disableSpritesAction, &QAction::toggled, [&](bool checked) {
         ppu.DisableSprites = checked;
+    });
+    QObject::connect(debugLogsAction, &QAction::toggled, [&](bool checked) {
+        showDebugLogs = checked;
     });
     QObject::connect(romInfoAction, &QAction::triggered, [&]() {
         std::string fileStr = "File: " + globalROM.Name;
@@ -149,8 +154,9 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    QTimer cpuTimer;
     ppu.Init();
+
+    QTimer cpuTimer;
     QObject::connect(&cpuTimer, &QTimer::timeout, [&]() {
         if (romIsLoaded) {
             cpu.run((uint32_t)(89342 * CPUSpeed));
@@ -159,6 +165,15 @@ int main(int argc, char *argv[]) {
         }
     });
     cpuTimer.start(16);
+
+    QTimer SRAMTimer;
+    QObject::connect(&SRAMTimer, &QTimer::timeout, [&]() {
+        if (showDebugLogs) printf("Saved SRAM!\n");
+        if (romIsLoaded && globalROM.hasBattery) {
+            globalROM.mapper->saveSRAM(cpu.PrgRAM);
+        }
+    });
+    SRAMTimer.start(1200);
 
     window.setFixedSize(NES_WIDTH*3, NES_HEIGHT*3);
     window.setWindowIcon(QIcon("gui/ico.png"));

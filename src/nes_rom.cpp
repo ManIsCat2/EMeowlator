@@ -73,6 +73,7 @@ bool NesROM::LoadNES(const std::string &filename) {
     uint8_t flags9 = data[9];
 
     bool hasTrainer = (flags6 & 0x04) != 0;
+    hasBattery = (flags6 & 0x02) != 0;
 
     if ((flags7 & 0x0C) == 0x08) {
         Version = HeaderVersion::NES2_0;
