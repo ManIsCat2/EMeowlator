@@ -16,7 +16,7 @@ void MMC1::reset() {
     prgReg = 0;
 
     modifyRegister(0x8000, control);
-    mapCPUMemory(0x6000, 0x7FFF, cpu.PrgRAM, 0, true, 0x60);
+    mapCPUMemory(0x6000, 0x7FFF, cpu.PrgRAM, 0, true, 0x60, globalROM.hasBattery);
     updateBanks();
 
     if (globalROM.hasBattery) {

@@ -166,15 +166,6 @@ int main(int argc, char *argv[]) {
     });
     cpuTimer.start(16);
 
-    QTimer SRAMTimer;
-    QObject::connect(&SRAMTimer, &QTimer::timeout, [&]() {
-        if (showDebugLogs) printf("Saved SRAM!\n");
-        if (romIsLoaded && globalROM.hasBattery) {
-            globalROM.mapper->saveSRAM(cpu.PrgRAM);
-        }
-    });
-    SRAMTimer.start(1200);
-
     window.setFixedSize(NES_WIDTH*3, NES_HEIGHT*3);
     window.setWindowIcon(QIcon("gui/ico.png"));
     window.show();

@@ -10,6 +10,7 @@ public:
     struct MemPage {
         uint8_t *ptr = nullptr;
         bool write = false;
+        bool battery = false;
     };
     struct MemPage PRGPages[256];
     struct MemPage CHRPages[256];
@@ -43,7 +44,7 @@ public:
     void setPRGSlot4(uint16_t slot, uint16_t val, uint32_t offset=0);
     void setPRGSlot2(uint16_t slot, uint16_t val, uint32_t offset=0);
 
-    void mapCPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable, uint8_t pageNum);
+    void mapCPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable, uint8_t pageNum, bool battery);
     void unmapCPUMemory(uint16_t start, uint16_t end, uint8_t pageNum);
     void mapPPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable);
 
