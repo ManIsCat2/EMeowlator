@@ -49,8 +49,7 @@ void CPU::run(uint32_t maxCycles) {
     }
 }
 
-void CPU::execute(uint8_t opcode)
-{
+void CPU::execute(uint8_t opcode) {
     auto readIndirect = [this](uint16_t addr) -> uint16_t
     {
         uint8_t lo = read(addr);
@@ -1896,7 +1895,7 @@ void CPU::SetZN(uint8_t value)
 uint8_t CPU::read(uint16_t addr)
 {
     if (addr < RAM_MIRRORED_SIZE) {
-        return RAM[addr & 0x7ff];
+        return setOpenBus(RAM[addr & 0x7ff]);
     }
 
     if (addr >= 0x2000 && addr < 0x4000) {
@@ -1910,11 +1909,11 @@ uint8_t CPU::read(uint16_t addr)
 
                 ppu.Vblank = false;
                 ppu.WriteLatch = false;
-                return status;
+                return setOpenBus(status);
             }
 
             case 4: // OAMDATA
-                return ppu.OAM[ppu.OAMAddr];
+                return setOpenBus(ppu.OAM[ppu.OAMAddr]);
 
             case 7: { // PPUDATA
                 uint16_t vaddr = ppu.VRAMAddr & 0x3FFF;
@@ -1938,11 +1937,11 @@ uint8_t CPU::read(uint16_t addr)
 
                 ppu.VRAMAddr += ppu.VRAMInc32Mode ? 32 : 1;
                 ppu.VRAMAddr &= 0x3FFF;
-                return ret;
+                return setOpenBus(ret);
             }
 
             default:
-                return 0;
+                return emulateOBus ? OpenBus : 0xff;
         }
     }
 
@@ -1965,11 +1964,11 @@ uint8_t CPU::read(uint16_t addr)
         }
     }
 
-    return globalROM.mapper ? globalROM.mapper->cpuRead(addr) : 0xff;
+    return globalROM.mapper ? globalROM.mapper->cpuRead(addr) : OpenBus;
 }
 
-void CPU::write(uint16_t addr, uint8_t value)
-{
+void CPU::write(uint16_t addr, uint8_t value) {
+    setOpenBus(value);
     if (addr < RAM_MIRRORED_SIZE) {
         RAM[addr & 0x7ff] = value;
         return;

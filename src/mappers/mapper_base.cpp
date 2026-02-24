@@ -47,9 +47,9 @@ void MapperBase::setPRGSlot2(uint16_t slot, uint16_t val, uint32_t offset) {
 uint8_t MapperBase::cpuRead(uint16_t addr) {
     if (!PRGPages[addr >> 8].ptr) {
         if (showDebugLogs) printf("WARNING: tried reading from unmapped CPU memory at address 0x%x\n", addr);
-        return 0xff;
+        return cpu.emulateOBus ? cpu.OpenBus : 0xff;
     }
-    return PRGPages[addr >> 8].ptr[addr & 0xFF];
+    return cpu.setOpenBus(PRGPages[addr >> 8].ptr[addr & 0xFF]);
 }
 void MapperBase::cpuWrite(uint16_t addr, uint8_t value) {
     if (PRGPages[addr >> 8].write) {

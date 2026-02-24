@@ -49,6 +49,7 @@ int main(int argc, char *argv[]) {
     QAction *openAction = new QAction("Open ROM", &window);
     QAction *closeAction = new QAction("Close ROM", &window);
     QAction *CPUPauseAction = makeQBool("Pause", &window, cpu.CPUPaused);
+    QAction *openBusAction = makeQBool("Open Bus", &window, cpu.emulateOBus);
     QAction *VRAMCorruptAction = makeQBool("VRAM Corruption", &window, ppu.VRAMCorruption);
     QAction *disableXScrollAction = makeQBool("Disable X Scroll", &window, ppu.DisableXScroll);
     QAction *disableYScrollAction = makeQBool("Disable Y Scroll", &window, ppu.DisableYScroll);
@@ -62,6 +63,7 @@ int main(int argc, char *argv[]) {
     fileMenu->addAction(openAction);
     fileMenu->addAction(closeAction);
     CPUMenu->addAction(CPUPauseAction);
+    CPUMenu->addAction(openBusAction);
     PPUMenu->addAction(VRAMCorruptAction);
     PPUMenu->addAction(disableXScrollAction);
     PPUMenu->addAction(disableYScrollAction);
@@ -96,6 +98,9 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(CPUPauseAction, &QAction::toggled, [&](bool checked) {
         cpu.CPUPaused = checked;
+    });
+    QObject::connect(openBusAction, &QAction::toggled, [&](bool checked) {
+        cpu.emulateOBus = checked;
     });
     QObject::connect(VRAMCorruptAction, &QAction::toggled, [&](bool checked) {
         ppu.VRAMCorruption = checked;
