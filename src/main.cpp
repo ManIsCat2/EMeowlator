@@ -42,6 +42,7 @@ int main(int argc, char *argv[]) {
     QMenu *fileMenu = menuBar->addMenu("File");
     QMenu *CPUMenu = menuBar->addMenu("CPU");
     QMenu *PPUMenu = menuBar->addMenu("PPU");
+    QMenu *saveStateMenu = menuBar->addMenu("Savestate");
     QMenu *debugMenu = menuBar->addMenu("Debug");
     QMenu *miscMenu = menuBar->addMenu("Misc");
 
@@ -52,6 +53,8 @@ int main(int argc, char *argv[]) {
     QAction *disableXScrollAction = makeQBool("Disable X Scroll", &window, ppu.DisableXScroll);
     QAction *disableYScrollAction = makeQBool("Disable Y Scroll", &window, ppu.DisableYScroll);
     QAction *disableSpritesAction = makeQBool("Disable Sprites", &window, ppu.DisableSprites);
+    QAction *saveSaveStateAction = new QAction("Save to file", &window);
+    QAction *loadSaveStateAction = new QAction("Load from file", &window);
     QAction *debugLogsAction = makeQBool("Show Debug Logs", &window, showDebugLogs);
     QAction *romInfoAction = new QAction("ROM Info", &window);
     QAction *exitAction = new QAction("Exit", &window);
@@ -63,6 +66,8 @@ int main(int argc, char *argv[]) {
     PPUMenu->addAction(disableXScrollAction);
     PPUMenu->addAction(disableYScrollAction);
     PPUMenu->addAction(disableSpritesAction);
+    saveStateMenu->addAction(saveSaveStateAction);
+    saveStateMenu->addAction(loadSaveStateAction);
     debugMenu->addAction(debugLogsAction);
     debugMenu->addAction(romInfoAction);
     miscMenu->addAction(exitAction);
@@ -103,6 +108,32 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(disableSpritesAction, &QAction::toggled, [&](bool checked) {
         ppu.DisableSprites = checked;
+    });
+    QObject::connect(saveSaveStateAction, &QAction::triggered, [&]() {
+        QString file = QFileDialog::getSaveFileName(
+            &window,
+            "Write Savestate",
+            "",
+            "MeowNES Savestate (*.nya)"
+        );
+
+        if (!file.isEmpty()) {
+            SaveStateFile savestate;
+            savestate.WriteSaveStateToFile(file.toStdString().c_str());
+        }
+    });
+    QObject::connect(loadSaveStateAction, &QAction::triggered, [&]() {
+        QString file = QFileDialog::getOpenFileName(
+            &window,
+            "Load Savestate",
+            "",
+            "MeowNES Savestate (*.nya)"
+        );
+
+        if (!file.isEmpty()) {
+            SaveStateFile savestate;
+            savestate.LoadSaveStateFromFile(file.toStdString().c_str());
+        }
     });
     QObject::connect(debugLogsAction, &QAction::toggled, [&](bool checked) {
         showDebugLogs = checked;
