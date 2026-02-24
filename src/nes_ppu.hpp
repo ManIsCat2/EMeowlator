@@ -2,6 +2,7 @@
 #include <array>
 #include <cstdint>
 #include <vector>
+#include <cstring>
 
 #include "nes.hpp"
 
@@ -58,6 +59,8 @@ public:
     bool DisableYScroll = false;
 
     void reset(void) {
+        memset(VRAM.data(), 0, VRAM.size());
+        memset(frameBuffer, 0, sizeof(frameBuffer));
         WriteLatch = false;
         TransferAddr = 0;
         VRAMAddr = 0;
@@ -95,3 +98,5 @@ public:
 
 extern PPU ppu;
 extern uint32_t nesPalette[64];
+extern uint32_t nesPaletteDefault[64];
+extern float rainbowHoverPhase;

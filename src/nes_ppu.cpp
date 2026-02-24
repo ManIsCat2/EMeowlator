@@ -11,6 +11,38 @@ uint32_t nesPalette[64] = {
     0xFFFEFFFF, 0xFFC0DEFF, 0xFFD2D1FF, 0xFFE7C7FF, 0xFFF8C2FF, 0xFFFFC3E9, 0xFFFFCBC4, 0xFFF5D7A5, 0xFFE2E394, 0xFFCEED96, 0xFFBCF2AA, 0xFFB3F1CB, 0xFFB4E9F0, 0xFFB6B6B6, 0xFF000000, 0xFF000000,
 };
 
+uint32_t nesPaletteDefault[64] = {
+    0xFF656565, 0xFF002A84, 0xFF1513A2, 0xFF3A019E, 0xFF59007A, 0xFF6A003E, 0xFF680800, 0xFF531D00, 0xFF323400, 0xFF0D4600, 0xFF004F00, 0xFF004C09, 0xFF003F4B, 0xFF000000, 0xFF000000, 0xFF000000,
+    0xFFAEAEAE, 0xFF175FD6, 0xFF4341FF, 0xFF7529FA, 0xFF9E1DCA, 0xFFB4207B, 0xFFB13322, 0xFF964E00, 0xFF6A6C00, 0xFF398400, 0xFF0F9000, 0xFF008D33, 0xFF007B8C, 0xFF000000, 0xFF000000, 0xFF000000,
+    0xFFFEFFFF, 0xFF66AFFF, 0xFF9390FF, 0xFFC578FF, 0xFFEE6CFF, 0xFFFF6FCA, 0xFFFF8271, 0xFFE69E25, 0xFFBABC00, 0xFF88D501, 0xFF5EE132, 0xFF47DD82, 0xFF4ACBDC, 0xFF4E4E4E, 0xFF000000, 0xFF000000,
+    0xFFFEFFFF, 0xFFC0DEFF, 0xFFD2D1FF, 0xFFE7C7FF, 0xFFF8C2FF, 0xFFFFC3E9, 0xFFFFCBC4, 0xFFF5D7A5, 0xFFE2E394, 0xFFCEED96, 0xFFBCF2AA, 0xFFB3F1CB, 0xFFB4E9F0, 0xFFB6B6B6, 0xFF000000, 0xFF000000,
+};
+
+float rainbowHoverPhase = 0.0f;
+uint32_t getRainbowColor() {
+    float h = rainbowHoverPhase * 360.0f;
+    float s = 1.0f;
+    float v = 1.0f;
+
+    float c = v * s;
+    float x = c * (1 - fabs(fmod(h / 60.0f, 2) - 1));
+    float m = v - c;
+
+    float r1, g1, b1;
+    if (h < 60)       { r1 = c; g1 = x; b1 = 0; }
+    else if (h < 120) { r1 = x; g1 = c; b1 = 0; }
+    else if (h < 180) { r1 = 0; g1 = c; b1 = x; }
+    else if (h < 240) { r1 = 0; g1 = x; b1 = c; }
+    else if (h < 300) { r1 = x; g1 = 0; b1 = c; }
+    else              { r1 = c; g1 = 0; b1 = x; }
+
+    uint8_t r = (uint8_t)((r1 + m) * 255);
+    uint8_t g = (uint8_t)((g1 + m) * 255);
+    uint8_t b = (uint8_t)((b1 + m) * 255);
+
+    return 0xFF000000 | (r << 16) | (g << 8) | b;
+}
+
 void PPU::Step() {
     if (Dot == 1 && ScanLine == 241) Vblank = true;
     if (Dot == 1 && ScanLine == 261) Vblank = false;
@@ -53,6 +85,7 @@ void PPU::Step() {
             int colorBits = ((hi >> bit) & 1) << 1 | ((lo >> bit) & 1);
             uint8_t finalPal = colorBits ? paletteRAM[colorBits + paletteIndex * 4] : paletteRAM[0];
             color = nesPalette[finalPal & 0x3F];
+            if ((finalPal & 0x3F) == hoveredPaletteIndex) color = getRainbowColor();
         }
 
         if (maskRenderSprites && !DisableSprites) {
@@ -109,11 +142,11 @@ void PPU::Step() {
                 if (!spritePixelDrawn) {
                     uint8_t palEntry = paletteRAM[16 + paletteIndex * 4 + colorId] & 0x3F;
                     color = nesPalette[palEntry];
+                    if (palEntry == hoveredPaletteIndex) color = getRainbowColor();
                     spritePixelDrawn = true;
                 }
             }
         }
-
         frameBuffer[y * NES_WIDTH + x] = color;
     }
 

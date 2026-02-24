@@ -30,8 +30,11 @@
 #include <QWidget>
 #include <QLabel>
 #include <QVBoxLayout>
+#include <QPushButton>
+#include <QColorDialog>
 
 extern bool romIsLoaded;
 extern NesROM globalROM;
 extern bool showDebugLogs;
 extern void *globalQTWin;
+extern int hoveredPaletteIndex;

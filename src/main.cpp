@@ -4,6 +4,7 @@
 #include "main.hpp"
 #include "qt/screen_widget.hpp"
 #include "qt/input_manager.hpp"
+#include "qt/palette_editor.hpp"
 #include "savestate.hpp"
 
 NesROM globalROM;
@@ -13,6 +14,7 @@ bool showDebugLogs = false;
 static bool fullscreen = false;
 static float CPUSpeed = 1.f;
 static bool unlimitFPS = false;
+int hoveredPaletteIndex = -1;
 
 void *globalQTWin;
 
@@ -50,6 +52,7 @@ int main(int argc, char *argv[]) {
     QAction *closeAction = new QAction("Close ROM", &window);
     QAction *CPUPauseAction = makeQBool("Pause", &window, cpu.CPUPaused);
     QAction *openBusAction = makeQBool("Open Bus", &window, cpu.emulateOBus);
+    QAction *paletteEditorAction = new QAction("Palette Editor", &window);
     QAction *VRAMCorruptAction = makeQBool("VRAM Corruption", &window, ppu.VRAMCorruption);
     QAction *disableXScrollAction = makeQBool("Disable X Scroll", &window, ppu.DisableXScroll);
     QAction *disableYScrollAction = makeQBool("Disable Y Scroll", &window, ppu.DisableYScroll);
@@ -64,6 +67,7 @@ int main(int argc, char *argv[]) {
     fileMenu->addAction(closeAction);
     CPUMenu->addAction(CPUPauseAction);
     CPUMenu->addAction(openBusAction);
+    PPUMenu->addAction(paletteEditorAction);
     PPUMenu->addAction(VRAMCorruptAction);
     PPUMenu->addAction(disableXScrollAction);
     PPUMenu->addAction(disableYScrollAction);
@@ -101,6 +105,120 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(openBusAction, &QAction::toggled, [&](bool checked) {
         cpu.emulateOBus = checked;
+    });
+    QObject::connect(paletteEditorAction, &QAction::triggered, [&]() {
+        QDialog *dialog = new QDialog(&window);
+        dialog->setWindowTitle("Palette Editor");
+        dialog->setFixedSize(200, 320);
+
+        QGridLayout *grid = new QGridLayout(dialog);
+
+        PaletteButton* buttons[64];
+
+        auto updateAllButtonsColor = [&]() {
+            for (int i = 0; i < 64; i++) {
+                QColor color(
+                    (nesPalette[i] >> 16) & 0xFF,
+                    (nesPalette[i] >> 8) & 0xFF,
+                    nesPalette[i] & 0xFF
+                );
+                buttons[i]->setStyleSheet(QString("background-color: %1").arg(color.name()));
+            }
+        };
+
+        for (int i = 0; i < 64; i++) {
+            buttons[i] = new PaletteButton(i, dialog);
+
+            auto updateButtonColor = [i, buttons]() {
+                QColor color(
+                    (nesPalette[i] >> 16) & 0xFF,
+                    (nesPalette[i] >> 8) & 0xFF,
+                    nesPalette[i] & 0xFF
+                );
+                buttons[i]->setStyleSheet(QString("background-color: %1").arg(color.name()));
+            };
+
+            updateButtonColor();
+
+            QObject::connect(buttons[i], &QPushButton::clicked, [i, dialog, updateButtonColor]() {
+                QColor current(
+                    (nesPalette[i] >> 16) & 0xFF,
+                    (nesPalette[i] >> 8) & 0xFF,
+                    nesPalette[i] & 0xFF
+                );
+
+                QColor newColor = QColorDialog::getColor(current, dialog);
+
+                if (newColor.isValid()) {
+                    nesPalette[i] =
+                        0xFF000000 | 
+                        (newColor.red() << 16) |
+                        (newColor.green() << 8) |
+                        newColor.blue();
+                    updateButtonColor();
+                }
+            });
+
+            grid->addWidget(buttons[i], i / 8, i % 8);
+        }
+
+        QPushButton *resetButton = new QPushButton("Reset Palette", dialog);
+        QPushButton *randomButton = new QPushButton("Randomize Palette", dialog);
+        QPushButton *exportButton = new QPushButton("Export Palette", dialog);
+        QPushButton *importButton = new QPushButton("Import Palette", dialog);
+        grid->addWidget(resetButton, 8, 0, 1, 8);
+        grid->addWidget(randomButton, 9, 0, 1, 8);
+        grid->addWidget(exportButton, 10, 0, 1, 8);
+        grid->addWidget(importButton, 11, 0, 1, 8);
+        resetButton->setFixedHeight(25);
+        randomButton->setFixedHeight(25);
+        exportButton->setFixedHeight(25);
+        importButton->setFixedHeight(25);
+        QObject::connect(resetButton, &QPushButton::clicked, [&]() {
+            memcpy(nesPalette, nesPaletteDefault, sizeof(nesPalette));
+            updateAllButtonsColor();
+        });
+        QObject::connect(randomButton, &QPushButton::clicked, [&]() {
+            for (int i = 0; i < 64; i++) {
+                nesPalette[i] = rand() % 0xFFFFFFFF;
+            }
+            updateAllButtonsColor();
+        });
+        QObject::connect(exportButton, &QPushButton::clicked, [&]() {
+            QString file = QFileDialog::getSaveFileName(
+                dialog,
+                "Export Palette",
+                "",
+                "MeowNES Palette (*.paw)"
+            );
+
+            if (!file.isEmpty()) {
+                FILE* f = fopen(file.toStdString().c_str(), "wb");
+                if (!f) return;
+                fwrite(nesPalette, 1, sizeof(nesPalette), f);
+                fclose(f);
+                updateAllButtonsColor();
+            }
+        });
+        QObject::connect(importButton, &QPushButton::clicked, [&]() {
+            QString file = QFileDialog::getOpenFileName(
+                dialog,
+                "Import Palette",
+                "",
+                "MeowNES Palette (*.paw)"
+            );
+
+            if (!file.isEmpty()) {
+                FILE* f = fopen(file.toStdString().c_str(), "rb");
+                if (!f) return;
+                fread(nesPalette, 1, sizeof(nesPalette), f);
+                fclose(f);
+                updateAllButtonsColor();
+            }
+        });
+
+        dialog->setLayout(grid);
+        dialog->exec();
     });
     QObject::connect(VRAMCorruptAction, &QAction::toggled, [&](bool checked) {
         ppu.VRAMCorruption = checked;
@@ -198,6 +316,8 @@ int main(int argc, char *argv[]) {
         if (romIsLoaded) {
             cpu.run((uint32_t)(89342 * CPUSpeed));
             screen->update();
+            rainbowHoverPhase += 0.001f;
+            if (rainbowHoverPhase > 1.0f) rainbowHoverPhase -= 1.0f;
         }
     });
     cpuTimer.start(16);
