@@ -45,12 +45,16 @@ uint32_t getRainbowColor() {
 
 void PPU::Step() {
     if (Dot == 1 && ScanLine == 241) Vblank = true;
-    if (Dot == 1 && ScanLine == 261) Vblank = false;
+    if (Dot == 1 && ScanLine == 261) {
+        Vblank = false;
+        sprite0Hit = false;
+    } 
 
     if (ScanLine >= 0 && ScanLine < NES_HEIGHT && Dot >= 1 && Dot <= NES_WIDTH) {
         int x = Dot - 1;
         int y = ScanLine;
         uint32_t color = 0;
+        uint8_t bgColorId = 0;
 
         if (maskRenderBG) {
             int absX = x + (DisableXScroll ? 0 : scrollX);
@@ -84,8 +88,9 @@ void PPU::Step() {
             int bit = 7 - fineX;
             int colorBits = ((hi >> bit) & 1) << 1 | ((lo >> bit) & 1);
             uint8_t finalPal = colorBits ? paletteRAM[colorBits + paletteIndex * 4] : paletteRAM[0];
-            color = nesPalette[finalPal & 0x3F];
-            if ((finalPal & 0x3F) == hoveredPaletteIndex) color = getRainbowColor();
+            bgColorId = finalPal & 0x3F;
+            color = nesPalette[bgColorId];
+            if ((bgColorId) == hoveredPaletteIndex) color = getRainbowColor();
         }
 
         if (maskRenderSprites && !DisableSprites) {
@@ -138,6 +143,9 @@ void PPU::Step() {
                 uint8_t colorId = (colorHigh << 1) | colorLow;
 
                 if (colorId == 0) continue;
+                if (!sprite0Hit && i == 0 && bgColorId != 0) {
+                    sprite0Hit = true;
+                }
 
                 if (!spritePixelDrawn) {
                     uint8_t palEntry = paletteRAM[16 + paletteIndex * 4 + colorId] & 0x3F;

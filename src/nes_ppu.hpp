@@ -32,6 +32,7 @@ public:
     int Dot = 0;
     int ScanLine = 0;
     bool Vblank = false;
+    bool sprite0Hit = false;
 
     bool mask8pxMaskBG = false;
     bool mask8pxMaskSprites = false;
