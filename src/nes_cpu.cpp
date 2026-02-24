@@ -20,11 +20,11 @@ void CPU::reset() {
     PC = read16(0xFFFC);
     cycles = 0;
     globalROM.ResetVec = PC;
+    ppu.reset();
 }
 
 void CPU::run(uint32_t maxCycles) {
     uint32_t cycles_run = 0;
-    //uint32_t frame_ppu_counter = 0;
 
     while (cycles_run < maxCycles) {
         if (!romIsLoaded || CPUPaused) return;

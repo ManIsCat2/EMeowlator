@@ -160,13 +160,14 @@ int main(int argc, char *argv[]) {
         sprintf(CHRSizeStr, "CHR Size: 0x%zx (%zu)", globalROM.CHRRomSize, globalROM.CHRRomSize);
         std::string mapperStr = "Mapper: " + std::string(globalROM.mapper ? globalROM.mapper->getName() : (globalROM.MapperID ? "Unknown" : "NROM")) + " (Mapper " + std::to_string(globalROM.MapperID)+")";
         std::string subMapperStr = "Sub Mapper: " + std::to_string(globalROM.SubMapperID);
+        std::string batteryStr = "Battery: " + std::string(globalROM.hasBattery ? "Yes" : "No");
         std::string CHRRamStr = "CHR-RAM: " + std::string(globalROM.CHRRomSize == 0 ? "Yes" : "No");
         
         QDialog* dialog = new QDialog(&window);
         dialog->setWindowTitle("ROM Info");
-        dialog->setFixedSize(320, 160);
+        dialog->setFixedSize(320, 180);
 
-        std::string fullInfo = joinLines({fileStr, HeaderHexStr, headVerStr, PRGSizeStr, CHRSizeStr, mapperStr, subMapperStr, CHRRamStr});
+        std::string fullInfo = joinLines({fileStr, HeaderHexStr, headVerStr, PRGSizeStr, CHRSizeStr, mapperStr, subMapperStr, batteryStr, CHRRamStr});
         if (!romIsLoaded) fullInfo = "ROM isn't loaded!";
         QLabel* label = new QLabel(QString::fromStdString(fullInfo), dialog);
         label->setAlignment(Qt::AlignCenter);
@@ -196,7 +197,6 @@ int main(int argc, char *argv[]) {
     QObject::connect(&cpuTimer, &QTimer::timeout, [&]() {
         if (romIsLoaded) {
             cpu.run((uint32_t)(89342 * CPUSpeed));
-            ppu.Render();
             screen->update();
         }
     });

@@ -56,24 +56,30 @@ void PPU::Step() {
         }
 
         if (maskRenderSprites && !DisableSprites) {
+            bool spritePixelDrawn = false;
             for (int i = 0; i < MaxSprites; i++) {
                 int spriteY = OAM[i * 4 + 0] + 1;
                 int tile = OAM[i * 4 + 1];
                 int attr = OAM[i * 4 + 2];
                 int spriteX = OAM[i * 4 + 3];
 
+                int spriteHeight = use8x16Sprites ? 16 : 8;
+                if (y < spriteY || y >= spriteY + spriteHeight) continue;
+
                 bool flipH = attr & 0x40;
                 bool flipV = attr & 0x80;
                 uint8_t paletteIndex = attr & 0x03;
-                int spriteHeight = use8x16Sprites ? 16 : 8;
+
+                if (x < spriteX || x >= spriteX + 8) continue;
 
                 uint16_t patternTable;
                 uint16_t vaddrBase;
 
+                int rowInSprite = y - spriteY;
+
                 if (use8x16Sprites) {
                     patternTable = (tile & 0x01) ? 0x1000 : 0x0000;
                     int tileIndex = tile & 0xFE;
-                    int rowInSprite = y - spriteY;
                     if (rowInSprite < 8) {
                         vaddrBase = patternTable + tileIndex * 16;
                     } else {
@@ -85,22 +91,25 @@ void PPU::Step() {
                 } else {
                     patternTable = spritePatternTable ? 0x1000 : 0x0000;
                     vaddrBase = patternTable + tile * 16;
-                    int rowInTile = flipV ? 7 - (y - spriteY) : (y - spriteY);
-                    vaddrBase += rowInTile;
+                    int inTileRow = flipV ? 7 - rowInSprite : rowInSprite;
+                    vaddrBase += inTileRow;
                 }
 
                 uint8_t plane0 = readCHR(vaddrBase);
                 uint8_t plane1 = readCHR(vaddrBase + 8);
 
-                int col = x - spriteX;
-                int tileCol = flipH ? 7 - col : col;
+                int colInTile = x - spriteX;
+                int tileCol = flipH ? 7 - colInTile : colInTile;
                 uint8_t colorLow  = (plane0 >> (7 - tileCol)) & 1;
                 uint8_t colorHigh = (plane1 >> (7 - tileCol)) & 1;
                 uint8_t colorId = (colorHigh << 1) | colorLow;
 
-                if (colorId != 0) {
+                if (colorId == 0) continue;
+
+                if (!spritePixelDrawn) {
                     uint8_t palEntry = paletteRAM[16 + paletteIndex * 4 + colorId] & 0x3F;
                     color = nesPalette[palEntry];
+                    spritePixelDrawn = true;
                 }
             }
         }
@@ -118,10 +127,6 @@ void PPU::Step() {
 
 uint8_t PPU::readCHR(uint16_t addr) {
     return globalROM.mapper ? globalROM.mapper->ppuRead(addr) : addr;
-}
-
-void PPU::Render() {
-
 }
 
 void PPU::LoadCHRROM(const uint8_t* chrData, int chrSize) {

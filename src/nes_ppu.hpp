@@ -21,7 +21,7 @@ public:
     std::array<uint8_t, 0x100> OAM{};
     uint32_t frameBuffer[NES_WIDTH * NES_HEIGHT];
 
-    MirrorMode Mirroring;
+    MirrorMode Mirroring = MirrorMode::VERTICAL;
     bool WriteLatch = false;
     unsigned short TransferAddr = 0;
     unsigned short VRAMAddr = 0;
@@ -44,9 +44,9 @@ public:
     bool use8x16Sprites = false;
     bool enableNMI = false;
 
-    uint16_t scrollX = 0;  // horizontal scroll in pixels
-    uint16_t scrollY = 0;  // vertical scroll in pixels
-    uint8_t scrollFineX = 0; // 0-7, fine pixel shift inside a tile
+    uint16_t scrollX = 0;
+    uint16_t scrollY = 0;
+    uint8_t scrollFineX = 0;
 
     int PaletteMode = 0;
     bool UseRandPalIndex = false;
@@ -57,13 +57,40 @@ public:
     bool DisableXScroll = false;
     bool DisableYScroll = false;
 
+    void reset(void) {
+        WriteLatch = false;
+        TransferAddr = 0;
+        VRAMAddr = 0;
+        OAMAddr = 0;
+        TempVRAMAddr = 0;
+        ReadBuffer = 0;
+        Dot = 0;
+        ScanLine = 0;
+        Vblank = false;
+
+        mask8pxMaskBG = false;
+        mask8pxMaskSprites = false;
+        maskRenderBG = false;
+        maskRenderSprites = false;
+
+        nametableSelect = 0; 
+        VRAMInc32Mode = false;
+        spritePatternTable = false;
+        BGPatternTable = false;
+        use8x16Sprites = false;
+        enableNMI = false;
+
+        scrollX = 0;
+        scrollY = 0;
+        scrollFineX = 0;
+    }
+
     void Step();
 
     void LoadCHRROM(const uint8_t* chrData, int chrSize);
     uint8_t readCHR(uint16_t addr);
 
     bool Init();
-    void Render();
 };
 
 extern PPU ppu;
