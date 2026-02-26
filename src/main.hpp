@@ -38,3 +38,9 @@ extern NesROM globalROM;
 extern bool showDebugLogs;
 extern void *globalQTWin;
 extern int hoveredPaletteIndex;
+
+struct Keybind {
+    const char* name;
+    Qt::Key key;
+};
+extern Keybind nesKeyBinds[];

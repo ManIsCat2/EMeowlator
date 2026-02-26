@@ -5,7 +5,43 @@
 #include "qt/screen_widget.hpp"
 #include "qt/input_manager.hpp"
 #include "qt/palette_editor.hpp"
+#include "config.hpp"
 #include "savestate.hpp"
+
+#ifdef _WIN32
+#include <direct.h>
+#define makeDirectory(dir) _mkdir(dir)
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#define makeDirectory(dir) mkdir(dir, 0777)
+#endif
+
+Keybind nesKeyBinds[] = {
+    {"A", Qt::Key_J},
+    {"B", Qt::Key_K},
+
+    {"Up", Qt::Key_W},
+    {"Down", Qt::Key_S},
+    {"Left", Qt::Key_A},
+    {"Right", Qt::Key_D},
+
+    {"Start", Qt::Key_Return},
+    {"Select", Qt::Key_Shift}
+};
+
+Keybind nesKeyBindsDefault[] = {
+    {"A", Qt::Key_J},
+    {"B", Qt::Key_K},
+
+    {"Up", Qt::Key_W},
+    {"Down", Qt::Key_S},
+    {"Left", Qt::Key_A},
+    {"Right", Qt::Key_D},
+
+    {"Start", Qt::Key_Return},
+    {"Select", Qt::Key_Shift}
+};
 
 NesROM globalROM;
 
@@ -40,10 +76,16 @@ int main(int argc, char *argv[]) {
     QMainWindow window;
     globalQTWin = (void*)&window;
 
+    makeDirectory("saves");
+
+    Config conf;
+    conf.Load("meowconf.txt");
+
     QMenuBar *menuBar = window.menuBar();
     QMenu *fileMenu = menuBar->addMenu("File");
     QMenu *CPUMenu = menuBar->addMenu("CPU");
     QMenu *PPUMenu = menuBar->addMenu("PPU");
+    QMenu *controllerMenu = menuBar->addMenu("Controller");
     QMenu *saveStateMenu = menuBar->addMenu("Savestate");
     QMenu *debugMenu = menuBar->addMenu("Debug");
     QMenu *miscMenu = menuBar->addMenu("Misc");
@@ -58,6 +100,7 @@ int main(int argc, char *argv[]) {
     QAction *disableYScrollAction = makeQBool("Disable Y Scroll", &window, ppu.DisableYScroll);
     QAction *disableSpritesAction = makeQBool("Disable Sprites", &window, ppu.DisableSprites);
     QAction *saveSaveStateAction = new QAction("Save to file", &window);
+    QAction *keyEditAction = new QAction("Keybind Editor", &window);
     QAction *loadSaveStateAction = new QAction("Load from file", &window);
     QAction *debugLogsAction = makeQBool("Show Debug Logs", &window, showDebugLogs);
     QAction *romInfoAction = new QAction("ROM Info", &window);
@@ -72,6 +115,7 @@ int main(int argc, char *argv[]) {
     PPUMenu->addAction(disableXScrollAction);
     PPUMenu->addAction(disableYScrollAction);
     PPUMenu->addAction(disableSpritesAction);
+    controllerMenu->addAction(keyEditAction);
     saveStateMenu->addAction(saveSaveStateAction);
     saveStateMenu->addAction(loadSaveStateAction);
     debugMenu->addAction(debugLogsAction);
@@ -232,6 +276,51 @@ int main(int argc, char *argv[]) {
     QObject::connect(disableSpritesAction, &QAction::toggled, [&](bool checked) {
         ppu.DisableSprites = checked;
     });
+    QObject::connect(keyEditAction, &QAction::triggered, [&]() {
+        QDialog *dialog = new QDialog(&window);
+        dialog->setWindowTitle("Keybind Editor");
+        dialog->setFixedSize(300, 340);
+
+        QVBoxLayout *layout = new QVBoxLayout(dialog);
+
+        std::vector<KeyCaptureButton*> buttons[sizeof(nesKeyBinds) / sizeof(nesKeyBinds[0])];
+        for (auto &bind : nesKeyBinds) {
+            QHBoxLayout *row = new QHBoxLayout();
+            QLabel *label = new QLabel(bind.name);
+
+            KeyCaptureButton *button = new KeyCaptureButton(
+                QKeySequence(bind.key).toString(),
+                &bind.key,
+                dialog
+            );
+            buttons->push_back(button);
+
+            QObject::connect(button, &QPushButton::clicked, [button]() {
+                button->setText("Press key...");
+                button->waitingForKey = true;
+                button->setFocus();
+            });
+
+            row->addWidget(label);
+            row->addWidget(button);
+            layout->addLayout(row);
+        }
+
+        QPushButton *resetButton = new QPushButton("Reset Binds", dialog);
+        QObject::connect(resetButton, &QPushButton::clicked, dialog, [&]() {
+            memcpy(nesKeyBinds, nesKeyBindsDefault, sizeof(nesKeyBinds));
+            for (size_t i = 0; i < buttons->size(); i++) {
+                KeyCaptureButton *button = buttons->data()[i];
+                button->setText(QKeySequence(nesKeyBindsDefault[i].key).toString());
+            }
+        });
+
+        layout->addStretch();
+        layout->addWidget(resetButton);
+
+        dialog->setLayout(layout);
+        dialog->exec();
+    });
     QObject::connect(saveSaveStateAction, &QAction::triggered, [&]() {
         QString file = QFileDialog::getSaveFileName(
             &window,
@@ -280,12 +369,14 @@ int main(int argc, char *argv[]) {
         std::string subMapperStr = "Sub Mapper: " + std::to_string(globalROM.SubMapperID);
         std::string batteryStr = "Battery: " + std::string(globalROM.hasBattery ? "Yes" : "No");
         std::string CHRRamStr = "CHR-RAM: " + std::string(globalROM.CHRRomSize == 0 ? "Yes" : "No");
+        char RESETVecStr[128];
+        sprintf(RESETVecStr, "RESET Vector: 0x%x", globalROM.ResetVec);
         
         QDialog* dialog = new QDialog(&window);
         dialog->setWindowTitle("ROM Info");
-        dialog->setFixedSize(320, 180);
+        dialog->setFixedSize(320, 200);
 
-        std::string fullInfo = joinLines({fileStr, HeaderHexStr, headVerStr, PRGSizeStr, CHRSizeStr, mapperStr, subMapperStr, batteryStr, CHRRamStr});
+        std::string fullInfo = joinLines({fileStr, HeaderHexStr, headVerStr, PRGSizeStr, CHRSizeStr, mapperStr, subMapperStr, batteryStr, CHRRamStr, RESETVecStr});
         if (!romIsLoaded) fullInfo = "ROM isn't loaded!";
         QLabel* label = new QLabel(QString::fromStdString(fullInfo), dialog);
         label->setAlignment(Qt::AlignCenter);
@@ -325,6 +416,10 @@ int main(int argc, char *argv[]) {
     window.setFixedSize(NES_WIDTH*3, NES_HEIGHT*3);
     window.setWindowIcon(QIcon("gui/ico.png"));
     window.show();
+
+    QObject::connect(&app, &QApplication::aboutToQuit, [&]() {
+        conf.Write("meowconf.txt");
+    });
 
     return app.exec();
 }

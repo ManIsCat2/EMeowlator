@@ -8,7 +8,6 @@
 extern int hoveredPaletteIndex;
 
 class PaletteButton : public QPushButton {
-   // Q_OBJECT
 public:
     int index;
 

@@ -33,7 +33,11 @@ void MMC3::cpuWrite(uint16_t addr, uint8_t value) {
             PrgMode = (value >> 6) & 1;
             ChrMode = (value >> 7) & 1;
         } else {
-            BankRegisters[BankSelect & 7] = value;
+            uint8_t bankReg = BankSelect & 7;
+            if (bankReg <= 1) {
+                value &= 0xFE;
+            }
+            BankRegisters[bankReg] = value;
             updatePRG();
             updateCHR();
         }
@@ -108,7 +112,7 @@ void MMC3::updateCHR() {
 		setCHRSlot(5, BankRegisters[3]);
 		setCHRSlot(6, BankRegisters[4]);
 		setCHRSlot(7, BankRegisters[5]);
-    } else {
+    } else if (ChrMode == 1) {
         setCHRSlot(0, BankRegisters[2]);
 		setCHRSlot(1, BankRegisters[3]);
 		setCHRSlot(2, BankRegisters[4]);
