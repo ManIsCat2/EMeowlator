@@ -7,15 +7,15 @@ NINA01::NINA01() {
 }
 
 void NINA01::reset() {
-    setPRGSlot(0, 0);
+    setPRGPage(0, 0);
     mapCPUMemory(0x6000, 0x7fff, cpu.PrgRAM, 0, true, 0x6000 >> 8, false);
 }
 
 void NINA01::cpuWrite(uint16_t addr, uint8_t value) {
     switch(addr) {
-        case 0x7FFD: setPRGSlot(0, value & 0x01); return;
-        case 0x7FFE: setCHRSlot(0, value & 0x0F); return;
-        case 0x7FFF: setCHRSlot(1, value & 0x0F); return;
+        case 0x7FFD: setPRGPage(0, value & 0x01); return;
+        case 0x7FFE: setCHRPage(0, value & 0x0F); return;
+        case 0x7FFF: setCHRPage(1, value & 0x0F); return;
     }
     MapperBase::cpuWrite(addr, value);
 }

@@ -24,10 +24,9 @@ MapperBase *NesROM::GetMapper(void) {
 			break;
         case 69: return new SunSoftFME7();
         case 90: case 209: case 211: return new JyCompany();
-        //hope for the best
         default: {
-            QMessageBox::information((QMainWindow*)globalQTWin, "Warning", ("Mapper " + std::to_string(MapperID) + " is Unimplemented, Using MMC1 instead.").c_str());
-            return new MMC1();
+            QMessageBox::critical((QMainWindow*)globalQTWin, "Error", ("Mapper " + std::to_string(MapperID) + " is Unimplemented, cannot open ROM.").c_str());
+            return nullptr;
         }
     }
 }
@@ -127,8 +126,8 @@ bool NesROM::LoadNES(const std::string &filename) {
     offset += CHRRomSize;
         
     if (mapper) { delete mapper; mapper = nullptr; }
-        
     mapper = GetMapper();
+    if (!mapper) return false;
     mapper->subMapper = SubMapperID;
     mapper->initialize();
     return true;

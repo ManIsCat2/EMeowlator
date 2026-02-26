@@ -12,5 +12,3 @@ Supported mappers:
 - Namco163 / Namco129 (Mapper 19) (WIP)
 - SunSoft FME-7 (Mapper 69) (WIP)
 - J.Y. Company ASIC (Mapper 90, 209 and 211) (WIP)
-
-Unimplemented mappers will default to MMC1 behavior.

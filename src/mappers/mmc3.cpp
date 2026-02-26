@@ -90,36 +90,36 @@ void MMC3::clockIRQ(bool a12) {
 
 void MMC3::updatePRG() {
     if (PrgMode == 0) {
-        setPRGSlot(0, BankRegisters[6]);
-		setPRGSlot(1, BankRegisters[7]);
-        setPRGSlot(2, -2);
-		setPRGSlot(3, -1);
+        setPRGPage(0, BankRegisters[6]);
+		setPRGPage(1, BankRegisters[7]);
+        setPRGPage(2, -2);
+		setPRGPage(3, -1);
     } else {
-        setPRGSlot(0, -2);
-        setPRGSlot(1, BankRegisters[7]);
-		setPRGSlot(2, BankRegisters[6]);
-        setPRGSlot(3, -1);
+        setPRGPage(0, -2);
+        setPRGPage(1, BankRegisters[7]);
+		setPRGPage(2, BankRegisters[6]);
+        setPRGPage(3, -1);
     }
 }
 
 void MMC3::updateCHR() {
     if (ChrMode == 0) {
-        setCHRSlot(0, BankRegisters[0] & 0xFE);
-		setCHRSlot(1, BankRegisters[0] | 0x01);
-		setCHRSlot(2, BankRegisters[1] & 0xFE);
-		setCHRSlot(3, BankRegisters[1] | 0x01);
-		setCHRSlot(4, BankRegisters[2]);
-		setCHRSlot(5, BankRegisters[3]);
-		setCHRSlot(6, BankRegisters[4]);
-		setCHRSlot(7, BankRegisters[5]);
+        setCHRPage(0, BankRegisters[0] & 0xFE);
+		setCHRPage(1, BankRegisters[0] | 0x01);
+		setCHRPage(2, BankRegisters[1] & 0xFE);
+		setCHRPage(3, BankRegisters[1] | 0x01);
+		setCHRPage(4, BankRegisters[2]);
+		setCHRPage(5, BankRegisters[3]);
+		setCHRPage(6, BankRegisters[4]);
+		setCHRPage(7, BankRegisters[5]);
     } else if (ChrMode == 1) {
-        setCHRSlot(0, BankRegisters[2]);
-		setCHRSlot(1, BankRegisters[3]);
-		setCHRSlot(2, BankRegisters[4]);
-		setCHRSlot(3, BankRegisters[5]);
-		setCHRSlot(4, BankRegisters[0] & 0xFE);
-		setCHRSlot(5, BankRegisters[0] | 0x01);
-		setCHRSlot(6, BankRegisters[1] & 0xFE);
-		setCHRSlot(7, BankRegisters[1] | 0x01);
+        setCHRPage(0, BankRegisters[2]);
+		setCHRPage(1, BankRegisters[3]);
+		setCHRPage(2, BankRegisters[4]);
+		setCHRPage(3, BankRegisters[5]);
+		setCHRPage(4, BankRegisters[0] & 0xFE);
+		setCHRPage(5, BankRegisters[0] | 0x01);
+		setCHRPage(6, BankRegisters[1] & 0xFE);
+		setCHRPage(7, BankRegisters[1] | 0x01);
     }
 }

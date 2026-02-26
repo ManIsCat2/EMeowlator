@@ -14,7 +14,7 @@ void SunSoftFME7::reset() {
     irqCounterEnabled = false;
     irqCounter = 0;;
 
-    setPRGSlot(3, -1);
+    setPRGPage(3, -1);
 }
 
 uint8_t SunSoftFME7::cpuRead(uint16_t addr) {
@@ -45,7 +45,7 @@ void SunSoftFME7::cpuWrite(uint16_t addr, uint8_t value) {
             switch(command) {
                 case 0: case 1: case 2: case 3:
                 case 4: case 5: case 6: case 7:
-                    setCHRSlot(command, value);
+                    setCHRPage(command, value);
                     break;
 
                 case 8:
@@ -53,7 +53,7 @@ void SunSoftFME7::cpuWrite(uint16_t addr, uint8_t value) {
                     break;
 
                 case 9: case 0xA: case 0xB:
-                    setPRGSlot(command - 9, value & 0x3F);
+                    setPRGPage(command - 9, value & 0x3F);
                     break;
 
                 case 0xC:

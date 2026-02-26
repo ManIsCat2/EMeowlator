@@ -97,21 +97,21 @@ void MMC1::updateBanks() {
 
     if (PrgMode) {
         if (slotSelect) {
-            setPRGSlot(0, prgReg | prgBankSelect);
-            setPRGSlot(1, 0x0F | prgBankSelect);
+            setPRGPage(0, prgReg | prgBankSelect);
+            setPRGPage(1, 0x0F | prgBankSelect);
         } else {
-            setPRGSlot(0, 0x00 | prgBankSelect);
-            setPRGSlot(1, prgReg | prgBankSelect);
+            setPRGPage(0, 0x00 | prgBankSelect);
+            setPRGPage(1, prgReg | prgBankSelect);
         }
     } else {
-        setPRGSlot2(0, (prgReg & 0xFE) | prgBankSelect);
+        setPRGPage2(0, (prgReg & 0xFE) | prgBankSelect);
     }
 
     if (ChrMode) {
-        setCHRSlot(0, chrReg0);
-        setCHRSlot(1, chrReg1);
+        setCHRPage(0, chrReg0);
+        setCHRPage(1, chrReg1);
     } else {
-        setCHRSlot(0, chrReg0 & 0x1E);
-        setCHRSlot(1, (chrReg0 & 0x1E) + 1);
+        setCHRPage(0, chrReg0 & 0x1E);
+        setCHRPage(1, (chrReg0 & 0x1E) + 1);
     }
 }

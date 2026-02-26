@@ -109,18 +109,18 @@ const char* JyCompany::getName() {
 void JyCompany::updatePrg() {
     switch(prgMode & 0x03) {
         case 0:
-            setPRGSlot4(0, (prgMode & 0x04) ? prgRegs[3] : 0x3C);
+            setPRGPage4(0, (prgMode & 0x04) ? prgRegs[3] : 0x3C);
             break;
         case 1:
-            setPRGSlot2(0, prgRegs[1] << 1);
-			setPRGSlot2(1, (prgMode & 0x04) ? prgRegs[3] : 0x3E);
+            setPRGPage2(0, prgRegs[1] << 1);
+			setPRGPage2(1, (prgMode & 0x04) ? prgRegs[3] : 0x3E);
             break;
         case 2:
         case 3:
-            setPRGSlot(0, prgRegs[0]);
-		    setPRGSlot(1, prgRegs[1]);
-			setPRGSlot(2, prgRegs[2]);
-			setPRGSlot(3, (prgMode & 0x04) ? prgRegs[3] : 0x3F);
+            setPRGPage(0, prgRegs[0]);
+		    setPRGPage(1, prgRegs[1]);
+			setPRGPage(2, prgRegs[2]);
+			setPRGPage(3, (prgMode & 0x04) ? prgRegs[3] : 0x3F);
             break;
     }
 }
@@ -154,24 +154,24 @@ void JyCompany::updateCHR() {
 
     switch(chrMode) {
         case 0:
-            setCHRSlot8(0, chrRegs[0] << 3);
+            setCHRPage8(0, chrRegs[0] << 3);
             break;
 
         case 1:
-            setCHRSlot4(0, chrRegs[chrLatch[0]] << 2);
-            setCHRSlot4(1, chrRegs[chrLatch[1]] << 2);
+            setCHRPage4(0, chrRegs[chrLatch[0]] << 2);
+            setCHRPage4(1, chrRegs[chrLatch[1]] << 2);
             break;
 
         case 2:
-            setCHRSlot2(0, chrRegs[0] << 1);
-            setCHRSlot2(1, chrRegs[2] << 1);
-            setCHRSlot2(2, chrRegs[4] << 1);
-            setCHRSlot2(3, chrRegs[6] << 1);
+            setCHRPage2(0, chrRegs[0] << 1);
+            setCHRPage2(1, chrRegs[2] << 1);
+            setCHRPage2(2, chrRegs[4] << 1);
+            setCHRPage2(3, chrRegs[6] << 1);
             break;
 
         case 3:
             for (int i = 0; i < 8; i++) {
-                setCHRSlot(i, chrRegs[i]);
+                setCHRPage(i, chrRegs[i]);
             }
             break;
     }

@@ -2,46 +2,46 @@
 #include "../nes_rom.hpp"
 #include "../main.hpp"
 
-void MapperBase::setCHRSlot(uint16_t slot, uint16_t val, uint32_t offset) {
+void MapperBase::setCHRPage(uint16_t page, uint16_t val, uint32_t offset) {
     uint32_t chrSlotSize = getCHRSlotSize();
     uint32_t bankOffset = ((val * chrSlotSize) + offset) & (globalROM.CHRRomSize - 1);
-    uint16_t ppuStart = slot * chrSlotSize;
+    uint16_t ppuStart = page * chrSlotSize;
     uint16_t ppuEnd = ppuStart + chrSlotSize - 1;
 
     mapPPUMemory(ppuStart, ppuEnd, ppu.ChrData.data(), bankOffset, globalROM.CHRRomSize == 0);
 }
-void MapperBase::setCHRSlot8(uint16_t slot, uint16_t val, uint32_t offset) {
-    setCHRSlot4(slot, val, offset);
-    setCHRSlot4(slot*2+1, val+4, offset);
+void MapperBase::setCHRPage8(uint16_t page, uint16_t val, uint32_t offset) {
+    setCHRPage4(page, val, offset);
+    setCHRPage4(page*2+1, val+4, offset);
 }
-void MapperBase::setCHRSlot4(uint16_t slot, uint16_t val, uint32_t offset) {
-    setCHRSlot2(slot*2, val, offset);
-    setCHRSlot2(slot*2+1, val+2, offset);
+void MapperBase::setCHRPage4(uint16_t page, uint16_t val, uint32_t offset) {
+    setCHRPage2(page*2, val, offset);
+    setCHRPage2(page*2+1, val+2, offset);
 }
-void MapperBase::setCHRSlot2(uint16_t slot, uint16_t val, uint32_t offset) {
-    setCHRSlot(slot*2, val, offset);
-    setCHRSlot(slot*2+1, val+1, offset);
+void MapperBase::setCHRPage2(uint16_t page, uint16_t val, uint32_t offset) {
+    setCHRPage(page*2, val, offset);
+    setCHRPage(page*2+1, val+1, offset);
 }
 
-void MapperBase::setPRGSlot(uint16_t slot, uint16_t val, uint32_t offset) {
+void MapperBase::setPRGPage(uint16_t page, uint16_t val, uint32_t offset) {
     uint32_t prgSlotSize = getPRGSlotSize();
     uint32_t bankOffset = ((val * prgSlotSize) + offset) & (globalROM.PRGRomSize - 1);
-    uint16_t cpuStart = 0x8000 + (slot * prgSlotSize);
+    uint16_t cpuStart = 0x8000 + (page * prgSlotSize);
     uint16_t cpuEnd = cpuStart + prgSlotSize - 1;
 
     mapCPUMemory(cpuStart, cpuEnd, globalROM.ROM, bankOffset, false, cpuStart >> 8, false);
 }
-void MapperBase::setPRGSlot8(uint16_t slot, uint16_t val, uint32_t offset) {
-    setPRGSlot4(slot, val, offset);
-    setPRGSlot4(slot*2+1, val+4, offset);
+void MapperBase::setPRGPage8(uint16_t page, uint16_t val, uint32_t offset) {
+    setPRGPage4(page, val, offset);
+    setPRGPage4(page*2+1, val+4, offset);
 }
-void MapperBase::setPRGSlot4(uint16_t slot, uint16_t val, uint32_t offset) {
-    setPRGSlot2(slot*2, val, offset);
-    setPRGSlot2(slot*2+1, val+2, offset);
+void MapperBase::setPRGPage4(uint16_t page, uint16_t val, uint32_t offset) {
+    setPRGPage2(page*2, val, offset);
+    setPRGPage2(page*2+1, val+2, offset);
 }
-void MapperBase::setPRGSlot2(uint16_t slot, uint16_t val, uint32_t offset) {
-    setPRGSlot(slot*2, val, offset);
-    setPRGSlot(slot*2+1, val+1, offset);
+void MapperBase::setPRGPage2(uint16_t page, uint16_t val, uint32_t offset) {
+    setPRGPage(page*2, val, offset);
+    setPRGPage(page*2+1, val+1, offset);
 }
 
 uint8_t MapperBase::cpuRead(uint16_t addr) {

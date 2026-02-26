@@ -393,13 +393,6 @@ int main(int argc, char *argv[]) {
     InputManager inputMgr;
     inputMgr.install(&window);
 
-    if (argc > 1) {
-        if (globalROM.LoadNES(argv[1])) {
-            cpu.reset();
-            romIsLoaded = true;
-        }
-    }
-
     ppu.Init();
 
     QTimer cpuTimer;
@@ -420,6 +413,13 @@ int main(int argc, char *argv[]) {
     QObject::connect(&app, &QApplication::aboutToQuit, [&]() {
         conf.Write("meowconf.txt");
     });
+
+    if (argc > 1) {
+        if (globalROM.LoadNES(argv[1])) {
+            cpu.reset();
+            romIsLoaded = true;
+        }
+    }
 
     return app.exec();
 }

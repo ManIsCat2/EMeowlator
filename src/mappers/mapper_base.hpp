@@ -34,15 +34,15 @@ public:
         return 0x4000;
     }
 
-    void setCHRSlot(uint16_t slot, uint16_t val, uint32_t offset=0);
-    void setCHRSlot8(uint16_t slot, uint16_t val, uint32_t offset=0);
-    void setCHRSlot4(uint16_t slot, uint16_t val, uint32_t offset=0);
-    void setCHRSlot2(uint16_t slot, uint16_t val, uint32_t offset=0);
+    void setCHRPage(uint16_t page, uint16_t val, uint32_t offset=0);
+    void setCHRPage8(uint16_t page, uint16_t val, uint32_t offset=0);
+    void setCHRPage4(uint16_t page, uint16_t val, uint32_t offset=0);
+    void setCHRPage2(uint16_t page, uint16_t val, uint32_t offset=0);
 
-    void setPRGSlot(uint16_t slot, uint16_t val, uint32_t offset=0);
-    void setPRGSlot8(uint16_t slot, uint16_t val, uint32_t offset=0);
-    void setPRGSlot4(uint16_t slot, uint16_t val, uint32_t offset=0);
-    void setPRGSlot2(uint16_t slot, uint16_t val, uint32_t offset=0);
+    void setPRGPage(uint16_t page, uint16_t val, uint32_t offset=0);
+    void setPRGPage8(uint16_t page, uint16_t val, uint32_t offset=0);
+    void setPRGPage4(uint16_t page, uint16_t val, uint32_t offset=0);
+    void setPRGPage2(uint16_t page, uint16_t val, uint32_t offset=0);
 
     void mapCPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable, uint8_t pageNum, bool battery);
     void unmapCPUMemory(uint16_t start, uint16_t end, uint8_t pageNum);
