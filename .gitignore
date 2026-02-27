@@ -8,6 +8,7 @@ imgui.ini
 *.exe
 *.pcx
 *.txt
+!CMakeLists.txt
 *.nya
 *.xml
 tests/*
