@@ -1,5 +1,5 @@
-#include "nes_cpu.hpp"
-#include "nes_rom.hpp"
+#include "nes/nes_cpu.hpp"
+#include "nes/nes_rom.hpp"
 
 #include "main.hpp"
 #include "qt/screen_widget.hpp"
@@ -46,7 +46,6 @@ Keybind nesKeyBindsDefault[] = {
 NesROM globalROM;
 
 bool romIsLoaded = false;
-bool showDebugLogs = false;
 static bool fullscreen = false;
 static float CPUSpeed = 1.f;
 static bool unlimitFPS = false;
@@ -102,7 +101,6 @@ int main(int argc, char *argv[]) {
     QAction *saveSaveStateAction = new QAction("Save to file", &window);
     QAction *keyEditAction = new QAction("Keybind Editor", &window);
     QAction *loadSaveStateAction = new QAction("Load from file", &window);
-    QAction *debugLogsAction = makeQBool("Show Debug Logs", &window, showDebugLogs);
     QAction *romInfoAction = new QAction("ROM Info", &window);
     QAction *exitAction = new QAction("Exit", &window);
 
@@ -118,7 +116,6 @@ int main(int argc, char *argv[]) {
     controllerMenu->addAction(keyEditAction);
     saveStateMenu->addAction(saveSaveStateAction);
     saveStateMenu->addAction(loadSaveStateAction);
-    debugMenu->addAction(debugLogsAction);
     debugMenu->addAction(romInfoAction);
     miscMenu->addAction(exitAction);
 
@@ -346,9 +343,6 @@ int main(int argc, char *argv[]) {
             SaveStateFile savestate;
             savestate.LoadSaveStateFromFile(file.toStdString().c_str());
         }
-    });
-    QObject::connect(debugLogsAction, &QAction::toggled, [&](bool checked) {
-        showDebugLogs = checked;
     });
     QObject::connect(romInfoAction, &QAction::triggered, [&]() {
         std::string fileStr = "File: " + globalROM.Name;

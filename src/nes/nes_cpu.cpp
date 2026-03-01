@@ -4,8 +4,8 @@
 //#define NES_DEBUG
 
 #ifdef  NES_DEBUG
-#define DEBUG_LOG(...) printf(__VA_ARGS__);
-#define DEBUG_LOG2(...) printf(__VA_ARGS__); printf("\n");
+#define DEBUG_LOG(...) DebugPrintLog("CPU", __VA_ARGS__);
+#define DEBUG_LOG2(...) printf("[CPU] ") printf(__VA_ARGS__); printf("\n");
 #else
 #define DEBUG_LOG(...) //printf(__VA_ARGS__);
 #define DEBUG_LOG2(...) //printf(__VA_ARGS__); printf("\n");
@@ -317,7 +317,8 @@ void CPU::execute(uint8_t opcode) {
     case 0x02:
         romIsLoaded = false;
         reset();
-        QMessageBox::critical((QMainWindow*)globalQTWin, "Fatal error", "CPU reached a HLT instruction");
+        DebugPrintLog("CPU", "CPU Crashed after reaching a JAM instruction");
+        QMessageBox::critical((QMainWindow*)globalQTWin, "Fatal error", "CPU Crashed after reaching a JAM instruction");
         break;
     // lda
     case 0xA9: // LDA immediate
@@ -1876,10 +1877,11 @@ void CPU::execute(uint8_t opcode) {
     }
 
     default:
-        char errorMsg[64];
-        sprintf(errorMsg, "Unimplemented Opcode: 0x%02X\n", opcode);
+        char errorMsg[256];
+        sprintf(errorMsg, "CPU Crashed after executing Unimplemented Opcode 0x%02X", opcode);
         romIsLoaded = false;
         reset();
+        DebugPrintLog("CPU", "%s", errorMsg);
         QMessageBox::critical((QMainWindow*)globalQTWin, "Fatal error", errorMsg);
         break;
     }

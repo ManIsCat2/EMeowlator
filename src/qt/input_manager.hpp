@@ -6,7 +6,7 @@
 #include <cstdint>
 #include "key_capture.hpp"
 #include "nes.hpp"
-#include "../nes_controller.hpp"
+#include "../nes/nes_controller.hpp"
 
 extern Keybind nesKeyBinds[];
 

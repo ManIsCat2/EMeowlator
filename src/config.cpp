@@ -11,8 +11,6 @@ Config::Entry ConfigEntries[] = {
     {"stick_right", &nesKeyBinds[5].key, Config::Type::KBIND},
     {"start_button", &nesKeyBinds[6].key, Config::Type::KBIND},
     {"select_button", &nesKeyBinds[7].key, Config::Type::KBIND},
-
-    {"debug_logs", &showDebugLogs, Config::Type::BOOL},
 };
 
 void Config::Load(const char *path) {
@@ -37,7 +35,7 @@ void Config::Load(const char *path) {
                     *(Qt::Key*)entry.ptr = static_cast<Qt::Key>(value);
                 } else {
                     //should never happen
-                    printf("Unknown Config type: %d\n", entry.type);
+                    DebugPrintLog("CONFIG", "Unknown Config type: %d", entry.type);
                     break;
                 }
             }
@@ -45,7 +43,7 @@ void Config::Load(const char *path) {
     }
 
     fclose(f);
-    if (showDebugLogs) printf("Loaded config file from '%s'\n", path);
+    DebugPrintLog("CONFIG", "Loaded config file from '%s'", path);
 }
 
 void Config::Write(const char *path) {
@@ -61,11 +59,11 @@ void Config::Write(const char *path) {
             fprintf(f, "%s %d\n", entry.name.c_str(), *(Qt::Key*)entry.ptr);
         } else {
             //should never happen
-            printf("Unknown Config type: %d\n", entry.type);
+            DebugPrintLog("CONFIG", "Unknown Config type: %d", entry.type);
             break;
         }
     }
 
     fclose(f);
-    if (showDebugLogs) printf("Wrote config file to '%s'\n", path);
+    DebugPrintLog("CONFIG", "Wrote config file to '%s'", path);
 }

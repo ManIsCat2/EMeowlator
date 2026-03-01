@@ -4,7 +4,7 @@
 #include <iostream>
 #include <array>
 #include "nes_ppu.hpp"
-#include "main.hpp"
+#include "../main.hpp"
 
 #include <stdio.h>
 

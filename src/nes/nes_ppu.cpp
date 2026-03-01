@@ -175,9 +175,7 @@ void PPU::LoadCHRROM(const uint8_t* chrData, int chrSize) {
     memcpy(ChrData.data(), chrData, chrSize);
 }
 
-bool PPU::Init() {
-    PaletteMode = 0;
-    
+bool PPU::Init() {    
     memset(frameBuffer, 0, sizeof(frameBuffer));
     return true;
 }

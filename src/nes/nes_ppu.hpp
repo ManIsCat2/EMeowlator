@@ -50,9 +50,6 @@ public:
     uint16_t scrollY = 0;
     uint8_t scrollFineX = 0;
 
-    int PaletteMode = 0;
-    bool UseRandPalIndex = false;
-    uint8_t RanPalIndex = 4;
     bool DisableSprites = false;
     int MaxSprites = 64;
     bool VRAMCorruption = false;
@@ -71,6 +68,7 @@ public:
         Dot = 0;
         ScanLine = 0;
         Vblank = false;
+        sprite0Hit = false;
 
         mask8pxMaskBG = false;
         mask8pxMaskSprites = false;

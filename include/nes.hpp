@@ -17,3 +17,5 @@
 #define STICK_DOWN      (1 << 5)
 #define STICK_LEFT      (1 << 6)
 #define STICK_RIGHT     (1 << 7)
+
+#include "debug.hpp"

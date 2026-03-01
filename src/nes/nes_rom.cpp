@@ -1,5 +1,5 @@
 #include "nes_rom.hpp"
-#include "main.hpp"
+#include "../main.hpp"
 
 MapperBase *NesROM::GetMapper(void) {
     switch (MapperID) {
@@ -25,7 +25,7 @@ MapperBase *NesROM::GetMapper(void) {
         case 69: return new SunSoftFME7();
         case 90: case 209: case 211: return new JyCompany();
         default: {
-            QMessageBox::critical((QMainWindow*)globalQTWin, "Error", ("Mapper " + std::to_string(MapperID) + " is Unimplemented, cannot open ROM.").c_str());
+            QMessageBox::critical((QMainWindow*)globalQTWin, "Error", ("Mapper " + std::to_string(MapperID) + " is Unimplemented, failed to open ROM").c_str());
             return nullptr;
         }
     }
@@ -127,8 +127,15 @@ bool NesROM::LoadNES(const std::string &filename) {
         
     if (mapper) { delete mapper; mapper = nullptr; }
     mapper = GetMapper();
-    if (!mapper) return false;
+    if (!mapper) { 
+        DebugPrintLog("ROM", "Unimplemented mapper: %u, failed to open ROM", MapperID)
+        return false;
+    }
     mapper->subMapper = SubMapperID;
     mapper->initialize();
+    DebugPrintLog("ROM", "Loaded NES ROM '%s'", Name.c_str());
+    if (Version == HeaderVersion::NES2_0) {
+        DebugPrintLog("ROM", "Detected NES2.0 Header with Submapper %u", SubMapperID)
+    }
     return true;
 }

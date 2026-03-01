@@ -1,11 +1,11 @@
 #include "savestate.hpp"
-#include "nes_cpu.hpp"
-#include "nes_ppu.hpp"
+#include "nes/nes_cpu.hpp"
+#include "nes/nes_ppu.hpp"
 
 void SaveStateFile::OpenFileR(const char *Name) {
     File = fopen(Name, "rb");
     if (!File) {
-        printf("Can't open \"%s\"\n", Name);
+        DebugPrintLog("SAVESTATE", "Can't open \"%s\"", Name);
         exit(1);
     }
     fseek(File, 0, SEEK_END);
@@ -19,7 +19,7 @@ void SaveStateFile::OpenFileR(const char *Name) {
 void SaveStateFile::OpenFileW(const char *Name) {
     File = fopen(Name, "wb");
     if (!File) {
-        printf("Can't open \"%s\"\n", Name);
+        DebugPrintLog("SAVESTATE", "Can't open \"%s\"", Name);
         exit(1);
     }
     ReadOnly = false;
@@ -124,6 +124,8 @@ void SaveStateFile::LoadSaveStateFromFile(const char *FileName) {
     ppu.scrollX         = ReadBytes<uint16_t>();
     ppu.scrollY         = ReadBytes<uint16_t>();
     ppu.scrollFineX     = ReadBytes<uint8_t>();
+
+    DebugPrintLog("SAVESTATE", "Loaded Savestate '%s'", FileName);
 
     CloseFile();
 }
