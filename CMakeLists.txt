@@ -22,10 +22,4 @@ add_executable(MeowNES ${SOURCES})
 
 target_link_libraries(MeowNES Qt6::Widgets)
 
-add_custom_command(TARGET MeowNES POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    "${CMAKE_CURRENT_SOURCE_DIR}/gui"
-    "${CMAKE_CURRENT_BINARY_DIR}/gui"
-)
-
 set(CMAKE_CLEAN_FILES "${CMAKE_CURRENT_BINARY_DIR}")

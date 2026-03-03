@@ -13,3 +13,4 @@ imgui.ini
 *.xml
 tests/*
 saves/*
+*.sh

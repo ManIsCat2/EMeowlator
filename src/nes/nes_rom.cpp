@@ -34,7 +34,7 @@ MapperBase *NesROM::GetMapper(void) {
 bool NesROM::LoadNES(const std::string &filename) {
     std::ifstream rom(filename, std::ios::binary | std::ios::ate);
     if (!rom) {
-        std::cerr << "Failed to open ROM: " << filename << "\n";
+        DebugPrintLog("ROM", "Failed to open ROM '%s'", filename.c_str());
         return false;
     }
 
@@ -42,21 +42,17 @@ bool NesROM::LoadNES(const std::string &filename) {
     Name = Path.filename().string();
 
     std::streamsize fsize = rom.tellg();
-    if (fsize < 16) {
-        std::cerr << "ROM too small\n";
-        return false;
-    }
     rom.seekg(0, std::ios::beg);
 
     std::vector<uint8_t> data((size_t)fsize);
     if (!rom.read(reinterpret_cast<char*>(data.data()), fsize)) {
-        std::cerr << "Failed to read ROM\n";
+        DebugPrintLog("ROM", "Failed to read ROM '%s'", filename.c_str());
         return false;
     }
 
     // header
     if (data.size() < 16 || data[0] != 'N' || data[1] != 'E' || data[2] != 'S' || data[3] != 0x1A) {
-        std::cerr << "Invalid NES header\n";
+        DebugPrintLog("ROM", "Invalid NES Header");
         return false;
     }
 
@@ -103,14 +99,14 @@ bool NesROM::LoadNES(const std::string &filename) {
     size_t offset = 16;
     if (hasTrainer) {
         if (data.size() < offset + 512) {
-            std::cerr << "ROM too small\n";
+            DebugPrintLog("ROM", "ROM too small");
             return false;
         }
         offset += 512;
     }
         
     if (!prgPages) {
-        std::cerr << "ROM has zero PRG pages.\n";
+        DebugPrintLog("ROM", "ROM has zero PRG Pages");
         return false;
     }
 
