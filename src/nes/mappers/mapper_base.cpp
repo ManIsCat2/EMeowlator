@@ -46,7 +46,7 @@ void MapperBase::setPRGPage2(uint16_t page, uint16_t val, uint32_t offset) {
 
 uint8_t MapperBase::cpuRead(uint16_t addr) {
     if (!PRGPages[addr >> 8].ptr) {
-        DebugPrintLog("MAPPER", "tried reading from unmapped CPU memory at address 0x%x", addr);
+        //DebugPrintLog("MAPPER", "tried reading from unmapped CPU memory at address 0x%x", addr);
         return cpu.emulateOBus ? cpu.OpenBus : 0xff;
     }
     return cpu.setOpenBus(PRGPages[addr >> 8].ptr[addr & 0xFF]);
@@ -64,7 +64,7 @@ void MapperBase::cpuWrite(uint16_t addr, uint8_t value) {
 uint8_t MapperBase::ppuRead(uint16_t addr) {
     addr &= 0x1FFF;
     if (!CHRPages[addr >> 8].ptr) {
-        DebugPrintLog("MAPPER", "tried reading from unmapped PPU memory at address 0x%x", addr);
+        //DebugPrintLog("MAPPER", "tried reading from unmapped PPU memory at address 0x%x", addr);
         return 0xff;
     }
 

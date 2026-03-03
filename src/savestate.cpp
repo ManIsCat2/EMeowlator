@@ -48,7 +48,7 @@ void SaveStateFile::WriteSaveStateToFile(const char *FileName) {
     //ppu
     WriteBytesPtr<uint8_t>(ppu.VRAM.data(), 0x4000);
     WriteBytesPtr<uint8_t>(ppu.paletteRAM.data(), 0x20);
-    WriteBytesPtr<uint8_t>(ppu.OAM.data(), 0x100);
+    WriteBytesPtr<uint8_t>(ppu.OAM, 0x100);
 
     WriteBytes<bool>(ppu.WriteLatch);
     WriteBytes<unsigned short>(ppu.VRAMAddr);
@@ -67,13 +67,11 @@ void SaveStateFile::WriteSaveStateToFile(const char *FileName) {
 
     WriteBytes<int>(ppu.nametableSelect);
     WriteBytes<bool>(ppu.VRAMInc32Mode);
-    WriteBytes<bool>(ppu.spritePatternTable);
-    WriteBytes<bool>(ppu.BGPatternTable);
+    WriteBytes<int>(ppu.spritePatternTable);
+    WriteBytes<int>(ppu.BGPatternTable);
     WriteBytes<bool>(ppu.use8x16Sprites);
     WriteBytes<bool>(ppu.enableNMI);
 
-    WriteBytes<uint16_t>(ppu.scrollX);
-    WriteBytes<uint16_t>(ppu.scrollY);
     WriteBytes<uint8_t>(ppu.scrollFineX);
 
     CloseFile();
@@ -97,7 +95,7 @@ void SaveStateFile::LoadSaveStateFromFile(const char *FileName) {
     // ppu
     ReadBytesPtr<uint8_t>(ppu.VRAM.data(), 0x4000);
     ReadBytesPtr<uint8_t>(ppu.paletteRAM.data(), 0x20);
-    ReadBytesPtr<uint8_t>(ppu.OAM.data(), 0x100);
+    ReadBytesPtr<uint8_t>(ppu.OAM, 0x100);
 
     ppu.WriteLatch      = ReadBytes<bool>();
     ppu.VRAMAddr        = ReadBytes<unsigned short>();
@@ -116,13 +114,11 @@ void SaveStateFile::LoadSaveStateFromFile(const char *FileName) {
 
     ppu.nametableSelect = ReadBytes<int>();
     ppu.VRAMInc32Mode   = ReadBytes<bool>();
-    ppu.spritePatternTable = ReadBytes<bool>();
-    ppu.BGPatternTable  = ReadBytes<bool>();
+    ppu.spritePatternTable = ReadBytes<int>();
+    ppu.BGPatternTable  = ReadBytes<int>();
     ppu.use8x16Sprites  = ReadBytes<bool>();
     ppu.enableNMI       = ReadBytes<bool>();
 
-    ppu.scrollX         = ReadBytes<uint16_t>();
-    ppu.scrollY         = ReadBytes<uint16_t>();
     ppu.scrollFineX     = ReadBytes<uint8_t>();
 
     DebugPrintLog("SAVESTATE", "Loaded Savestate '%s'", FileName);

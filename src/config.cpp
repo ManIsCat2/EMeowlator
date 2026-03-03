@@ -35,7 +35,7 @@ void Config::Load(const char *path) {
                     *(Qt::Key*)entry.ptr = static_cast<Qt::Key>(value);
                 } else {
                     //should never happen
-                    DebugPrintLog("CONFIG", "Unknown Config type: %d", entry.type);
+                    DebugPrintLog("CONFIG", "Unknown Config type: %d", (int)entry.type);
                     break;
                 }
             }
@@ -59,7 +59,7 @@ void Config::Write(const char *path) {
             fprintf(f, "%s %d\n", entry.name.c_str(), *(Qt::Key*)entry.ptr);
         } else {
             //should never happen
-            DebugPrintLog("CONFIG", "Unknown Config type: %d", entry.type);
+            DebugPrintLog("CONFIG", "Unknown Config type: %d", (int)entry.type);
             break;
         }
     }

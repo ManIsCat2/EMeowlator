@@ -19,7 +19,7 @@ public:
     std::vector<uint8_t> ChrData{};
     std::array<uint8_t, VRAM_MIRRORED_SIZE> VRAM{};
     std::array<uint8_t, PALRAM_SIZE> paletteRAM{};
-    std::array<uint8_t, 0x100> OAM{};
+    uint8_t OAM[0x100];
     uint32_t frameBuffer[NES_WIDTH * NES_HEIGHT];
 
     MirrorMode Mirroring = MirrorMode::VERTICAL;
@@ -38,59 +38,36 @@ public:
     bool mask8pxMaskSprites = false;
     bool maskRenderBG = false;
     bool maskRenderSprites = false;
+    uint8_t FullPPUCTRL = 0;
 
     int nametableSelect = 0; 
     bool VRAMInc32Mode = false;
-    bool spritePatternTable = false;
-    bool BGPatternTable = false;
+    int spritePatternTable = 0;
+    int BGPatternTable = 0;
     bool use8x16Sprites = false;
     bool enableNMI = false;
 
-    uint16_t scrollX = 0;
-    uint16_t scrollY = 0;
     uint8_t scrollFineX = 0;
+
+    uint8_t patternTableLow = 0;
+    uint8_t patternTableHigh = 0;
+    uint8_t ntb = 0;
+    uint16_t shiftRegHigh = 0;
+    uint16_t shiftRegLow = 0;
+    uint16_t attributeByte = 0;
+    int shiftAttribute = 0;
 
     bool DisableSprites = false;
     int MaxSprites = 64;
     bool VRAMCorruption = false;
-    bool DisableXScroll = false;
-    bool DisableYScroll = false;
 
-    void reset(void) {
-        memset(VRAM.data(), 0, VRAM.size());
-        memset(frameBuffer, 0, sizeof(frameBuffer));
-        WriteLatch = false;
-        TransferAddr = 0;
-        VRAMAddr = 0;
-        OAMAddr = 0;
-        TempVRAMAddr = 0;
-        ReadBuffer = 0;
-        Dot = 0;
-        ScanLine = 0;
-        Vblank = false;
-        sprite0Hit = false;
-
-        mask8pxMaskBG = false;
-        mask8pxMaskSprites = false;
-        maskRenderBG = false;
-        maskRenderSprites = false;
-
-        nametableSelect = 0; 
-        VRAMInc32Mode = false;
-        spritePatternTable = false;
-        BGPatternTable = false;
-        use8x16Sprites = false;
-        enableNMI = false;
-
-        scrollX = 0;
-        scrollY = 0;
-        scrollFineX = 0;
-    }
+    void reset(void);
 
     void Step();
 
     void LoadCHRROM(const uint8_t* chrData, int chrSize);
     uint8_t readCHR(uint16_t addr);
+    uint8_t readVRAM(uint16_t addr);
 
     bool Init();
 };

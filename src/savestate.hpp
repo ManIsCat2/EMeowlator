@@ -20,7 +20,7 @@ public:
     T ReadBytes() {
         T Buf{};
         constexpr size_t RealSize = sizeof(T);
-        if (Offset + RealSize > FileSize) return Buf;
+        if ((int32_t)(Offset + RealSize) > FileSize) return Buf;
         memcpy(&Buf, Data + Offset, RealSize);
         Offset += RealSize;
         return Buf;
@@ -29,7 +29,7 @@ public:
     template <typename T>
     T *ReadBytesPtr(T *Buf, uint32_t Len) {
         size_t RealSize = sizeof(T) * Len;
-        if (Offset + RealSize > FileSize) return Buf;
+        if ((int32_t)(Offset + RealSize) > FileSize) return Buf;
         memcpy(Buf, Data + Offset, RealSize);
         Offset += RealSize;
         return Buf;

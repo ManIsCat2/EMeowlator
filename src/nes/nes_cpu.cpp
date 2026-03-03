@@ -1,14 +1,14 @@
 #include "nes_cpu.hpp"
 #include "nes_controller.hpp"
 
-//#define NES_DEBUG
+//#define CPU_DBG
 
-#ifdef  NES_DEBUG
-#define DEBUG_LOG(...) DebugPrintLog("CPU", __VA_ARGS__);
-#define DEBUG_LOG2(...) printf("[CPU] ") printf(__VA_ARGS__); printf("\n");
+#ifdef CPU_DBG
+#define DEBUG_LOG(...) printf("[CPU] "); printf(__VA_ARGS__);
+#define DEBUG_LOG2(...) printf("[CPU] "); printf(__VA_ARGS__); printf("\n");
 #else
-#define DEBUG_LOG(...) //printf(__VA_ARGS__);
-#define DEBUG_LOG2(...) //printf(__VA_ARGS__); printf("\n");
+#define DEBUG_LOG(...)
+#define DEBUG_LOG2(...)
 #endif
 
 CPU cpu;
@@ -19,6 +19,10 @@ void CPU::reset() {
     P = 0x24;
     PC = read16(0xFFFC);
     cycles = 0;
+
+    for (int i = 0; i < (sizeof(RAM) / sizeof(RAM[0])); i++) {
+        RAM[i] = (!(i & 1)) ? 0x24 : 0x01; // L is real 2401
+    }
     globalROM.ResetVec = PC;
     ppu.reset();
 }
@@ -39,12 +43,19 @@ void CPU::run(uint32_t maxCycles) {
         }
 
         execute(opcode);
-
-        ppu.Step();
-        ppu.Step();
-        ppu.Step();
-
         cycles_run += cycles;
+
+        // no proper timing yet
+        /*while (cycles) {
+            cycles--;
+            ppu.Step();
+            ppu.Step();
+            ppu.Step();
+        }*/
+        ppu.Step();
+        ppu.Step();
+        ppu.Step();
+
         cycles = 0;
     }
 }
@@ -1922,9 +1933,9 @@ uint8_t CPU::read(uint16_t addr)
                 if (vaddr < 0x3F00) {
                     ret = ppu.ReadBuffer;
                     uint16_t nt = vaddr & 0x0FFF;
-                    if (vaddr < 0x2000)
-                        ppu.ReadBuffer = ppu.ChrData[vaddr];
-                    else {
+                    if (vaddr < 0x2000) {
+                        ppu.ReadBuffer = globalROM.mapper->ppuRead(vaddr);
+                    } else {
                         if (ppu.Mirroring == MirrorMode::VERTICAL) nt &= 0x7FF;
                         else nt = (nt & VRAM_SIZE) ? (nt - 0x400) : nt;
                         ppu.ReadBuffer = ppu.VRAM[nt];
@@ -1979,11 +1990,11 @@ void CPU::write(uint16_t addr, uint8_t value) {
             case 0: // PPUCTRL
                 ppu.nametableSelect      = value & 0x03;
                 ppu.VRAMInc32Mode        = (value & 0x04) != 0;
-                ppu.spritePatternTable   = (value & 0x08) != 0;
-                ppu.BGPatternTable       = (value & 0x10) != 0;
+                ppu.spritePatternTable   = value & 0x08;
+                ppu.BGPatternTable       = value & 0x10;
                 ppu.use8x16Sprites       = (value & 0x20) != 0;
                 ppu.enableNMI            = (value & 0x80) != 0;
-
+                ppu.FullPPUCTRL = value;
                 ppu.TempVRAMAddr = (ppu.TempVRAMAddr & 0x73FF) | ((value & 0x03) << 10);
                 break;
 
@@ -2006,11 +2017,12 @@ void CPU::write(uint16_t addr, uint8_t value) {
                 break;
 
             case 5: // PPUSCROLL
-               if (!ppu.WriteLatch) {
-                    ppu.scrollX = value; // coarseX + fineX
-                    ppu.scrollFineX = value & 7; // fine pixel inside tile
+                if (!ppu.WriteLatch) {
+                    ppu.scrollFineX = value & 7;
+                    ppu.TempVRAMAddr = (ppu.TempVRAMAddr & 0x7fe0) | (value >> 3);
                 } else {
-                    ppu.scrollY = value;  // coarseY + fineY
+                    ppu.TransferAddr = (ushort)((ppu.TempVRAMAddr & 0xc1f) | (((value & 0xF8) << 2) | ((value & 7) << 12)));
+
                 }
                 ppu.WriteLatch = !ppu.WriteLatch;
                 break;

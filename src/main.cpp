@@ -117,8 +117,6 @@ int main(int argc, char *argv[]) {
     QAction *openBusAction = makeQBool("Open Bus", &window, cpu.emulateOBus);
     QAction *paletteEditorAction = new QAction("Palette Editor", &window);
     QAction *VRAMCorruptAction = makeQBool("VRAM Corruption", &window, ppu.VRAMCorruption);
-    QAction *disableXScrollAction = makeQBool("Disable X Scroll", &window, ppu.DisableXScroll);
-    QAction *disableYScrollAction = makeQBool("Disable Y Scroll", &window, ppu.DisableYScroll);
     QAction *disableSpritesAction = makeQBool("Disable Sprites", &window, ppu.DisableSprites);
     QAction *saveSaveStateAction = new QAction("Save to file", &window);
     QAction *keyEditAction = new QAction("Keybind Editor", &window);
@@ -132,8 +130,6 @@ int main(int argc, char *argv[]) {
     CPUMenu->addAction(openBusAction);
     PPUMenu->addAction(paletteEditorAction);
     PPUMenu->addAction(VRAMCorruptAction);
-    PPUMenu->addAction(disableXScrollAction);
-    PPUMenu->addAction(disableYScrollAction);
     PPUMenu->addAction(disableSpritesAction);
     controllerMenu->addAction(keyEditAction);
     saveStateMenu->addAction(saveSaveStateAction);
@@ -287,12 +283,6 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(VRAMCorruptAction, &QAction::toggled, [&](bool checked) {
         ppu.VRAMCorruption = checked;
-    });
-    QObject::connect(disableXScrollAction, &QAction::toggled, [&](bool checked) {
-        ppu.DisableXScroll = checked;
-    });
-    QObject::connect(disableYScrollAction, &QAction::toggled, [&](bool checked) {
-        ppu.DisableYScroll = checked;
     });
     QObject::connect(disableSpritesAction, &QAction::toggled, [&](bool checked) {
         ppu.DisableSprites = checked;

@@ -43,126 +43,152 @@ uint32_t getRainbowColor() {
     return 0xFF000000 | (r << 16) | (g << 8) | b;
 }
 
+void PPU::reset(void) {
+    std::fill(VRAM.data(), VRAM.data()+(VRAM_MIRRORED_SIZE-1), 0x67);
+    memset(frameBuffer, 0, sizeof(frameBuffer));
+    WriteLatch = false;
+    TransferAddr = 0;
+    VRAMAddr = 0;
+    OAMAddr = 0;
+    TempVRAMAddr = 0;
+    ReadBuffer = 0;
+    Dot = 0;
+    ScanLine = 0;
+    Vblank = false;
+    sprite0Hit = false;
+    
+    mask8pxMaskBG = false;
+    mask8pxMaskSprites = false;
+    maskRenderBG = false;
+    maskRenderSprites = false;
+    
+    nametableSelect = 0; 
+    VRAMInc32Mode = false;
+    spritePatternTable = 0;
+    BGPatternTable = 0;
+    use8x16Sprites = false;
+    enableNMI = false;
+    
+    scrollFineX = 0;
+}
+
 void PPU::Step() {
-    if (Dot == 1 && ScanLine == 241) Vblank = true;
-    if (Dot == 1 && ScanLine == 261) {
-        Vblank = false;
-        sprite0Hit = false;
-    } 
+	if (Dot == 1 && ScanLine == 241)
+		Vblank = true;
+	if (Dot == 1 && ScanLine == 261) {
+		Vblank = false;
+		sprite0Hit = false;
+	}
 
-    if (ScanLine >= 0 && ScanLine < NES_HEIGHT && Dot >= 1 && Dot <= NES_WIDTH) {
-        int x = Dot - 1;
-        int y = ScanLine;
-        uint32_t color = 0;
-        uint8_t bgColorId = 0;
-
-        if (maskRenderBG) {
-            int absX = x + (DisableXScroll ? 0 : scrollX);
-            int absY = y + (DisableYScroll ? 0 : scrollY);
-            int ntH = (absX / NES_WIDTH) & 1;
-            int ntV = (absY / NES_HEIGHT) & 1;
-            int nametable = nametableSelect ^ ntH ^ (ntV << 1);
-            int nametableBase = 0x2000 | (nametable << 10);
-
-            int tileX = (absX / 8) & 31;
-            int tileY = (absY / 8) % 30;
-            int fineX = absX % 8;
-            int fineY = absY % 8;
-
-            int vramAddr = (nametableBase + tileY * 32 + tileX) & 0x0FFF;
-            uint8_t tileIndex = VRAM[vramAddr];
-
-            uint16_t vaddr = (BGPatternTable ? 0x1000 : 0x0000) + tileIndex * 16 + fineY;
-            uint8_t lo = readCHR(vaddr);
-            uint8_t hi = readCHR(vaddr + 8);
-
-            int attrX = tileX / 4;
-            int attrY = tileY / 4;
-            int attrAddr = (nametableBase + 0x3C0 + attrY * 8 + attrX) & 0x0FFF;
-            uint8_t attrByte = VRAM[attrAddr];
-            int quadrantX = (tileX % 4) / 2;
-            int quadrantY = (tileY % 4) / 2;
-            int attrShift = (quadrantY * 2 + quadrantX) * 2;
-            uint8_t paletteIndex = (attrByte >> attrShift) & 0x03;
-
-            int bit = 7 - fineX;
-            int colorBits = ((hi >> bit) & 1) << 1 | ((lo >> bit) & 1);
-            uint8_t finalPal = colorBits ? paletteRAM[colorBits + paletteIndex * 4] : paletteRAM[0];
-            bgColorId = finalPal & 0x3F;
-            color = nesPalette[bgColorId];
-            if ((bgColorId) == hoveredPaletteIndex) color = getRainbowColor();
-        }
-
-        if (maskRenderSprites && !DisableSprites) {
-            bool spritePixelDrawn = false;
-            for (int i = 0; i < MaxSprites; i++) {
-                int spriteY = OAM[i * 4 + 0] + 1;
-                int tile = OAM[i * 4 + 1];
-                int attr = OAM[i * 4 + 2];
-                int spriteX = OAM[i * 4 + 3];
-
-                int spriteHeight = use8x16Sprites ? 16 : 8;
-                if (y < spriteY || y >= spriteY + spriteHeight) continue;
-
-                bool flipH = attr & 0x40;
-                bool flipV = attr & 0x80;
-                uint8_t paletteIndex = attr & 0x03;
-
-                if (x < spriteX || x >= spriteX + 8) continue;
-
-                uint16_t patternTable;
-                uint16_t vaddrBase;
-
-                int rowInSprite = y - spriteY;
-
-                if (use8x16Sprites) {
-                    patternTable = (tile & 0x01) ? 0x1000 : 0x0000;
-                    int tileIndex = tile & 0xFE;
-                    if (rowInSprite < 8) {
-                        vaddrBase = patternTable + tileIndex * 16;
-                    } else {
-                        vaddrBase = patternTable + (tileIndex + 1) * 16;
+	if (maskRenderBG || maskRenderSprites) {
+		if (ScanLine < 240) {
+			if (Dot - NES_WIDTH > 63u) {
+				if (Dot < NES_WIDTH) {
+					uint8_t color = (shiftRegHigh >> (0x0E - scrollFineX) & 0x02) | (shiftRegLow >> (0x0F - scrollFineX) & 0x01);
+                    uint8_t palette = shiftAttribute >> (0x1C - scrollFineX * 0x02) & 0x0C;
+                    if (maskRenderSprites) {
+                       for (int i = 0; i < 256; i += 4) {
+                            uint8_t *sprite = OAM + i;
+                            uint16_t spriteH = use8x16Sprites ? 16 : 8;
+                            uint16_t spriteX = Dot - sprite[3];
+                            uint16_t spriteY = ScanLine - sprite[0] - 1;
+                            uint16_t sx = spriteX ^ !(sprite[2] & 0x40) * 7;
+                            uint16_t sy = spriteY ^ (sprite[2] & 0x80 ? spriteH - 1 : 0);
+                            if (spriteX < 8 && spriteY < spriteH) {
+                                uint16_t spriteTile = sprite[1];
+                                uint16_t spriteAddress = (use8x16Sprites ? spriteTile % 0x02 << 0x0C | spriteTile << 4 & -32 | sy * 0x02 & 0x10 : (spritePatternTable) << 0x09 | spriteTile << 0x04) | sy & 0x07;
+                                uint16_t spriteColor = readCHR(spriteAddress + 8) >> sx << 0x01 & 0x02 | readCHR(spriteAddress) >> sx & 0x01;
+                                if (spriteColor) {
+                                    if (!(sprite[2] & 32 && color)) {
+                                        color = spriteColor;
+                                        palette = 16 | sprite[2] * 0x04 & 0x0C;
+                                    }
+                                    if (i == 0 && color != 0) sprite0Hit = true;
+                                    break;
+                                }
+                            }
+                        }
                     }
-                    int inTileRow = rowInSprite & 7;
-                    if (flipV) inTileRow = 7 - inTileRow;
-                    vaddrBase += inTileRow;
-                } else {
-                    patternTable = spritePatternTable ? 0x1000 : 0x0000;
-                    vaddrBase = patternTable + tile * 16;
-                    int inTileRow = flipV ? 7 - rowInSprite : rowInSprite;
-                    vaddrBase += inTileRow;
-                }
+					frameBuffer[ScanLine * NES_WIDTH + Dot] = nesPalette[paletteRAM[color ? palette | color : 0]];
+				}
 
-                uint8_t plane0 = readCHR(vaddrBase);
-                uint8_t plane1 = readCHR(vaddrBase + 8);
+				if (Dot < 336) {
+					shiftRegHigh <<= 1;
+					shiftRegLow <<= 1;
+					shiftAttribute <<= 2;
+				}
 
-                int colInTile = x - spriteX;
-                int tileCol = flipH ? 7 - colInTile : colInTile;
-                uint8_t colorLow  = (plane0 >> (7 - tileCol)) & 1;
-                uint8_t colorHigh = (plane1 >> (7 - tileCol)) & 1;
-                uint8_t colorId = (colorHigh << 1) | colorLow;
+				int eightStepPipelineTemp = (FullPPUCTRL << 8 & 0x1000) | ntb << 0x04 | VRAMAddr >> 0x0C;
+				switch ((Dot) & 7) {
+                    case 1:
+                        ntb = readVRAM(VRAMAddr);
+                        break;
+                    case 3:
+                        attributeByte = (readVRAM((VRAMAddr & 0xc00) | 0x3c0 | (VRAMAddr >> 4 & 0x38) | (VRAMAddr / 4 & 7)) >> ((VRAMAddr >> 5 & 2) | (VRAMAddr / 2 & 1)) * 2) % 4 * 0x5555;
+                        break;
+                    case 5:
+                        patternTableLow = readCHR(eightStepPipelineTemp);
+                        break;
+                    case 7: {
+                        patternTableHigh = readCHR(eightStepPipelineTemp + 8);
+                        if ((VRAMAddr & 0x001F) == 31) {
+                            VRAMAddr &= 0xFFE0;
+                            VRAMAddr ^= 0x0400;
+                        } else {
+                            VRAMAddr++;
+                        }
+                        shiftRegHigh |= patternTableHigh;
+                        shiftRegLow |= patternTableLow;
+                        shiftAttribute |= attributeByte;
+                        break;
+                    }
+				}
+			}
 
-                if (colorId == 0) continue;
-                if (!sprite0Hit && i == 0 && bgColorId != 0) {
-                    sprite0Hit = true;
-                }
+			if (Dot == 256) {
+				if ((VRAMAddr & 0x7000) != 0x7000) {
+					VRAMAddr += 0x1000;
+				} else {
+					VRAMAddr &= 0x0FFF;
+					int YScroll = (VRAMAddr & 0x03E0) >> 5;
+					if (YScroll == 29) {
+						YScroll = 0;
+						VRAMAddr ^= 0x0800;
+					} else if (YScroll == 31) {// tanks 100th_coin
+						YScroll = 0; 
+					} else {
+						YScroll++;
+						YScroll &= 0x1F;
+					}
+					VRAMAddr = ((VRAMAddr & 0xFC1F) | (YScroll << 5));
+				}
+			}
 
-                if (!spritePixelDrawn) {
-                    uint8_t palEntry = paletteRAM[16 + paletteIndex * 4 + colorId] & 0x3F;
-                    color = nesPalette[palEntry];
-                    if (palEntry == hoveredPaletteIndex) color = getRainbowColor();
-                    spritePixelDrawn = true;
-                }
-            }
-        }
-        frameBuffer[y * NES_WIDTH + x] = color;
-    }
+			if (Dot == 257) {
+                // 0b0111101111100000, 0b0000010000011111
+				VRAMAddr = ((VRAMAddr & 0x7be0) | (TransferAddr & 0x41f));
+			}
+		}
 
-    Dot++;
-    if (Dot > 341) {
-        Dot = 0;
-        ScanLine++;
-        if (ScanLine > 261) ScanLine = 0;
+		if (Dot >= 280 && Dot <= 304 && ScanLine == 261) {
+            // 0b0000010000011111, 0b0111101111100000
+			VRAMAddr = ((VRAMAddr & 0x41f) | (TransferAddr & 0x7be0));
+		}
+	}
+
+	Dot++;
+	if (Dot > 341) {
+		Dot = 0;
+		ScanLine++;
+		if (ScanLine > 261) ScanLine = 0;
+	}
+}
+
+uint8_t PPU::readVRAM(uint16_t addr) {
+    if (Mirroring == MirrorMode::HORIZONTAL) {
+        return VRAM[(addr & 0x3FF) | (addr & 0x800) >> 1];
+    } else {
+        return VRAM[addr & 0x7FF];
     }
 }
 
@@ -170,7 +196,7 @@ uint8_t PPU::readCHR(uint16_t addr) {
     return globalROM.mapper ? globalROM.mapper->ppuRead(addr) : addr;
 }
 
-void PPU::LoadCHRROM(const uint8_t* chrData, int chrSize) {
+void PPU::LoadCHRROM(const uint8_t *chrData, int chrSize) {
     ChrData.resize(chrSize);
     memcpy(ChrData.data(), chrData, chrSize);
 }
