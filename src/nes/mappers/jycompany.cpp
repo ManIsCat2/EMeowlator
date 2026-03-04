@@ -76,7 +76,7 @@ void JyCompany::cpuWrite(uint16_t addr, uint8_t value) {
             case 0xA004: case 0xA005: case 0xA006: case 0xA007:
                 chrHighRegs[addr & 0x07] = value;;
                 break;
-            case 0xC000: irqEnabled = value & 0x01; if(!irqEnabled) cpu.doIRQ = false; break;
+            case 0xC000: irqEnabled = value & 0x01; if(!irqEnabled) cpu.IRQPending = false; break;
             case 0xC004: irqPrescaler = value ^ irqXorReg; break;
             case 0xC005: irqCounter = value ^ irqXorReg; break;
             case 0xC006: irqXorReg = value; break;

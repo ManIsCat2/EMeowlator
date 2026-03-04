@@ -12,14 +12,14 @@ public:
     void reset() override;
     const char* getName(void) override;
 
-    uint16_t getCHRSlotSize() override {
+    uint16_t getCHRPageSize() override {
         return 0x400;
     }
-    uint16_t getPRGSlotSize() override {
+    uint16_t getPRGPageSize() override {
         return 0x2000;
     }
 
-    void clockIRQ();
+    void clockCPU(void) override;
 private:
     uint8_t command;
     uint8_t workRamValue;

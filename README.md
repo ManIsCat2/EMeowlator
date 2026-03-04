@@ -1,4 +1,4 @@
-MeowNES is a completely broken emulator made by a cat using QT.
+MeowNES is a completely broken emulator made by a Cat, scrolling may be broken in some games.
 
 Supported mappers:
 - NROM (Mapper 0)

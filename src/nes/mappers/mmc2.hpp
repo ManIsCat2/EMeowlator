@@ -12,10 +12,10 @@ public:
     const char *getName(void) override;
     void reset() override;
 
-    uint16_t getCHRSlotSize() override {
+    uint16_t getCHRPageSize() override {
         return 0x1000;
     }
-    uint16_t getPRGSlotSize() override {
+    uint16_t getPRGPageSize() override {
         return 0x2000;
     }
 private:
@@ -25,6 +25,4 @@ private:
     uint8_t ChrBankFE[2];
 
     uint8_t Latch[2];
-
-    void updatePRG();
 };

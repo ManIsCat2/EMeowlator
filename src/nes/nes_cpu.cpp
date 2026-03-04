@@ -35,9 +35,16 @@ void CPU::run(uint32_t maxCycles) {
         bool prevNMIDetect = NMIDetector;
         NMIDetector = ppu.Vblank && ppu.enableNMI;
         uint8_t opcode = 0;
+        if (globalROM.mapper) globalROM.mapper->clockCPU();
+
+        // nmi "overrides" irq
         if (!prevNMIDetect && NMIDetector) {
             opcode = 0x00;
             doNMI = true;
+        } else if (IRQPending && !(P & 0x04)) {
+            IRQPending = false;
+            opcode = 0x00;
+            doIRQ = true;
         } else {
             opcode = fetch();
         }
@@ -1872,17 +1879,18 @@ void CPU::execute(uint8_t opcode) {
     }
     
     case 0x00: { // BRK
-        if (!doNMI) {
+        if (!doNMI && !doIRQ) {
             PC++;
         }
         push((PC >> 8) & 0xFF);
         push(PC & 0xFF);
-        push((doNMI ? (P & ~0x10) : (P)) | 0x20 | 0x30);
+        push((doNMI ? (P & ~0x10) : (P)) | 0x20 | (doIRQ ? (P & 0xEF) : 0x30));
         P |= 0x04;
         uint8_t AddrLow = read(doNMI ? 0xFFFA : 0xFFFE);
         uint8_t AddrHigh = read(doNMI ? 0xFFFB : 0xFFFF);
         PC = ((AddrHigh*256)+AddrLow);
         doNMI = false;
+        doIRQ = false;
         cycles += 7;
         break;
     }
@@ -2093,8 +2101,7 @@ void CPU::write(uint16_t addr, uint8_t value) {
     if (globalROM.mapper) globalROM.mapper->cpuWrite(addr, value);
 }
 
-uint16_t CPU::read16(uint16_t addr)
-{
+uint16_t CPU::read16(uint16_t addr) {
     uint8_t lo = read(addr);
     uint8_t hi = read(addr + 1);
     return (hi << 8) | lo;

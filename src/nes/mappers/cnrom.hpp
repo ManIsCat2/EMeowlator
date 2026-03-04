@@ -11,10 +11,10 @@ public:
     const char *getName(void) override;
     void reset() override;
 
-    uint16_t getCHRSlotSize() override {
+    uint16_t getCHRPageSize() override {
         return 0x2000;
     }
-    uint16_t getPRGSlotSize() override {
+    uint16_t getPRGPageSize() override {
         return 0x8000;
     }
 };

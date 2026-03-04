@@ -34,13 +34,13 @@ void Namco163::updateWorkRamMapping() {
 	}
 }
 
-void Namco163::clockIRQ() {
+void Namco163::clockCPU(void) {
     if (irqCounter & 0x8000) {
         if ((irqCounter & 0x7FFF) != 0x7FFF) {
             irqCounter++;
 
             if ((irqCounter & 0x7FFF) == 0x7FFF) {
-                cpu.doIRQ = true;
+                cpu.IRQPending = true;
             }
         }
     }
@@ -50,12 +50,12 @@ void Namco163::cpuWrite(uint16_t addr, uint8_t value) {
     switch(addr & 0xF800) {
         case 0x5000:
             irqCounter = (irqCounter & 0xFF00) | value;
-            cpu.doIRQ = false;
+            cpu.IRQPending = false;
             break;
 
         case 0x5800:
             irqCounter = (irqCounter & 0x00FF) | (value << 8);
-            cpu.doIRQ = false;
+            cpu.IRQPending = false;
             break;
         case 0x8000:
         case 0x8800:

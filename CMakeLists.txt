@@ -21,5 +21,7 @@ file(GLOB_RECURSE SOURCES
 add_executable(MeowNES ${SOURCES})
 
 target_link_libraries(MeowNES Qt6::Widgets)
+#target_compile_options(MeowNES PRIVATE -fsanitize=address)
+#target_link_options(MeowNES PRIVATE -fsanitize=address)
 
 set(CMAKE_CLEAN_FILES "${CMAKE_CURRENT_BINARY_DIR}")

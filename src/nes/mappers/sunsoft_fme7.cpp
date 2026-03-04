@@ -68,7 +68,7 @@ void SunSoftFME7::cpuWrite(uint16_t addr, uint8_t value) {
                 case 0xD:
                     irqEnabled = value & 1;
                     irqCounterEnabled = value & 0x80;
-                    cpu.doIRQ = false;
+                    cpu.IRQPending = false;
                     break;
                 case 0xE:
                     irqCounter = (irqCounter & 0xFF00) | value;
@@ -85,13 +85,13 @@ const char* SunSoftFME7::getName(void) {
     return "SunSoft FME-7";
 }
 
-void SunSoftFME7::clockIRQ() {
+void SunSoftFME7::clockCPU(void) {
     if(!irqCounterEnabled)
         return;
 
     irqCounter--;
 
-    if(irqCounter == 0xFFFF) {
-        if(irqEnabled) cpu.doIRQ = true;
+    if (irqCounter == 0xFFFF) {
+        if (irqEnabled) cpu.IRQPending = true;
     }
 }

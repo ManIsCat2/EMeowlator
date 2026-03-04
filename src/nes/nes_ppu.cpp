@@ -44,7 +44,8 @@ uint32_t getRainbowColor() {
 }
 
 void PPU::reset(void) {
-    std::fill(VRAM.data(), VRAM.data()+(VRAM_MIRRORED_SIZE-1), 0x67);
+    memset(VRAM.data(), 0, VRAM_MIRRORED_SIZE);
+    memset(paletteRAM.data(), 0, PALRAM_SIZE);
     memset(frameBuffer, 0, sizeof(frameBuffer));
     WriteLatch = false;
     TransferAddr = 0;
@@ -92,16 +93,20 @@ void PPU::Step() {
                             uint16_t spriteH = use8x16Sprites ? 16 : 8;
                             uint16_t spriteX = Dot - sprite[3];
                             uint16_t spriteY = ScanLine - sprite[0] - 1;
-                            uint16_t sx = spriteX ^ !(sprite[2] & 0x40) * 7;
-                            uint16_t sy = spriteY ^ (sprite[2] & 0x80 ? spriteH - 1 : 0);
+
+                            int flipH = sprite[2] & 0x40;
+                            int flipV = sprite[2] & 0x80;
+
+                            uint16_t sx = spriteX ^ !(flipH) * 7;
+                            uint16_t sy = spriteY ^ (flipV ? spriteH - 1 : 0);
                             if (spriteX < 8 && spriteY < spriteH) {
                                 uint16_t spriteTile = sprite[1];
                                 uint16_t spriteAddress = (use8x16Sprites ? spriteTile % 0x02 << 0x0C | spriteTile << 4 & -32 | sy * 0x02 & 0x10 : (spritePatternTable) << 0x09 | spriteTile << 0x04) | sy & 0x07;
                                 uint16_t spriteColor = readCHR(spriteAddress + 8) >> sx << 0x01 & 0x02 | readCHR(spriteAddress) >> sx & 0x01;
                                 if (spriteColor) {
-                                    if (!(sprite[2] & 32 && color)) {
+                                    if (!(sprite[2] & 0x20 && color)) {
                                         color = spriteColor;
-                                        palette = 16 | sprite[2] * 0x04 & 0x0C;
+                                        palette = 0x10 | sprite[2] * 0x04 & 0x0C;
                                     }
                                     if (i == 0 && color != 0) sprite0Hit = true;
                                     break;
@@ -109,7 +114,10 @@ void PPU::Step() {
                             }
                         }
                     }
-					frameBuffer[ScanLine * NES_WIDTH + Dot] = nesPalette[paletteRAM[color ? palette | color : 0]];
+                    uint8_t finalPal = paletteRAM[color ? palette | color : 0] & 0x3f;
+                    uint32_t fbColor = nesPalette[finalPal];
+                    if (finalPal == hoveredPaletteIndex) fbColor = getRainbowColor();
+					frameBuffer[ScanLine * NES_WIDTH + Dot] = fbColor;
 				}
 
 				if (Dot < 336) {
@@ -118,7 +126,7 @@ void PPU::Step() {
 					shiftAttribute <<= 2;
 				}
 
-				int eightStepPipelineTemp = (FullPPUCTRL << 8 & 0x1000) | ntb << 0x04 | VRAMAddr >> 0x0C;
+				uint16_t fetchAddress = (FullPPUCTRL << 8 & 0x1000) | ntb << 0x04 | VRAMAddr >> 0x0C;
 				switch ((Dot) & 7) {
                     case 1:
                         ntb = readVRAM(VRAMAddr);
@@ -127,10 +135,10 @@ void PPU::Step() {
                         attributeByte = (readVRAM((VRAMAddr & 0xc00) | 0x3c0 | (VRAMAddr >> 4 & 0x38) | (VRAMAddr / 4 & 7)) >> ((VRAMAddr >> 5 & 2) | (VRAMAddr / 2 & 1)) * 2) % 4 * 0x5555;
                         break;
                     case 5:
-                        patternTableLow = readCHR(eightStepPipelineTemp);
+                        patternTableLow = readCHR(fetchAddress);
                         break;
                     case 7: {
-                        patternTableHigh = readCHR(eightStepPipelineTemp + 8);
+                        patternTableHigh = readCHR(fetchAddress + 8);
                         if ((VRAMAddr & 0x001F) == 31) {
                             VRAMAddr &= 0xFFE0;
                             VRAMAddr ^= 0x0400;
@@ -174,6 +182,8 @@ void PPU::Step() {
             // 0b0000010000011111, 0b0111101111100000
 			VRAMAddr = ((VRAMAddr & 0x41f) | (TransferAddr & 0x7be0));
 		}
+
+        if (globalROM.mapper) globalROM.mapper->clockPPU();
 	}
 
 	Dot++;

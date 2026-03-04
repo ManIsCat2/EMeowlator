@@ -54,7 +54,7 @@ void MMC3::cpuWrite(uint16_t addr, uint8_t value) {
     } else if (addr >= 0xE000) {
         if ((addr & 1) == 0) {
             IRQEnabled = false;
-            cpu.doIRQ = false;
+            cpu.IRQPending = false;
         } else {
             IRQEnabled = true;
         }
@@ -63,29 +63,6 @@ void MMC3::cpuWrite(uint16_t addr, uint8_t value) {
 
 const char* MMC3::getName(void) {
     return "MMC3";
-}
-
-uint8_t MMC3::ppuRead(uint16_t addr) {
-    bool a12 = (addr & 0x1fff) & 0x1000;
-    clockIRQ(a12);
-
-    return MapperBase::ppuRead(addr);
-}
-
-void MMC3::clockIRQ(bool a12) {
-    if (!LastA12 && a12) {
-        if (IRQCounter == 0) {
-            IRQCounter = IRQReload;
-        } else {
-            IRQCounter--;
-        }
-
-        if (IRQCounter == 0 && IRQEnabled) {
-            cpu.doIRQ = true;
-        }
-    }
-
-    LastA12 = a12;
 }
 
 void MMC3::updatePRG() {
@@ -121,5 +98,11 @@ void MMC3::updateCHR() {
 		setCHRPage(5, BankRegisters[0] | 0x01);
 		setCHRPage(6, BankRegisters[1] & 0xFE);
 		setCHRPage(7, BankRegisters[1] | 0x01);
+    }
+}
+
+void MMC3::clockPPU(void) {
+    if ((ppu.ScanLine + 1) % 262 < 241 && ppu.Dot == 261 && IRQEnabled && !IRQReload--) {
+        cpu.IRQPending = true;
     }
 }

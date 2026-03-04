@@ -3,7 +3,7 @@
 #include "../../main.hpp"
 
 void MapperBase::setCHRPage(uint16_t page, uint16_t val, uint32_t offset) {
-    uint32_t chrSlotSize = getCHRSlotSize();
+    uint32_t chrSlotSize = getCHRPageSize();
     uint32_t bankOffset = ((val * chrSlotSize) + offset) & (globalROM.CHRRomSize - 1);
     uint16_t ppuStart = page * chrSlotSize;
     uint16_t ppuEnd = ppuStart + chrSlotSize - 1;
@@ -24,7 +24,7 @@ void MapperBase::setCHRPage2(uint16_t page, uint16_t val, uint32_t offset) {
 }
 
 void MapperBase::setPRGPage(uint16_t page, uint16_t val, uint32_t offset) {
-    uint32_t prgSlotSize = getPRGSlotSize();
+    uint32_t prgSlotSize = getPRGPageSize();
     uint32_t bankOffset = ((val * prgSlotSize) + offset) & (globalROM.PRGRomSize - 1);
     uint16_t cpuStart = 0x8000 + (page * prgSlotSize);
     uint16_t cpuEnd = cpuStart + prgSlotSize - 1;

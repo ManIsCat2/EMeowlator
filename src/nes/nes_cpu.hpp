@@ -23,6 +23,7 @@ public:
     bool NMIDetector = false;
     bool doNMI = false;
     bool doIRQ = false;
+    bool IRQPending = false;
 
     uint8_t setOpenBus(uint8_t val) {
         if (emulateOBus) OpenBus = val;

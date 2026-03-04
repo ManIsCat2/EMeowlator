@@ -23,16 +23,19 @@ public:
     virtual const char *getName(void) { return ""; }
     virtual void reset() {}
     void initialize() {
-
+        // may add things here
         reset();
     }
 
-    virtual uint16_t getCHRSlotSize() {
+    virtual uint16_t getCHRPageSize() {
         return 0x2000;
     }
-	virtual uint16_t getPRGSlotSize() {
+	virtual uint16_t getPRGPageSize() {
         return 0x4000;
     }
+
+    virtual void clockCPU(void) {}
+    virtual void clockPPU(void) {}
 
     void setCHRPage(uint16_t page, uint16_t val, uint32_t offset=0);
     void setCHRPage8(uint16_t page, uint16_t val, uint32_t offset=0);

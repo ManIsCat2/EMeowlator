@@ -7,17 +7,18 @@ public:
     MMC3();
     ~MMC3() override = default;
 
-    uint8_t ppuRead(uint16_t addr) override;
     void cpuWrite(uint16_t addr, uint8_t value) override;
     const char *getName(void) override;
     void reset() override;
 
-    uint16_t getCHRSlotSize() override {
+    uint16_t getCHRPageSize() override {
         return 0x400;
     }
-    uint16_t getPRGSlotSize() override {
+    uint16_t getPRGPageSize() override {
         return 0x2000;
     }
+
+    void clockPPU(void) override;
 private:
     uint8_t BankSelect;
     uint8_t BankRegisters[8];
@@ -32,5 +33,4 @@ private:
 
     void updatePRG();
     void updateCHR();
-    void clockIRQ(bool a12);
 };
