@@ -101,6 +101,8 @@ void MMC3::updateCHR() {
     }
 }
 
+// instead of checking for a12 rising edge... i do this
+// it is a really shitty hack but it will work for most games
 void MMC3::clockPPU(void) {
     if ((ppu.ScanLine + 1) % 262 < 241 && ppu.Dot == 261 && IRQEnabled && !IRQReload--) {
         cpu.IRQPending = true;

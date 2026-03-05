@@ -45,6 +45,7 @@ uint32_t getRainbowColor() {
 
 void PPU::reset(void) {
     memset(VRAM.data(), 0, VRAM_MIRRORED_SIZE);
+    memset(OAM, 0, 0x100);
     memset(paletteRAM.data(), 0, PALRAM_SIZE);
     memset(frameBuffer, 0, sizeof(frameBuffer));
     WriteLatch = false;
@@ -87,7 +88,7 @@ void PPU::Step() {
 				if (Dot < NES_WIDTH) {
 					uint8_t color = (shiftRegHigh >> (0x0E - scrollFineX) & 0x02) | (shiftRegLow >> (0x0F - scrollFineX) & 0x01);
                     uint8_t palette = shiftAttribute >> (0x1C - scrollFineX * 0x02) & 0x0C;
-                    if (maskRenderSprites) {
+                    if (maskRenderSprites && !DisableSprites) {
                        for (int i = 0; i < 256; i += 4) {
                             uint8_t *sprite = OAM + i;
                             uint16_t spriteH = use8x16Sprites ? 16 : 8;

@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         arch:
-          - name: Win64
+          - name: win64
             sys: mingw64
             env: x86_64
 
@@ -45,10 +45,10 @@ jobs:
           cd build
           make -j12
       
-      - name: Deploy Qt Libraries
-        run: |
-          cd build
-          windeployqt MeowNES.exe --release
+      #- name: Deploy Qt Libraries
+      #  run: |
+      #    cd build
+      #    windeployqt MeowNES.exe --release
           
       - name: Upload
         uses: actions/upload-artifact@v4

@@ -68,8 +68,7 @@ void CPU::run(uint32_t maxCycles) {
 }
 
 void CPU::execute(uint8_t opcode) {
-    auto readIndirect = [this](uint16_t addr) -> uint16_t
-    {
+    auto readIndirect = [this](uint16_t addr) {
         uint8_t lo = read(addr);
         uint8_t hi;
         if ((addr & 0x00FF) == 0xFF)
@@ -79,10 +78,8 @@ void CPU::execute(uint8_t opcode) {
         return (hi << 8) | lo;
     };
 
-    auto branch = [this](bool condition, int8_t offset)
-    {
-        if (condition)
-        {
+    auto branch = [this](bool condition, int8_t offset) {
+        if (condition) {
             uint16_t oldPC = PC;
             PC += offset;
             cycles += 1;
@@ -1897,7 +1894,7 @@ void CPU::execute(uint8_t opcode) {
 
     default:
         char errorMsg[256];
-        sprintf(errorMsg, "CPU Crashed after executing Unimplemented Opcode 0x%02X", opcode);
+        sprintf(errorMsg, "CPU crashed after reaching Unimplemented Opcode 0x%02X", opcode);
         romIsLoaded = false;
         reset();
         DebugPrintLog("CPU", "%s", errorMsg);

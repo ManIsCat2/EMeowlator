@@ -99,8 +99,7 @@ int main(int argc, char *argv[]) {
 
     makeDirectory("saves");
 
-    Config conf;
-    conf.Load("meowconf.txt");
+    Config::Load("meowconf.txt");
 
     QMenuBar *menuBar = window.menuBar();
     QMenu *fileMenu = menuBar->addMenu("File");
@@ -422,7 +421,7 @@ int main(int argc, char *argv[]) {
     window.show();
 
     QObject::connect(&app, &QApplication::aboutToQuit, [&]() {
-        conf.Write("meowconf.txt");
+        Config::Write("meowconf.txt");
     });
 
     if (argc > 1) {

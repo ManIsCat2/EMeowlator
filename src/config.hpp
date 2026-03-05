@@ -16,6 +16,6 @@ public:
         Type type;
     };
 
-    void Load(const char *path);
-    void Write(const char *path);
+    static void Load(const char *path);
+    static void Write(const char *path);
 };

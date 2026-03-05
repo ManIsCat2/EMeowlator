@@ -13,7 +13,7 @@ public:
         bool battery = false;
     };
     struct MemPage PRGPages[256];
-    struct MemPage CHRPages[256];
+    struct MemPage CHRPages[32];
 
     virtual ~MapperBase() = default;
     virtual uint8_t cpuRead(uint16_t addr);
