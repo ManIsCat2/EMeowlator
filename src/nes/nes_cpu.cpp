@@ -1957,7 +1957,7 @@ uint8_t CPU::read(uint16_t addr)
             }
 
             default:
-                return emulateOBus ? OpenBus : 0xff;
+                return OpenBus;
         }
     }
 

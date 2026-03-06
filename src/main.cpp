@@ -92,6 +92,9 @@ QAction *makeQBool(const QString &text, QObject *parent, bool defaultBool) {
     return newAction;
 }
 
+QImage rawOutputImage((uint8_t*)(ppu.frameBuffer), NES_WIDTH, NES_HEIGHT, QImage::Format_RGB32);
+QImage filteredOutputImage((uint8_t*)(ppu.frameBuffer), NES_NTSC_OUT_WIDTH(NES_WIDTH), NES_HEIGHT, QImage::Format_RGB32);
+
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     QMainWindow window;
@@ -103,37 +106,50 @@ int main(int argc, char *argv[]) {
 
     QMenuBar *menuBar = window.menuBar();
     QMenu *fileMenu = menuBar->addMenu("File");
-    QMenu *CPUMenu = menuBar->addMenu("CPU");
-    QMenu *PPUMenu = menuBar->addMenu("PPU");
-    QMenu *controllerMenu = menuBar->addMenu("Controller");
-    QMenu *saveStateMenu = menuBar->addMenu("Savestate");
-    QMenu *debugMenu = menuBar->addMenu("Debug");
+    QMenu *settingsMenu = menuBar->addMenu("Settings");
     QMenu *miscMenu = menuBar->addMenu("Misc");
 
+    //file
     QAction *openAction = new QAction("Open ROM", &window);
     QAction *closeAction = new QAction("Close ROM", &window);
-    QAction *CPUPauseAction = makeQBool("Pause", &window, cpu.CPUPaused);
-    QAction *openBusAction = makeQBool("Open Bus", &window, cpu.emulateOBus);
-    QAction *paletteEditorAction = new QAction("Palette Editor", &window);
+    QAction *saveSaveStateAction = new QAction("Save Savestate", &window);
+    QAction *loadSaveStateAction = new QAction("Load Savestate", &window);
+    // settings
     QAction *VRAMCorruptAction = makeQBool("VRAM Corruption", &window, ppu.VRAMCorruption);
     QAction *disableSpritesAction = makeQBool("Disable Sprites", &window, ppu.DisableSprites);
-    QAction *saveSaveStateAction = new QAction("Save to file", &window);
-    QAction *keyEditAction = new QAction("Keybind Editor", &window);
-    QAction *loadSaveStateAction = new QAction("Load from file", &window);
+    QAction *paletteEditorAction = new QAction("Palette Editor", &window);
+    QAction *keyEditAction = new QAction("Input", &window);
+    QAction *CPUPauseAction = makeQBool("Pause", &window, cpu.CPUPaused);
+    // misc
     QAction *romInfoAction = new QAction("ROM Info", &window);
     QAction *exitAction = new QAction("Exit", &window);
 
     fileMenu->addAction(openAction);
     fileMenu->addAction(closeAction);
-    CPUMenu->addAction(CPUPauseAction);
-    CPUMenu->addAction(openBusAction);
-    PPUMenu->addAction(paletteEditorAction);
-    PPUMenu->addAction(VRAMCorruptAction);
-    PPUMenu->addAction(disableSpritesAction);
-    controllerMenu->addAction(keyEditAction);
-    saveStateMenu->addAction(saveSaveStateAction);
-    saveStateMenu->addAction(loadSaveStateAction);
-    debugMenu->addAction(romInfoAction);
+    fileMenu->addSeparator();
+    fileMenu->addAction(saveSaveStateAction);
+    fileMenu->addAction(loadSaveStateAction);
+
+    settingsMenu->addAction(VRAMCorruptAction);
+    settingsMenu->addAction(disableSpritesAction);
+    QMenu *videoFilterMenu = settingsMenu->addMenu("Video Filter");
+
+    std::array<std::string, 2> videoFiltersStr[] = {"None", "NTSC"};
+	for (int i = 0; i < (int)videoFiltersStr->size(); i++) {
+	    QAction *vfilterAction = new QAction(QString::fromStdString(videoFiltersStr->data()[i]), &window);
+
+		videoFilterMenu->addAction(vfilterAction);
+
+		QObject::connect(vfilterAction, &QAction::triggered, [i]{ ppu.InitFilter((VideoFilter)i); DebugPrintLog("SETTINGS", "Set vFilter to %u", i); } );
+	}
+
+    settingsMenu->addAction(paletteEditorAction);
+    settingsMenu->addSeparator();
+    settingsMenu->addAction(keyEditAction);
+    settingsMenu->addSeparator();
+    settingsMenu->addAction(CPUPauseAction);
+
+    miscMenu->addAction(romInfoAction);
     miscMenu->addAction(exitAction);
 
     QObject::connect(exitAction, &QAction::triggered, &window, &QMainWindow::close);
@@ -162,9 +178,6 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(CPUPauseAction, &QAction::toggled, [&](bool checked) {
         cpu.CPUPaused = checked;
-    });
-    QObject::connect(openBusAction, &QAction::toggled, [&](bool checked) {
-        cpu.emulateOBus = checked;
     });
     QObject::connect(paletteEditorAction, &QAction::triggered, [&]() {
         QDialog *dialog = new QDialog(&window);
@@ -288,7 +301,7 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(keyEditAction, &QAction::triggered, [&]() {
         QDialog *dialog = new QDialog(&window);
-        dialog->setWindowTitle("Keybind Editor");
+        dialog->setWindowTitle("Input");
         dialog->setFixedSize(300, 340);
 
         QVBoxLayout *layout = new QVBoxLayout(dialog);
@@ -401,11 +414,17 @@ int main(int argc, char *argv[]) {
     inputMgr.install(&window);
 
     ppu.Init();
-
     QTimer cpuTimer;
     QObject::connect(&cpuTimer, &QTimer::timeout, [&]() {
         if (romIsLoaded) {
             cpu.run((uint32_t)(89342 * CPUSpeed));
+            if (ppu.filtering != VideoFilter::NONE) {
+                screen->image = filteredOutputImage;
+                nes_ntsc_blit(&ppu.NTSC, ppu.palIndexBuf, 256, 0, 256, 240, ppu.frameBuffer, NES_NTSC_OUT_WIDTH(256) * sizeof(uint32_t));
+            } else {
+                screen->image = rawOutputImage;
+                ppu.blitPixels();
+            }
             screen->update();
             rainbowHoverPhase += 0.001f;
             if (rainbowHoverPhase > 1.0f) rainbowHoverPhase -= 1.0f;

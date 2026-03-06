@@ -13,7 +13,6 @@ public:
     CPU() { }
 
     bool CPUPaused = false;
-    bool emulateOBus = true;
     uint8_t RAM[RAM_SIZE];
     uint8_t PrgRAM[0x2000];
     uint8_t OpenBus = 0;
@@ -26,8 +25,7 @@ public:
     bool IRQPending = false;
 
     uint8_t setOpenBus(uint8_t val) {
-        if (emulateOBus) OpenBus = val;
-        return val;
+        return OpenBus = val;
     }
 
     void GetInfo(uint8_t *AReg, uint8_t *XReg, uint8_t *YReg, uint16_t *PCPtr, uint8_t *SPPtr, uint8_t *PPtr) {

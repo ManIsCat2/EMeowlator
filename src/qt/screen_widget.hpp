@@ -8,8 +8,9 @@ class ScreenWidget : public QWidget {
 public:
     QImage image;
 
-    ScreenWidget(uint32_t *fb, QWidget *parent = nullptr) : QWidget(parent), image((uint8_t*)(fb), NES_WIDTH, NES_HEIGHT, QImage::Format_ARGB32) {
-        setFixedSize(NES_WIDTH*3, NES_HEIGHT*3);
+    ScreenWidget(uint32_t *fb, QWidget *parent = nullptr) : QWidget(parent) {
+        image = QImage((uint8_t*)(fb), NES_WIDTH, NES_HEIGHT, QImage::Format_RGB32);
+        setFixedSize(768, NES_HEIGHT*3);
     }
 
 protected:

@@ -5,6 +5,7 @@
 #include <cstring>
 
 #include "nes.hpp"
+#include "nes_ntsc.h"
 
 enum class MirrorMode {
     HORIZONTAL,
@@ -14,13 +15,24 @@ enum class MirrorMode {
     FOURSCREEN
 };
 
+enum class VideoFilter {
+    NONE,
+    NTSC,
+};
+
+
 class PPU {
 public:
     std::vector<uint8_t> ChrData{};
     std::array<uint8_t, VRAM_MIRRORED_SIZE> VRAM{};
     std::array<uint8_t, PALRAM_SIZE> paletteRAM{};
     uint8_t OAM[0x100];
-    uint32_t frameBuffer[NES_WIDTH * NES_HEIGHT];
+    uint32_t frameBuffer[(NES_NTSC_OUT_WIDTH(256)) * NES_HEIGHT];
+    uint8_t palIndexBuf[NES_WIDTH * NES_HEIGHT];
+
+    nes_ntsc_t NTSC;
+    nes_ntsc_setup_t NTSCSetup;
+    VideoFilter filtering = VideoFilter::NONE;
 
     MirrorMode Mirroring = MirrorMode::VERTICAL;
     bool WriteLatch = false;
@@ -69,7 +81,10 @@ public:
     uint8_t readCHR(uint16_t addr);
     uint8_t readVRAM(uint16_t addr);
 
-    bool Init();
+    void blitPixels();
+
+    void Init();
+    void InitFilter(VideoFilter filter);
 };
 
 extern PPU ppu;
