@@ -6,6 +6,7 @@
 
 #include "nes.hpp"
 #include "nes_ntsc.h"
+#include "filters/filters.hpp"
 
 enum class MirrorMode {
     HORIZONTAL,
@@ -18,8 +19,8 @@ enum class MirrorMode {
 enum class VideoFilter {
     NONE,
     NTSC,
+    CHROMA
 };
-
 
 class PPU {
 public:
@@ -27,16 +28,14 @@ public:
     std::array<uint8_t, VRAM_MIRRORED_SIZE> VRAM{};
     std::array<uint8_t, PALRAM_SIZE> paletteRAM{};
     uint8_t OAM[0x100];
-    uint32_t frameBuffer[(NES_NTSC_OUT_WIDTH(256)) * NES_HEIGHT];
+    uint32_t frameBuffer[NES_NTSC_OUT_WIDTH(256) * NES_HEIGHT];
     uint8_t palIndexBuf[NES_WIDTH * NES_HEIGHT];
 
-    nes_ntsc_t NTSC;
-    nes_ntsc_setup_t NTSCSetup;
+    VFilterBase *vfilter = nullptr;
     VideoFilter filtering = VideoFilter::NONE;
 
     MirrorMode Mirroring = MirrorMode::VERTICAL;
     bool WriteLatch = false;
-    unsigned short TransferAddr = 0;
     unsigned short VRAMAddr = 0;
     unsigned short OAMAddr = 0;
     unsigned short TempVRAMAddr = 0;
@@ -63,7 +62,7 @@ public:
 
     uint8_t patternTableLow = 0;
     uint8_t patternTableHigh = 0;
-    uint8_t ntb = 0;
+    uint8_t nametableByte = 0;
     uint16_t shiftRegHigh = 0;
     uint16_t shiftRegLow = 0;
     uint16_t attributeByte = 0;
@@ -84,6 +83,7 @@ public:
     void blitPixels();
 
     void Init();
+    VFilterBase *GetVideoFilter(VideoFilter filter);
     void InitFilter(VideoFilter filter);
 };
 

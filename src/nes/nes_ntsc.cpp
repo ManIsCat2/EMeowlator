@@ -13,10 +13,10 @@ details. You should have received a copy of the GNU Lesser General Public
 License along with this module; if not, write to the Free Software Foundation,
 Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA */
 
-nes_ntsc_setup_t const nes_ntsc_monochrome = { 0,-1, 0, 0,.2,  0,.2,-.2,-.2,-1, 1, 0, 0, 0, 0 };
-nes_ntsc_setup_t const nes_ntsc_composite  = { 0, 0, 0, 0, 0,  0, 0,  0,  0, 0, 1, 0, 0, 0, 0 };
-nes_ntsc_setup_t const nes_ntsc_svideo     = { 0, 0, 0, 0,.2,  0,.2, -1, -1, 0, 1, 0, 0, 0, 0 };
-nes_ntsc_setup_t const nes_ntsc_rgb        = { 0, 0, 0, 0,.2,  0,.7, -1, -1,-1, 1, 0, 0, 0, 0 };
+nes_ntsc_setup_t const nes_ntsc_monochrome = { 0,-1, 0, 0,.2,  0,.2,-.2,-.2,-1, 1, 0, 0, 0, 0, 0 };
+nes_ntsc_setup_t const nes_ntsc_composite  = { 0, 0, 0, 0, 0,  0, 0,  0,  0, 0, 1, 0, 0, 0, 0, 0 };
+nes_ntsc_setup_t const nes_ntsc_svideo     = { 0, 0, 0, 0,.2,  0,.2, -1, -1, 0, 1, 0, 0, 0, 0, 0 };
+nes_ntsc_setup_t const nes_ntsc_rgb        = { 0, 0, 0, 0,.2,  0,.7, -1, -1,-1, 1, 0, 0, 0, 0, 0 };
 
 #define alignment_count 3
 #define burst_count     3
@@ -133,9 +133,18 @@ void nes_ntsc_init( nes_ntsc_t* ntsc, nes_ntsc_setup_t const* setup )
 			float i = TO_ANGLE_SIN( color ) * sat;
 			float q = TO_ANGLE_COS( color ) * sat;
 			float y = (hi + lo) * 0.5f;
-			
+
+			// MeowNES edit: Add 32bit palette entry
+			if ( setup->_32bit_palette )
+			{
+				unsigned int const in = setup->_32bit_palette [(entry & 0x3F)];
+				static float const to_float = 1.0f / 0xFF;
+				float r = to_float * (unsigned char)(in >> 16);
+				float g = to_float * (unsigned char)(in >> 8);
+				float b = to_float * (unsigned char)(in);
+				q = RGB_TO_YIQ( r, g, b, y, i );
 			/* Optionally use base palette instead */
-			if ( setup->base_palette )
+			} else if ( setup->base_palette )
 			{
 				unsigned char const* in = &setup->base_palette [(entry & 0x3F) * 3];
 				static float const to_float = 1.0f / 0xFF;

@@ -52,7 +52,6 @@ void SaveStateFile::WriteSaveStateToFile(const char *FileName) {
 
     WriteBytes<bool>(ppu.WriteLatch);
     WriteBytes<unsigned short>(ppu.VRAMAddr);
-    WriteBytes<unsigned short>(ppu.TransferAddr);
     WriteBytes<unsigned short>(ppu.OAMAddr);
     WriteBytes<unsigned short>(ppu.TempVRAMAddr);
     WriteBytes<uint8_t>(ppu.ReadBuffer);
@@ -99,7 +98,6 @@ void SaveStateFile::LoadSaveStateFromFile(const char *FileName) {
 
     ppu.WriteLatch      = ReadBytes<bool>();
     ppu.VRAMAddr        = ReadBytes<unsigned short>();
-    ppu.TransferAddr    = ReadBytes<unsigned short>();
     ppu.OAMAddr         = ReadBytes<unsigned short>();
     ppu.TempVRAMAddr    = ReadBytes<unsigned short>();
     ppu.ReadBuffer      = ReadBytes<uint8_t>();

@@ -103,7 +103,7 @@ void JyCompany::cpuWrite(uint16_t addr, uint8_t value) {
 }
 
 const char* JyCompany::getName() {
-    return "JyCompany ASIC";
+    return "J.Y. Company";
 }
 
 void JyCompany::updatePrg() {
@@ -126,11 +126,11 @@ void JyCompany::updatePrg() {
 }
 
 uint16_t JyCompany::getChrReg(int index) {
-    if(chrMode >= 2 && mirrorChr && (index == 2 || index == 3)) {
+    if (chrMode >= 2 && mirrorChr && (index == 2 || index == 3)) {
         index -= 2;
     }
     
-    if(chrBlockMode) {
+    if (chrBlockMode) {
         uint8_t mask = 0;
         uint8_t shift = 0;
         switch(chrMode) {

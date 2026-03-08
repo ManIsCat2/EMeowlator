@@ -97,6 +97,7 @@ QImage filteredOutputImage((uint8_t*)(ppu.frameBuffer), NES_NTSC_OUT_WIDTH(NES_W
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
+    app.setStyle(QStyleFactory::create("Fusion"));
     QMainWindow window;
     globalQTWin = (void*)&window;
 
@@ -106,7 +107,8 @@ int main(int argc, char *argv[]) {
 
     QMenuBar *menuBar = window.menuBar();
     QMenu *fileMenu = menuBar->addMenu("File");
-    QMenu *settingsMenu = menuBar->addMenu("Settings");
+    QMenu *gameMenu = menuBar->addMenu("Game");
+    QMenu *settingsMenu = menuBar->addMenu("Options");
     QMenu *miscMenu = menuBar->addMenu("Misc");
 
     //file
@@ -114,12 +116,14 @@ int main(int argc, char *argv[]) {
     QAction *closeAction = new QAction("Close ROM", &window);
     QAction *saveSaveStateAction = new QAction("Save Savestate", &window);
     QAction *loadSaveStateAction = new QAction("Load Savestate", &window);
-    // settings
+    //game
+    QAction *gameResetAction = new QAction("Reset", &window);
+    QAction *gamePauseAction = new QAction("Pause", &window);
+    // options
     QAction *VRAMCorruptAction = makeQBool("VRAM Corruption", &window, ppu.VRAMCorruption);
     QAction *disableSpritesAction = makeQBool("Disable Sprites", &window, ppu.DisableSprites);
     QAction *paletteEditorAction = new QAction("Palette Editor", &window);
-    QAction *keyEditAction = new QAction("Input", &window);
-    QAction *CPUPauseAction = makeQBool("Pause", &window, cpu.CPUPaused);
+    QAction *keyEditAction = new QAction("Input Config", &window);
     // misc
     QAction *romInfoAction = new QAction("ROM Info", &window);
     QAction *exitAction = new QAction("Exit", &window);
@@ -130,11 +134,14 @@ int main(int argc, char *argv[]) {
     fileMenu->addAction(saveSaveStateAction);
     fileMenu->addAction(loadSaveStateAction);
 
+    gameMenu->addAction(gameResetAction);
+    gameMenu->addAction(gamePauseAction);
+
     settingsMenu->addAction(VRAMCorruptAction);
     settingsMenu->addAction(disableSpritesAction);
     QMenu *videoFilterMenu = settingsMenu->addMenu("Video Filter");
 
-    std::array<std::string, 2> videoFiltersStr[] = {"None", "NTSC"};
+    std::array<std::string, 3> videoFiltersStr[] = {"None", "NTSC", "Chroma"};
 	for (int i = 0; i < (int)videoFiltersStr->size(); i++) {
 	    QAction *vfilterAction = new QAction(QString::fromStdString(videoFiltersStr->data()[i]), &window);
 
@@ -146,8 +153,6 @@ int main(int argc, char *argv[]) {
     settingsMenu->addAction(paletteEditorAction);
     settingsMenu->addSeparator();
     settingsMenu->addAction(keyEditAction);
-    settingsMenu->addSeparator();
-    settingsMenu->addAction(CPUPauseAction);
 
     miscMenu->addAction(romInfoAction);
     miscMenu->addAction(exitAction);
@@ -176,8 +181,13 @@ int main(int argc, char *argv[]) {
             cpu.reset();
         }
     });
-    QObject::connect(CPUPauseAction, &QAction::toggled, [&](bool checked) {
-        cpu.CPUPaused = checked;
+    QObject::connect(gameResetAction, &QAction::triggered, [&]() {
+        cpu.reset();
+        DebugPrintLog("GAME", "Reset Game");
+    });
+    QObject::connect(gamePauseAction, &QAction::triggered, [&]() {
+        cpu.CPUPaused = !cpu.CPUPaused;
+        DebugPrintLog("GAME", cpu.CPUPaused ? "Paused Game" : "Unpaused Game");
     });
     QObject::connect(paletteEditorAction, &QAction::triggered, [&]() {
         QDialog *dialog = new QDialog(&window);
@@ -301,7 +311,7 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(keyEditAction, &QAction::triggered, [&]() {
         QDialog *dialog = new QDialog(&window);
-        dialog->setWindowTitle("Input");
+        dialog->setWindowTitle("Input Config");
         dialog->setFixedSize(300, 340);
 
         QVBoxLayout *layout = new QVBoxLayout(dialog);
@@ -408,7 +418,8 @@ int main(int argc, char *argv[]) {
         dialog->exec();
     });
 
-    ScreenWidget *screen = new ScreenWidget(ppu.frameBuffer);
+    ScreenWidget *screen = new ScreenWidget(&window);
+    screen->image = rawOutputImage;
     window.setCentralWidget(screen);
     InputManager inputMgr;
     inputMgr.install(&window);
@@ -418,13 +429,12 @@ int main(int argc, char *argv[]) {
     QObject::connect(&cpuTimer, &QTimer::timeout, [&]() {
         if (romIsLoaded) {
             cpu.run((uint32_t)(89342 * CPUSpeed));
-            if (ppu.filtering != VideoFilter::NONE) {
+            if (ppu.filtering == VideoFilter::NTSC) {
                 screen->image = filteredOutputImage;
-                nes_ntsc_blit(&ppu.NTSC, ppu.palIndexBuf, 256, 0, 256, 240, ppu.frameBuffer, NES_NTSC_OUT_WIDTH(256) * sizeof(uint32_t));
             } else {
                 screen->image = rawOutputImage;
-                ppu.blitPixels();
             }
+            ppu.vfilter->applyFilter();
             screen->update();
             rainbowHoverPhase += 0.001f;
             if (rainbowHoverPhase > 1.0f) rainbowHoverPhase -= 1.0f;
@@ -436,6 +446,7 @@ int main(int argc, char *argv[]) {
 
     QPixmap pixmap;
     pixmap.loadFromData(MeowNESIcon, sizeof(MeowNESIcon) / sizeof(MeowNESIcon[0]));
+    window.setWindowTitle("MeowNES");
     window.setWindowIcon(QIcon(pixmap));
     window.show();
 

@@ -49,7 +49,6 @@ void PPU::reset(void) {
     memset(paletteRAM.data(), 0, PALRAM_SIZE);
     memset(frameBuffer, 0, sizeof(frameBuffer));
     WriteLatch = false;
-    TransferAddr = 0;
     VRAMAddr = 0;
     OAMAddr = 0;
     TempVRAMAddr = 0;
@@ -125,10 +124,10 @@ void PPU::Step() {
 					shiftAttribute <<= 2;
 				}
 
-				uint16_t fetchAddress = (FullPPUCTRL << 8 & 0x1000) | ntb << 0x04 | VRAMAddr >> 0x0C;
+				uint16_t fetchAddress = ((FullPPUCTRL & 0x10) << 8) | (nametableByte << 4) | ((VRAMAddr >> 12) & 7);
 				switch ((Dot) & 7) {
                     case 1:
-                        ntb = readVRAM(VRAMAddr);
+                        nametableByte = readVRAM(VRAMAddr);
                         break;
                     case 3:
                         attributeByte = (readVRAM((VRAMAddr & 0xc00) | 0x3c0 | (VRAMAddr >> 4 & 0x38) | (VRAMAddr / 4 & 7)) >> ((VRAMAddr >> 5 & 2) | (VRAMAddr / 2 & 1)) * 2) % 4 * 0x5555;
@@ -173,13 +172,13 @@ void PPU::Step() {
 
 			if (Dot == 257) {
                 // 0b0111101111100000, 0b0000010000011111
-				VRAMAddr = ((VRAMAddr & 0x7be0) | (TransferAddr & 0x41f));
+				VRAMAddr = ((VRAMAddr & 0x7be0) | (TempVRAMAddr & 0x41f));
 			}
 		}
 
 		if (Dot >= 280 && Dot <= 304 && ScanLine == 261) {
             // 0b0000010000011111, 0b0111101111100000
-			VRAMAddr = ((VRAMAddr & 0x41f) | (TransferAddr & 0x7be0));
+			VRAMAddr = ((VRAMAddr & 0x41f) | (TempVRAMAddr & 0x7be0));
 		}
 
         if (globalROM.mapper) globalROM.mapper->clockPPU();
@@ -218,13 +217,22 @@ void PPU::blitPixels() {
 }
 
 void PPU::Init() {
+    InitFilter(VideoFilter::NONE);
     memset(frameBuffer, 0, sizeof(frameBuffer));
+}
+
+VFilterBase *PPU::GetVideoFilter(VideoFilter filter) {
+    switch (filter) {
+        case VideoFilter::NONE: return new DefaultFilter();
+        case VideoFilter::NTSC: return new NTSCFilter();
+        case VideoFilter::CHROMA: return new ChromaFilter();
+    }
+    return nullptr;
 }
 
 void PPU::InitFilter(VideoFilter filter) {
     filtering = filter;
-    switch (filter) {
-        case VideoFilter::NTSC: NTSCSetup = {}; break;
-    }
-    nes_ntsc_init(&NTSC, &NTSCSetup);
+    if (vfilter) { delete vfilter; vfilter = nullptr; }
+    vfilter = GetVideoFilter(filter);
+    vfilter->initialize();
 }
