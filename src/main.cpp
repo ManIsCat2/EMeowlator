@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
     settingsMenu->addAction(disableSpritesAction);
     QMenu *videoFilterMenu = settingsMenu->addMenu("Video Filter");
 
-    std::array<std::string, 3> videoFiltersStr[] = {"None", "NTSC", "Chroma"};
+    std::array<std::string, 4> videoFiltersStr[] = {"None", "NTSC", "Chroma", "Grayscale"};
 	for (int i = 0; i < (int)videoFiltersStr->size(); i++) {
 	    QAction *vfilterAction = new QAction(QString::fromStdString(videoFiltersStr->data()[i]), &window);
 
@@ -177,6 +177,7 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(closeAction, &QAction::triggered, [&]() {
         if (romIsLoaded) {
+            globalROM.mapper->saveSRAM();
             romIsLoaded = false;
             cpu.reset();
         }
@@ -399,14 +400,17 @@ int main(int argc, char *argv[]) {
         std::string subMapperStr = "Sub Mapper: " + std::to_string(globalROM.SubMapperID);
         std::string batteryStr = "Battery: " + std::string(globalROM.hasBattery ? "Yes" : "No");
         std::string CHRRamStr = "CHR-RAM: " + std::string(globalROM.CHRRomSize == 0 ? "Yes" : "No");
+        char batterySizeStr[128];
+        size_t SRAMSize = globalROM.hasBattery ? globalROM.mapper->getSRAMSize() : 0x0000; 
+        sprintf(batterySizeStr, "SRAM/Battery Size: 0x%zx (%zu)", SRAMSize, SRAMSize);
         char RESETVecStr[128];
         sprintf(RESETVecStr, "RESET Vector: 0x%x", globalROM.ResetVec);
         
         QDialog* dialog = new QDialog(&window);
         dialog->setWindowTitle("ROM Info");
-        dialog->setFixedSize(320, 200);
+        dialog->setFixedSize(350, 250);
 
-        std::string fullInfo = joinLines({fileStr, HeaderHexStr, headVerStr, PRGSizeStr, CHRSizeStr, mapperStr, subMapperStr, batteryStr, CHRRamStr, RESETVecStr});
+        std::string fullInfo = joinLines({fileStr, HeaderHexStr, headVerStr, PRGSizeStr, CHRSizeStr, mapperStr, subMapperStr, batteryStr, CHRRamStr, batterySizeStr, RESETVecStr});
         if (!romIsLoaded) fullInfo = "ROM isn't loaded!";
         QLabel* label = new QLabel(QString::fromStdString(fullInfo), dialog);
         label->setAlignment(Qt::AlignCenter);
@@ -451,6 +455,7 @@ int main(int argc, char *argv[]) {
     window.show();
 
     QObject::connect(&app, &QApplication::aboutToQuit, [&]() {
+        globalROM.mapper->saveSRAM();
         Config::Write("meowconf.txt");
     });
 

@@ -19,7 +19,8 @@ enum class MirrorMode {
 enum class VideoFilter {
     NONE,
     NTSC,
-    CHROMA
+    CHROMA,
+    GRAYSCALE
 };
 
 class PPU {

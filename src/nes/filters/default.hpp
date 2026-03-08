@@ -3,6 +3,5 @@
 
 class DefaultFilter : public VFilterBase {
 public:
-    ~DefaultFilter() override = default;
     void applyFilter(void) override;
 };

@@ -5,7 +5,6 @@
 class UxROM : public MapperBase {
 public:
     UxROM();
-    ~UxROM() override = default;
 
     void cpuWrite(uint16_t addr, uint8_t value) override;
     const char *getName(void) override;

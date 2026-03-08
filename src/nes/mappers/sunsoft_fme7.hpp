@@ -5,9 +5,7 @@
 class SunSoftFME7 : public MapperBase {
 public:
     SunSoftFME7();
-    ~SunSoftFME7() override = default;
 
-    uint8_t cpuRead(uint16_t addr) override;
     void cpuWrite(uint16_t addr, uint8_t value) override;
     void reset() override;
     const char* getName(void) override;
@@ -18,6 +16,9 @@ public:
     uint16_t getPRGPageSize() override {
         return 0x2000;
     }
+    uint16_t getSRAMSize() override {
+        return 0x8000;
+    }
 
     void clockCPU(void) override;
 private:
@@ -27,4 +28,6 @@ private:
     bool irqEnabled;
     bool irqCounterEnabled;
     uint16_t irqCounter; 
+
+    void updateWRAM(void);
 };

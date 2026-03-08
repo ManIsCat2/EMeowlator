@@ -2,6 +2,10 @@
 #include "../nes_rom.hpp"
 #include "../../main.hpp"
 
+MapperBase::~MapperBase() {
+    if (SRAM) delete[] SRAM;
+}
+
 void MapperBase::setCHRPage(uint16_t page, uint16_t val, uint32_t offset) {
     uint32_t chrSlotSize = getCHRPageSize();
     uint32_t bankOffset = ((val * chrSlotSize) + offset) & (globalROM.CHRRomSize - 1);
@@ -54,10 +58,6 @@ uint8_t MapperBase::cpuRead(uint16_t addr) {
 void MapperBase::cpuWrite(uint16_t addr, uint8_t value) {
     if (PRGPages[addr >> 8].write) {
         PRGPages[addr >> 8].ptr[addr & 0xFF] = value;
-        if (PRGPages[addr >> 8].battery) {
-            globalROM.mapper->saveSRAM(cpu.PrgRAM);
-           // DebugPrintLog("MAPPER", "Saved SRAM value 0x%02x", value);
-        }
     }
 }
 
@@ -108,15 +108,30 @@ void MapperBase::mapPPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uin
     }
 }
 
-void MapperBase::saveSRAM(uint8_t *mem) {
-    FILE* f = fopen(("saves/"+globalROM.Name+".sav").c_str(), "wb");
+void MapperBase::saveSRAM() {
+    if (!globalROM.hasBattery) return;
+    std::string fname = ("saves/"+globalROM.Name+".sav");
+    FILE* f = fopen(fname.c_str(), "wb");
     if (!f) return;
-    fwrite(mem, 1, 0x2000, f);
+    fwrite(SRAM, 1, getSRAMSize(), f);
     fclose(f);
+    DebugPrintLog("MAPPER", "Saved SRAM to %s", fname.c_str())
 }
-void MapperBase::loadSRAM(uint8_t *mem) {
-    FILE* f = fopen(("saves/"+globalROM.Name+".sav").c_str(), "rb");
+void MapperBase::loadSRAM() {
+    if (!globalROM.hasBattery) return;
+    std::string fname = ("saves/"+globalROM.Name+".sav");
+    FILE* f = fopen(fname.c_str(), "rb");
     if (!f) return;
-    fread(mem, 1, 0x2000, f);
+    fread(SRAM, 1, getSRAMSize(), f);
     fclose(f);
+    DebugPrintLog("MAPPER", "Loaded SRAM from %s", fname.c_str())
+}
+
+void MapperBase::initialize() {
+    if (globalROM.hasBattery) {
+        //DebugPrintLog("MAPPER", "Loaded Save");
+        SRAM = new uint8_t[getSRAMSize()];
+        loadSRAM();
+    }
+    reset();
 }

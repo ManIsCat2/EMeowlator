@@ -1,7 +1,7 @@
 #pragma once
 #include "filter_base.hpp"
 
-class ChromaFilter : public VFilterBase {
+class GrayScaleFilter : public VFilterBase {
 public:
     void applyFilter(void) override;
 };

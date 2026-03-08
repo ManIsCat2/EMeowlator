@@ -5,7 +5,6 @@
 class Namco163 : public MapperBase {
 public:
     Namco163();
-    ~Namco163() override = default;
 
     void cpuWrite(uint16_t addr, uint8_t value) override;
     void reset() override;

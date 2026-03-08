@@ -19,9 +19,9 @@ void CPU::reset() {
 }
 
 void CPU::run(uint32_t maxCycles) {
-    uint32_t cycles_run = 0;
+    uint32_t cyclesRun = 0;
 
-    while (cycles_run < maxCycles) {
+    while (cyclesRun < maxCycles) {
         if (!romIsLoaded || CPUPaused) return;
         bool prevNMIDetect = NMIDetector;
         NMIDetector = ppu.Vblank && ppu.enableNMI;
@@ -41,7 +41,7 @@ void CPU::run(uint32_t maxCycles) {
         }
 
         execute(opcode);
-        cycles_run += cycles;
+        cyclesRun += cycles;
 
         // no proper timing yet
         /*while (cycles) {
@@ -323,8 +323,8 @@ void CPU::execute(uint8_t opcode) {
     case 0x02:
         romIsLoaded = false;
         reset();
-        DebugPrintLog("CPU", "CPU Crashed after reaching a JAM instruction");
-        QMessageBox::critical((QMainWindow*)globalQTWin, "Fatal error", "CPU Crashed after reaching a JAM instruction");
+        DebugPrintLog("CPU", "CPU crashed after reaching a JAM instruction");
+        QMessageBox::critical((QMainWindow*)globalQTWin, "Fatal error", "CPU crashed after reaching a JAM instruction");
         break;
     // lda
     case 0xA9: // LDA immediate
@@ -1901,8 +1901,7 @@ void CPU::SetZN(uint8_t value)
     P = (value & 0x80 ? P | 0x80 : P & ~0x80);
 }
 
-uint8_t CPU::read(uint16_t addr)
-{
+uint8_t CPU::read(uint16_t addr) {
     if (addr < RAM_MIRRORED_SIZE) {
         return setOpenBus(RAM[addr & 0x7ff]);
     }

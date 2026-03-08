@@ -4,7 +4,6 @@
 
 class NTSCFilter : public VFilterBase {
 public:
-    ~NTSCFilter() override = default;
     void initialize(void) override;
     void applyFilter(void) override;
 private:

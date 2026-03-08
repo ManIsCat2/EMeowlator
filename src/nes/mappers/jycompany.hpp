@@ -5,7 +5,6 @@
 class JyCompany : public MapperBase {
 public:
     JyCompany();
-    ~JyCompany() override = default;
 
     uint8_t cpuRead(uint16_t addr) override;
     void cpuWrite(uint16_t addr, uint8_t value) override;
@@ -18,6 +17,9 @@ public:
     uint16_t getPRGPageSize() override {
         return 0x2000;
     }
+
+    void clockCPU(void) override;
+    void clockPPU(void) override;
 private:
     uint8_t prgRegs[4];
     uint8_t prgMode;
@@ -40,12 +42,15 @@ private:
     uint8_t irqPrescaler;
     uint8_t irqXorReg;
     uint8_t irqFunkyModeReg;
-    uint16_t lastPpuAddr;
+    uint8_t irqCountDirection;
+	bool irqFunkyMode = false;
+    bool irqSmallPrescaler = false;
 
     uint8_t multiplyValue1;
     uint8_t multiplyValue2;
     uint8_t regRamValue;
 
+    void clockIRQ(void);
     void updatePrg();
     void updateCHR();
     void updateMirroring();

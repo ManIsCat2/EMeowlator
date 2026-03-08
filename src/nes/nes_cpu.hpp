@@ -14,7 +14,6 @@ public:
 
     bool CPUPaused = false;
     uint8_t RAM[RAM_SIZE];
-    uint8_t PrgRAM[0x2000];
     uint8_t OpenBus = 0;
 
     void reset();

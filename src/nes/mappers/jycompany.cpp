@@ -29,7 +29,9 @@ void JyCompany::reset() {
     irqPrescaler = 0;
     irqXorReg = 0;
     irqFunkyModeReg = 0;
-    lastPpuAddr = 0;
+    irqCountDirection = 0;
+	irqFunkyMode = false;
+    irqSmallPrescaler = false;
 
     multiplyValue1 = 0;
     multiplyValue2 = 0;
@@ -39,7 +41,7 @@ void JyCompany::reset() {
 }
 
 uint8_t JyCompany::cpuRead(uint16_t addr) {
-    if(addr < 0x8000) {
+    if (addr < 0x8000) {
         switch(addr & 0xF803) {
             case 0x5000: return 0;
             case 0x5800: return (multiplyValue1 * multiplyValue2) & 0xFF;
@@ -47,7 +49,7 @@ uint8_t JyCompany::cpuRead(uint16_t addr) {
             case 0x5803: return regRamValue;
         }
         if (addr >= 0x6000 && enablePrgAt6000) {
-            return cpu.PrgRAM[addr - 0x6000];
+            return PRGRam[addr - 0x6000];
         }
     }
     return MapperBase::cpuRead(addr);
@@ -61,7 +63,7 @@ void JyCompany::cpuWrite(uint16_t addr, uint8_t value) {
             case 0x5803: regRamValue = value; break;
         }
         if (addr >= 0x6000 && enablePrgAt6000) {
-            cpu.PrgRAM[addr - 0x6000] = value;
+            PRGRam[addr - 0x6000] = value;
         }
     } else {
         switch(addr & 0xF007) {
@@ -76,7 +78,22 @@ void JyCompany::cpuWrite(uint16_t addr, uint8_t value) {
             case 0xA004: case 0xA005: case 0xA006: case 0xA007:
                 chrHighRegs[addr & 0x07] = value;;
                 break;
-            case 0xC000: irqEnabled = value & 0x01; if(!irqEnabled) cpu.IRQPending = false; break;
+            case 0xC000:
+                irqEnabled = value & 0x01;
+                if(!irqEnabled) cpu.IRQPending = false;
+                break;
+            case 0xC001:
+				irqCountDirection = (value >> 6) & 0x03;
+				irqFunkyMode = (value & 0x08) == 0x08;
+				irqSmallPrescaler = ((value >> 2) & 0x01) == 0x01;
+				irqSource = (value & 0x03);
+              //  DebugPrintLog("MAPPER", "IRQ Src %u", irqSource);
+				break;
+            case 0xC002:
+				irqEnabled = false;
+				cpu.IRQPending = false;
+				break;
+			case 0xC003: irqEnabled = true; break;
             case 0xC004: irqPrescaler = value ^ irqXorReg; break;
             case 0xC005: irqCounter = value ^ irqXorReg; break;
             case 0xC006: irqXorReg = value; break;
@@ -189,5 +206,52 @@ void JyCompany::updateMirroring() {
         case 1: ppu.Mirroring = MirrorMode::HORIZONTAL; break;
         case 2: ppu.Mirroring = MirrorMode::SCREEN_A; break;
         case 3: ppu.Mirroring = MirrorMode::SCREEN_B; break;
+    }
+}
+
+void JyCompany::clockIRQ(void) {
+    uint8_t mask = irqSmallPrescaler ? 0x07 : 0xFF;
+    uint8_t correctPrescale = irqPrescaler & mask;
+    bool doCount = false;
+    if (irqCountDirection == 0x01) {
+        correctPrescale++;
+        if ((correctPrescale & mask) == 0) {
+            doCount = true;
+        }
+    } else if (irqCountDirection == 0x02) {
+        if (--correctPrescale == 0) {
+            doCount = true;
+        }
+    }
+    irqPrescaler = (irqPrescaler & ~mask) | (correctPrescale & mask);
+        
+    if (doCount) {
+        if (irqCountDirection == 0x01) {
+            irqCounter++;
+            if (irqCounter == 0 && irqEnabled) {
+                cpu.IRQPending = true;
+            }
+        } else if (irqCountDirection == 0x02) {
+            irqCounter--;
+            if (irqCounter == 0xFF && irqEnabled) {
+                cpu.IRQPending = true;
+            }
+        }
+    }
+}
+
+void JyCompany::clockCPU(void) {
+    if (irqSource == 0) {
+        clockIRQ();
+    }
+}
+
+void JyCompany::clockPPU(void) {
+    if (irqSource == 1) {
+        //incredible
+        // clockIRQ();
+        if ((ppu.ScanLine + 1) % 262 < 241 && ppu.Dot == 261 && irqEnabled && (irqCounter-- == 0xff)) {
+            cpu.IRQPending = true;
+        }
     }
 }

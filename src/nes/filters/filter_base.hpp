@@ -5,7 +5,7 @@
 
 class VFilterBase {
 public:
-    virtual ~VFilterBase() = default;
+    virtual ~VFilterBase() {};
     virtual void initialize(void) {};
     virtual void applyFilter(void) {};
 };

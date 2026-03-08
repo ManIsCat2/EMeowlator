@@ -23,15 +23,18 @@ const char* Namco163::getName(void) {
 }
 
 void Namco163::updateWorkRamMapping() {
-    if(variant == Variant::NAMCO_163) {
+    uint8_t *memory = globalROM.hasBattery ? SRAM : PRGRam;
+    if (variant == Variant::NAMCO_163) {
 		bool WriteEnable = (writeProtect & 0x40) == 0x40;
-		mapCPUMemory(0x6000, 0x67FF, cpu.PrgRAM, 0, WriteEnable && (writeProtect & 0x01) == 0x00, 0x60, false);
-		mapCPUMemory(0x6800, 0x6FFF, cpu.PrgRAM, 0, WriteEnable && (writeProtect & 0x02) == 0x00, 0x68, false);
-		mapCPUMemory(0x7000, 0x77FF, cpu.PrgRAM, 0, WriteEnable && (writeProtect & 0x04) == 0x00, 0x70, false);
-		mapCPUMemory(0x7800, 0x7FFF, cpu.PrgRAM, 0, WriteEnable && (writeProtect & 0x08) == 0x00, 0x78, false);
-	} else if(variant == Variant::NAMCO_175) {
-		mapCPUMemory(0x6000, 0x7FFF, cpu.PrgRAM, 0, (writeProtect & 0x01) == 0x01, 0x60, false);
-	}
+		mapCPUMemory(0x6000, 0x67FF, memory, 0, WriteEnable && (writeProtect & 0x01) == 0x00, 0x60, globalROM.hasBattery);
+		mapCPUMemory(0x6800, 0x6FFF, memory, 0, WriteEnable && (writeProtect & 0x02) == 0x00, 0x68, globalROM.hasBattery);
+		mapCPUMemory(0x7000, 0x77FF, memory, 0, WriteEnable && (writeProtect & 0x04) == 0x00, 0x70, globalROM.hasBattery);
+		mapCPUMemory(0x7800, 0x7FFF, memory, 0, WriteEnable && (writeProtect & 0x08) == 0x00, 0x78, globalROM.hasBattery);
+	} else if (variant == Variant::NAMCO_175) {
+		mapCPUMemory(0x6000, 0x7FFF, memory, 0, (writeProtect & 0x01) == 0x01, 0x60, globalROM.hasBattery);
+	} else {
+        unmapCPUMemory(0x6000, 0x7FFF, 0x60);
+    }
 }
 
 void Namco163::clockCPU(void) {
@@ -127,4 +130,5 @@ void Namco163::cpuWrite(uint16_t addr, uint8_t value) {
             updateWorkRamMapping();
             break;
     }
+    MapperBase::cpuWrite(addr, value);
 }

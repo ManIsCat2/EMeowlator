@@ -5,7 +5,6 @@
 class MMC2 : public MapperBase {
 public:
     MMC2();
-    ~MMC2() override = default;
 
     uint8_t ppuRead(uint16_t addr) override;
     void cpuWrite(uint16_t addr, uint8_t value) override;

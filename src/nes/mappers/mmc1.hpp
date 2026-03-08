@@ -5,7 +5,6 @@
 class MMC1 : public MapperBase {
 public:
     MMC1();
-    ~MMC1() override = default;
 
     void cpuWrite(uint16_t addr, uint8_t value) override;
     const char *getName(void) override;

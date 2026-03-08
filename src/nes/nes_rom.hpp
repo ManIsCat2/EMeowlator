@@ -3,7 +3,6 @@
 enum class HeaderVersion {
     NES2_0,
     INES,
-    OLD_INES
 };
 
 #include <cstdint>

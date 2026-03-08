@@ -15,25 +15,7 @@ void SunSoftFME7::reset() {
     irqCounter = 0;;
 
     setPRGPage(3, -1);
-}
-
-uint8_t SunSoftFME7::cpuRead(uint16_t addr) {
-    if(addr < 0x8000) {
-        if (addr >= 0x6000) {
-            if (workRamValue & 0x40) {
-                if(workRamValue & 0x80)
-                    return cpu.PrgRAM[addr - 0x6000];
-                return 0xFF;
-            }
-
-            size_t offset = (workRamValue & 0x3F) * 0x2000;
-            return globalROM.ROM[offset + (addr & 0x1FFF)];
-        }
-    } else {
-        return MapperBase::cpuRead(addr);
-    }
-
-    return 0xff;
+    updateWRAM();
 }
 
 void SunSoftFME7::cpuWrite(uint16_t addr, uint8_t value) {
@@ -50,6 +32,7 @@ void SunSoftFME7::cpuWrite(uint16_t addr, uint8_t value) {
 
                 case 8:
                     workRamValue = value;
+                    updateWRAM();
                     break;
 
                 case 9: case 0xA: case 0xB:
@@ -94,4 +77,16 @@ void SunSoftFME7::clockCPU(void) {
     if (irqCounter == 0xFFFF) {
         if (irqEnabled) cpu.IRQPending = true;
     }
+}
+
+void SunSoftFME7::updateWRAM(void) {
+    if (workRamValue & 0x40) {
+        if (workRamValue & 0x80) {
+		    mapCPUMemory(0x6000, 0x7FFF, globalROM.hasBattery ? SRAM : PRGRam, 0, true, 0x60, globalROM.hasBattery);
+        } else {
+            unmapCPUMemory(0x6000, 0x7FFF, 0x60);
+        }
+	} else {
+		mapCPUMemory(0x6000, 0x7FFF, globalROM.ROM, 0, true, 0x60, false);
+	}
 }

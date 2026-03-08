@@ -15,23 +15,26 @@ public:
     struct MemPage PRGPages[256];
     struct MemPage CHRPages[32];
 
-    virtual ~MapperBase() = default;
+    uint8_t PRGRam[0x2000];
+    uint8_t *SRAM = nullptr;
+
+    virtual ~MapperBase();
     virtual uint8_t cpuRead(uint16_t addr);
     virtual void cpuWrite(uint16_t addr, uint8_t value);
     virtual uint8_t ppuRead(uint16_t addr);
     virtual void ppuWrite(uint16_t addr, uint8_t value);
     virtual const char *getName(void) { return ""; }
     virtual void reset() {}
-    void initialize() {
-        // may add things here
-        reset();
-    }
+    void initialize();
 
     virtual uint16_t getCHRPageSize() {
         return 0x2000;
     }
 	virtual uint16_t getPRGPageSize() {
         return 0x4000;
+    }
+    virtual uint16_t getSRAMSize() { 
+        return 0x2000;
     }
 
     virtual void clockCPU(void) {}
@@ -51,6 +54,6 @@ public:
     void unmapCPUMemory(uint16_t start, uint16_t end, uint8_t pageNum);
     void mapPPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable);
 
-    void saveSRAM(uint8_t *mem);
-    void loadSRAM(uint8_t *mem);
+    void saveSRAM();
+    void loadSRAM();
 };

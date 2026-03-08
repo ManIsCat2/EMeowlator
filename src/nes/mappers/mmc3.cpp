@@ -18,16 +18,13 @@ void MMC3::reset() {
     IRQEnabled = false;
     LastA12 = false;
 
-    mapCPUMemory(0x6000, 0x7fff, cpu.PrgRAM, 0, true, 0x60, false);
-
+    mapCPUMemory(0x6000, 0x7FFF, globalROM.hasBattery ? SRAM : PRGRam, 0, true, 0x60, globalROM.hasBattery);
     updatePRG();
     updateCHR();
 }
 
 void MMC3::cpuWrite(uint16_t addr, uint8_t value) {
-    if (addr >= 0x6000 && addr < 0x8000) {
-        cpu.PrgRAM[addr - 0x6000] = value;
-    } else if (addr >= 0x8000 && addr <= 0x9FFF) {
+    if (addr >= 0x8000 && addr <= 0x9FFF) {
         if ((addr & 1) == 0) {
             BankSelect = value;
             PrgMode = (value >> 6) & 1;
@@ -58,6 +55,8 @@ void MMC3::cpuWrite(uint16_t addr, uint8_t value) {
         } else {
             IRQEnabled = true;
         }
+    } else {
+        MapperBase::cpuWrite(addr, value);
     }
 }
 
