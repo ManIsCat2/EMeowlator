@@ -137,7 +137,9 @@ void nes_ntsc_init( nes_ntsc_t* ntsc, nes_ntsc_setup_t const* setup )
 			// MeowNES edit: Add 32bit palette entry
 			if ( setup->_32bit_palette )
 			{
-				unsigned int const in = setup->_32bit_palette [(entry & 0x3F)];
+				unsigned int in = setup->_32bit_palette [(entry & 0x3F)];
+				extern unsigned int getRainbowColor();
+				if (entry == 254) in = getRainbowColor();
 				static float const to_float = 1.0f / 0xFF;
 				float r = to_float * (unsigned char)(in >> 16);
 				float g = to_float * (unsigned char)(in >> 8);

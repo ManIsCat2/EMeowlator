@@ -40,7 +40,7 @@ uint32_t getRainbowColor() {
     uint8_t g = (uint8_t)((g1 + m) * 255);
     uint8_t b = (uint8_t)((b1 + m) * 255);
 
-    return 0xFF000000 | (r << 16) | (g << 8) | b;
+    return  (r << 16) | (g << 8) | b;
 }
 
 void PPU::reset(void) {
@@ -115,6 +115,7 @@ void PPU::Step() {
                         }
                     }
                     uint8_t finalPal = paletteRAM[color ? palette | color : 0] & 0x3f;
+                    if (finalPal == hoveredPaletteIndex) finalPal = 254;
 					palIndexBuf[ScanLine * NES_WIDTH + Dot] = finalPal;
 				}
 
@@ -212,7 +213,8 @@ void PPU::LoadCHRROM(const uint8_t *chrData, int chrSize) {
 void PPU::blitPixels() {
     int size = NES_WIDTH * NES_HEIGHT;
     for (int i = 0; i < size; i++) {
-        frameBuffer[i] = nesPalette[palIndexBuf[i] & 0x3F];
+        if (palIndexBuf[i] == 254) frameBuffer[i] = getRainbowColor();
+        else frameBuffer[i] = nesPalette[palIndexBuf[i] & 0x3f];
     }
 }
 

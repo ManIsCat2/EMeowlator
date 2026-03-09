@@ -207,6 +207,9 @@ int main(int argc, char *argv[]) {
                     nesPalette[i] & 0xFF
                 );
                 buttons[i]->setStyleSheet(QString("background-color: %1").arg(color.name()));
+                if (ppu.filtering == VideoFilter::NTSC) {
+                    ppu.vfilter->initialize();
+                }
             }
         };
 
@@ -240,6 +243,9 @@ int main(int argc, char *argv[]) {
                         (newColor.green() << 8) |
                         newColor.blue();
                     updateButtonColor();
+                    if (ppu.filtering == VideoFilter::NTSC) {
+                        ppu.vfilter->initialize();
+                    }
                 }
             });
 
@@ -259,7 +265,7 @@ int main(int argc, char *argv[]) {
         exportButton->setFixedHeight(25);
         importButton->setFixedHeight(25);
         QObject::connect(resetButton, &QPushButton::clicked, [&]() {
-            memcpy(nesPalette, nesPaletteDefault, sizeof(nesPalette));
+            memcpy(nesPalette, nesPaletteDefault, sizeof(nesPaletteDefault));
             updateAllButtonsColor();
         });
         QObject::connect(randomButton, &QPushButton::clicked, [&]() {
@@ -440,7 +446,10 @@ int main(int argc, char *argv[]) {
             }
             ppu.vfilter->applyFilter();
             screen->update();
-            rainbowHoverPhase += 0.001f;
+            rainbowHoverPhase += 0.002f;
+            if (ppu.filtering == VideoFilter::NTSC) {
+                ppu.vfilter->initialize();
+            }
             if (rainbowHoverPhase > 1.0f) rainbowHoverPhase -= 1.0f;
         }
     });
