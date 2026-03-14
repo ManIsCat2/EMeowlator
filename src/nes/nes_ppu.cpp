@@ -85,8 +85,12 @@ void PPU::Step() {
 		if (ScanLine < 240) {
 			if (Dot - NES_WIDTH > 63u) {
 				if (Dot < NES_WIDTH) {
-					uint8_t color = (shiftRegHigh >> (0x0E - scrollFineX) & 0x02) | (shiftRegLow >> (0x0F - scrollFineX) & 0x01);
-                    uint8_t palette = shiftAttribute >> (0x1C - scrollFineX * 0x02) & 0x0C;
+					uint8_t color = 0;
+                    uint8_t palette = 0;
+                    if (maskRenderBG && (Dot > 8 || mask8pxMaskBG)) {
+                        color = (shiftRegHigh >> (0x0E - scrollFineX) & 0x02) | (shiftRegLow >> (0x0F - scrollFineX) & 0x01);
+                        palette = shiftAttribute >> (0x1C - scrollFineX * 0x02) & 0x0C;
+                    }
                     if (maskRenderSprites && !DisableSprites) {
                        for (int i = 0; i < 256; i += 4) {
                             uint8_t *sprite = OAM + i;
@@ -108,7 +112,11 @@ void PPU::Step() {
                                         color = spriteColor;
                                         palette = 0x10 | sprite[2] * 0x04 & 0x0C;
                                     }
-                                    if (i == 0 && color != 0) sprite0Hit = true;
+                                    if (i == 0 && color != 0 && maskRenderBG && maskRenderSprites) {
+                                       // if (mask8pxMaskSprites && (Dot > 8 || mask8pxMaskSprites)) {
+                                            if ((mask8pxMaskSprites || Dot > 8) && Dot < 256 && Dot != 255) sprite0Hit = true;
+                                        //}
+                                    }
                                     break;
                                 }
                             }

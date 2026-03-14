@@ -58,6 +58,7 @@ bool NesROM::LoadNES(const std::string &filename) {
     // header
     if (data.size() < 16 || data[0] != 'N' || data[1] != 'E' || data[2] != 'S' || data[3] != 0x1A) {
         DebugPrintLog("ROM", "Invalid NES Header");
+        QMessageBox::critical((QMainWindow*)globalQTWin, "Error", "ROM has invalid NES Header");
         return false;
     }
 
@@ -111,7 +112,8 @@ bool NesROM::LoadNES(const std::string &filename) {
     }
         
     if (!prgPages) {
-        DebugPrintLog("ROM", "ROM has zero PRG Pages");
+        DebugPrintLog("ROM", "ROM has no PRG Pages");
+        QMessageBox::critical((QMainWindow*)globalQTWin, "Error", "ROM doesn't have any PRG Pages");
         return false;
     }
 

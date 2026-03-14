@@ -1,6 +1,10 @@
 #pragma once
 /* NES NTSC video filter */
 
+/*
+* Modified to be used with MeowNES, grep for "MeowNES edit" to see the changes.
+*/
+
 /* nes_ntsc 0.2.2 */
 #ifndef NES_NTSC_H
 #define NES_NTSC_H

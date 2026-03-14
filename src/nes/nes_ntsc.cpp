@@ -1,5 +1,9 @@
 /* nes_ntsc 0.2.2. http://www.slack.net/~ant/ */
 
+/*
+* Modified to be used with MeowNES, grep for "MeowNES edit" to see the changes.
+*/
+
 #include "nes_ntsc.h"
 
 /* Copyright (C) 2006-2007 Shay Green. This module is free software; you

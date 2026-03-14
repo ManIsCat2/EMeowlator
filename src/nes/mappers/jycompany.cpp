@@ -250,8 +250,18 @@ void JyCompany::clockPPU(void) {
     if (irqSource == 1) {
         //incredible
         // clockIRQ();
-        if ((ppu.ScanLine + 1) % 262 < 241 && ppu.Dot == 261 && irqEnabled && (irqCounter-- == 0xff)) {
-            cpu.IRQPending = true;
+        if ((ppu.ScanLine + 1) % 262 < 241 && ppu.Dot == 261) {
+            if (irqCountDirection == 0x01) {
+                //irqCounter++;
+                if (irqCounter++ == 0 && irqEnabled) {
+                    cpu.IRQPending = true;
+                }
+            } else if (irqCountDirection == 0x02) {
+                //irqCounter--;
+                if (irqCounter-- == 0xFF && irqEnabled) {
+                    cpu.IRQPending = true;
+                }
+            }
         }
     }
 }

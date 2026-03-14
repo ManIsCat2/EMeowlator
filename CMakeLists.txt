@@ -4,7 +4,7 @@ project(MeowNES)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -O3 -march=native -flto -fno-plt -ffast-math -fstrict-aliasing -funroll-loops")
 find_package(Qt6 REQUIRED Widgets)
 
 if (WIN32)

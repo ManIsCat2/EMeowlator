@@ -32,7 +32,7 @@ void CPU::run(uint32_t maxCycles) {
         if (!prevNMIDetect && NMIDetector) {
             opcode = 0x00;
             doNMI = true;
-        } else if (IRQPending && !(P & 0x04)) {
+        } else if (IRQPending && !(P & Flags::I)) {
             IRQPending = false;
             opcode = 0x00;
             doIRQ = true;
@@ -127,20 +127,20 @@ void CPU::execute(uint8_t opcode) {
     };
 
     auto adc_op = [this](uint8_t value, int baseCycles) {
-        uint16_t sum = A + value + (P & 0x01);
+        uint16_t sum = A + value + (P & Flags::C);
         SetZN(sum & 0xFF);
-        if (sum > 0xFF) P |= 0x01; else P &= ~0x01;
-        if (((A ^ sum) & (value ^ sum) & 0x80) != 0) P |= 0x40; else P &= ~0x40;
+        if (sum > 0xFF) P |= Flags::C; else P &= ~Flags::C;
+        if (((A ^ sum) & (value ^ sum) & 0x80) != 0) P |= Flags::V; else P &= ~Flags::V;
         A = sum & 0xFF;
         cycles += baseCycles;
     };
 
     auto sbc_op = [this](uint8_t value, int baseCycles) {
         value ^= 0xFF; // invert for SBC
-        uint16_t sum = A + value + (P & 0x01);
+        uint16_t sum = A + value + (P & Flags::C);
         SetZN(sum & 0xFF);
-        if (sum > 0xFF) P |= 0x01; else P &= ~0x01;
-        if (((A ^ sum) & (value ^ sum) & 0x80) != 0) P |= 0x40; else P &= ~0x40;
+        if (sum > 0xFF) P |= Flags::C; else P &= ~Flags::C;
+        if (((A ^ sum) & (value ^ sum) & 0x80) != 0) P |= Flags::V; else P &= ~Flags::V;
         A = sum & 0xFF;
         cycles += baseCycles;
     };
@@ -158,14 +158,14 @@ void CPU::execute(uint8_t opcode) {
     };
 
     auto lsr = [this](uint8_t &reg) {
-        P = (reg & 0x01) ? (P | 0x01) : (P & ~0x01);
+        P = (reg & 0x01) ? (P | Flags::C) : (P & ~Flags::C);
         reg >>= 1;
         SetZN(reg);
     };
 
     auto lsr_mem = [this](uint16_t addr, int baseCycles) {
         uint8_t value = read(addr);
-        P = (value & 0x01) ? (P | 0x01) : (P & ~0x01);
+        P = (value & 0x01) ? (P | Flags::C) : (P & ~Flags::C);
         value >>= 1;
         write(addr, value);
         SetZN(value);
@@ -174,16 +174,16 @@ void CPU::execute(uint8_t opcode) {
 
     auto rol = [this](uint8_t &reg) {
         uint8_t old = reg;
-        reg = (reg << 1) | (P & 0x01);
-        P = (old & 0x80) ? (P | 0x01) : (P & ~0x01);
+        reg = (reg << 1) | (P & Flags::C);
+        P = (old & 0x80) ? (P | Flags::C) : (P & ~Flags::C);
         SetZN(reg);
     };
 
     auto rol_mem = [this](uint16_t addr, int baseCycles) {
         uint8_t value = read(addr);
         uint8_t old = value;
-        value = (value << 1) | (P & 0x01);
-        P = (old & 0x80) ? (P | 0x01) : (P & ~0x01);
+        value = (value << 1) | (P & Flags::C);
+        P = (old & 0x80) ? (P | Flags::C) : (P & ~Flags::C);
         write(addr, value);
         SetZN(value);
         cycles += baseCycles;
@@ -191,16 +191,16 @@ void CPU::execute(uint8_t opcode) {
 
     auto ror = [this](uint8_t &reg) {
         uint8_t old = reg;
-        uint8_t carryIn = (P & 0x01) ? 0x80 : 0x00;
-        P = (old & 0x01) ? (P | 0x01) : (P & ~0x01);
+        uint8_t carryIn = (P & Flags::C) ? 0x80 : 0x00;
+        P = (old & 0x01) ? (P | Flags::C) : (P & ~Flags::C);
         reg = (old >> 1) | carryIn;
         SetZN(reg);
     };
 
     auto ror_mem = [this](uint16_t addr, int baseCycles) {
         uint8_t value = read(addr);
-        uint8_t carryIn = (P & 0x01) ? 0x80 : 0x00;
-        P = (value & 0x01) ? (P | 0x01) : (P & ~0x01);
+        uint8_t carryIn = (P & Flags::C) ? 0x80 : 0x00;
+        P = (value & 0x01) ? (P | Flags::C) : (P & ~Flags::C);
         value = (value >> 1) | carryIn;
         write(addr, value);
         SetZN(value);
@@ -208,14 +208,14 @@ void CPU::execute(uint8_t opcode) {
     };
 
     auto asl = [this](uint8_t &reg) {
-        P = (reg & 0x80) ? (P | 0x01) : (P & ~0x01);
+        P = (reg & 0x80) ? (P | Flags::C) : (P & ~Flags::C);
         reg <<= 1;
         SetZN(reg);
     };
 
     auto asl_mem = [this](uint16_t addr, int baseCycles) {
         uint8_t value = read(addr);
-        P = (value & 0x80) ? (P | 0x01) : (P & ~0x01);
+        P = (value & 0x80) ? (P | Flags::C) : (P & ~Flags::C);
         value <<= 1;
         write(addr, value);
         SetZN(value);
@@ -225,13 +225,13 @@ void CPU::execute(uint8_t opcode) {
     auto cmp_reg = [this](uint8_t reg, uint8_t value, int baseCycles) {
         uint8_t r = reg - value;
         SetZN(r);
-        P = (reg >= value ? P | 0x01 : P & ~0x01);
+        P = (reg >= value ? P | Flags::C : P & ~Flags::C);
         cycles += baseCycles;
     };
 
     auto slo = [this](uint16_t addr) {
         uint8_t value = read(addr);
-        P = (value & 0x80) ? (P | 0x01) : (P & ~0x01);
+        P = (value & 0x80) ? (P | Flags::C) : (P & ~Flags::C);
 
         value <<= 1;
         write(addr, value);
@@ -250,22 +250,22 @@ void CPU::execute(uint8_t opcode) {
 
         A ^= value;
         SetZN(A);
-        if (oldBit0) P |= 0x01; else P &= ~0x01;
+        if (oldBit0) P |= Flags::C; else P &= ~Flags::C;
     };
 
     auto rra = [this](uint16_t addr) {
         uint8_t value = read(addr);
-        uint8_t oldCarry = P & 0x01;
+        uint8_t oldCarry = P & Flags::C;
 
         uint8_t newCarry = value & 0x01;
         value = (value >> 1) | (oldCarry << 7);
         write(addr, value);
-        P = (P & ~0x01) | newCarry;
-        uint16_t sum = (uint16_t)A + value + (P & 0x01);
+        P = (P & ~Flags::C) | newCarry;
+        uint16_t sum = (uint16_t)A + value + (P & Flags::C);
 
-        if (sum > 0xFF) P |= 0x01; else P &= ~0x01;
-        if ((~(A ^ value) & (A ^ sum)) & 0x80) P |= 0x40;
-        else P &= ~0x40;
+        if (sum > 0xFF) P |= Flags::C; else P &= ~Flags::C;
+        if ((~(A ^ value) & (A ^ sum)) & 0x80) P |= Flags::V;
+        else P &= ~Flags::V;
         A = sum & 0xFF;
         SetZN(A);
     };
@@ -285,7 +285,7 @@ void CPU::execute(uint8_t opcode) {
         write(addr, value);
         uint16_t result = (uint16_t)A - value;
 
-        if (A >= value) P |= 0x01; else P &= ~0x01;
+        if (A >= value) P |= Flags::C; else P &= ~Flags::C;
 
         SetZN(result & 0xFF);
     };
@@ -293,11 +293,11 @@ void CPU::execute(uint8_t opcode) {
     auto isc = [this](uint16_t addr) {
         uint8_t value = (read(addr) + 1) & 0xFF;
         write(addr, value);
-        uint16_t borrow = ((P & 0x01) ? 0 : 1);
+        uint16_t borrow = ((P & Flags::C) ? 0 : 1);
         uint16_t result = (uint16_t)A - value - borrow;
 
-        if (A >= value + borrow) P |= 0x01; else P &= ~0x01;
-        if (((A ^ result) & 0x80) && ((A ^ value) & 0x80)) P |= 0x40; else P &= ~0x40;
+        if (A >= value + borrow) P |= Flags::C; else P &= ~Flags::C;
+        if (((A ^ result) & 0x80) && ((A ^ value) & 0x80)) P |= Flags::V; else P &= ~Flags::V;
         A = result & 0xFF;
 
         SetZN(A);
@@ -306,12 +306,12 @@ void CPU::execute(uint8_t opcode) {
     auto rla = [this](uint16_t addr) {
         uint8_t value = read(addr);
 
-        bool oldCarry = P & 0x01;
+        bool oldCarry = P & Flags::C;
         bool newCarry = value & 0x80;
 
         value = (value << 1) | (oldCarry ? 1 : 0);
         write(addr, value);
-        P = newCarry ? (P | 0x01) : (P & ~0x01);
+        P = newCarry ? (P | Flags::C) : (P & ~Flags::C);
 
         A &= value;
 
@@ -783,14 +783,14 @@ void CPU::execute(uint8_t opcode) {
         break;
     }
     // branch
-    case 0xF0: branch(P & 0x02, fetch()); cycles+=2; break; // BEQ
-    case 0xD0: branch(!(P & 0x02), fetch()); cycles+=2; break; // BNE
-    case 0x10: branch(!(P & 0x80), fetch()); cycles+=2; break; // BPL
-    case 0x30: branch(P & 0x80, fetch()); cycles+=2; break; // BMI
-    case 0xB0: branch(P & 0x01, fetch()); cycles+=2; break; // BCS
-    case 0x90: branch(!(P & 0x01), fetch()); cycles+=2; break; // BCC
-    case 0x50: branch(!(P & 0x40), fetch()); cycles+=2; break; // BVC
-    case 0x70: branch((P & 0x40), fetch()); cycles+=2; break; // BVS
+    case 0xF0: branch(P & Flags::Z, fetch()); cycles+=2; break; // BEQ
+    case 0xD0: branch(!(P & Flags::Z), fetch()); cycles+=2; break; // BNE
+    case 0x10: branch(!(P & Flags::N), fetch()); cycles+=2; break; // BPL
+    case 0x30: branch(P & Flags::N, fetch()); cycles+=2; break; // BMI
+    case 0xB0: branch(P & Flags::C, fetch()); cycles+=2; break; // BCS
+    case 0x90: branch(!(P & Flags::C), fetch()); cycles+=2; break; // BCC
+    case 0x50: branch(!(P & Flags::V), fetch()); cycles+=2; break; // BVC
+    case 0x70: branch((P & Flags::V), fetch()); cycles+=2; break; // BVS
 
     // arithmatic
     case 0x61: { // ADC (indirect,X)
@@ -1119,7 +1119,7 @@ void CPU::execute(uint8_t opcode) {
         uint16_t addr = fetch16();
         uint8_t value = read(addr);
         P = (P & 0x3D) | (value & 0xC0);
-        P = (A & value) ? (P & ~0x02) : (P | 0x02);
+        P = (A & value) ? (P & ~Flags::Z) : (P | Flags::Z);
         cycles += 4;
         //DEBUG_LOG("BIT abs 0x%04X\n", addr);
         break;
@@ -1128,7 +1128,7 @@ void CPU::execute(uint8_t opcode) {
         uint8_t addr = fetch();
         uint8_t value = read(addr);
         P = (P & 0x3D) | (value & 0xC0);
-        P = (A & value) ? (P & ~0x02) : (P | 0x02);
+        P = (A & value) ? (P & ~Flags::Z) : (P | Flags::Z);
         cycles += 3;
         //DEBUG_LOG("BIT zp 0x%02X\n", addr);
         break;
@@ -1260,49 +1260,49 @@ void CPU::execute(uint8_t opcode) {
         break;
 
     case 0x08: // PHP
-        push(P | 0x10);
+        push(P | Flags::B);
         cycles += 3;
         //DEBUG_LOG2("PHP");
         break;
 
     case 0x28: // PLP
-        P = pop() | 0x20;
+        P = pop() | Flags::U;
         cycles += 4;
         //DEBUG_LOG2("PLP");
         break;
 
     // SEI
     case 0x78:
-        P |= 0x04;
+        P |= Flags::I;
         cycles += 2;
         //DEBUG_LOG2("SEI");
         break;
     // SEC
     case 0x38:
-        P |= 0x01;
+        P |= Flags::C;
         cycles += 2;
         //DEBUG_LOG2("SEC");
         break;
     case 0xF8: // SED
-        P |= 0x08;
+        P |= Flags::D;
         //DEBUG_LOG2("SED");
         cycles += 2;
         break;
 
     // CLD
     case 0xD8:
-        P &= ~0x08;
+        P &= ~Flags::D;
         cycles += 2;
         //DEBUG_LOG2("CLD");
         break;
     case 0x18: // CLC
-        P &= ~0x01;
+        P &= ~Flags::C;
         cycles += 2;
         //DEBUG_LOG2("CLC");
         break;
     case 0x40: { // RTI
-        P = pop() | 0x20;
-        P &= ~0x10;
+        P = pop() | Flags::U;
+        P &= ~Flags::B;
         uint8_t lo = pop();
         uint8_t hi = pop();
         PC = (hi << 8) | lo;
@@ -1316,12 +1316,12 @@ void CPU::execute(uint8_t opcode) {
         //DEBUG_LOG2("NOP");
         break;
     case 0xB8: // CLV
-        P &= ~0x40;
+        P &= ~Flags::V;
         cycles += 2;
         //DEBUG_LOG2("CLV");
         break;
     case 0x58: // CLI
-        P &= ~0x04;
+        P &= ~Flags::I;
         cycles += 2;
         //DEBUG_LOG2("CLI");
         break;
@@ -1652,9 +1652,15 @@ void CPU::execute(uint8_t opcode) {
         break;
     }
     case 0xBB: { // LAE absolute,Y
-        fetch16();
+        uint16_t addr = fetch16() + Y;
+        uint8_t flags = read(addr);
+        X = (flags & SP);
+		A = (flags & SP);
+        SP = (flags & SP);
+		SetZN(X);
         cycles += 6;
-        ////DEBUG_LOG("LAE Y abs 0x%02X\n", zp);
+        if ((addr & 0xFF00) != ((addr - Y) & 0xFF00)) cycles++;
+        //DEBUG_LOG("LAE Y abs 0x%02X\n", zp);
         break;
     }
 
@@ -1771,7 +1777,7 @@ void CPU::execute(uint8_t opcode) {
         uint8_t value = fetch();
         A &= value;
         SetZN(A);
-        if (A & 0x80) P |= 0x01; else P &= ~0x01;
+        if (A & 0x80) P |= Flags::C; else P &= ~Flags::C;
         cycles += 2;
         //DEBUG_LOG("ANC imm 0x%02X\n", value);
         break;
@@ -1781,7 +1787,7 @@ void CPU::execute(uint8_t opcode) {
         A &= value;
         uint8_t carryOut = A & 1;
         A >>= 1;
-        if (carryOut) P |= 0x01; else P &= ~0x01;
+        if (carryOut) P |= Flags::C; else P &= ~Flags::C;
         SetZN(A);
         cycles += 2;
         //DEBUG_LOG("ALR imm 0x%02X\n", value);
@@ -1790,29 +1796,30 @@ void CPU::execute(uint8_t opcode) {
     case 0x6B: { // ARR imm
         uint8_t value = fetch();
         A &= value;
-        A = (A >> 1) | ((P & 0x01) ? 0x80 : 0x00);
+        A = (A >> 1) | ((P & Flags::C) ? 0x80 : 0x00);
         SetZN(A);
         uint8_t bit5 = (A >> 5) & 1;
         uint8_t bit6 = (A >> 6) & 1;
-        if (bit6) P |= 0x01; else P &= ~0x01;
-        if (bit5 ^ bit6) P |= 0x40; else P &= ~0x40;
+        if (bit6) P |= Flags::C; else P &= ~Flags::C;
+        if (bit5 ^ bit6) P |= Flags::V; else P &= ~Flags::V;
 
         cycles += 2;
         //DEBUG_LOG("ARR imm 0x%02X\n", value);
         break;
     }
-    case 0x8B: { // XAA imm
+    case 0x8B: { // ANE imm
         uint8_t value = fetch();
         A = X & value;
         SetZN(A);
         cycles += 2;
-        //DEBUG_LOG("XAA imm 0x%02X\n", value);
+        //DEBUG_LOG("ANE imm 0x%02X\n", value);
         break;
     }
     case 0xAB: { // LXA imm
         uint8_t value = fetch();
-        A = (A | 0xEE) & X & value;
-        SetZN(A);
+        A = ((A | 0xEE) & value);
+        X = A;
+        SetZN(X);
         cycles += 2;
         //DEBUG_LOG("LXA imm 0x%02X\n", value);
         break;
@@ -1820,7 +1827,7 @@ void CPU::execute(uint8_t opcode) {
     case 0xCB: { // AXS imm
         uint8_t value = fetch();
         uint8_t result = (A & X) - value;
-        if ((A & X) >= value) P |= 0x01; else P &= ~0x01;
+        if ((A & X) >= value) P |= Flags::C; else P &= ~Flags::C;
         X = result;
         SetZN(X);
         cycles += 2;
@@ -1872,8 +1879,8 @@ void CPU::execute(uint8_t opcode) {
         }
         push((PC >> 8) & 0xFF);
         push(PC & 0xFF);
-        push((doNMI ? (P & ~0x10) : (P)) | 0x20 | (doIRQ ? (P & 0xEF) : 0x30));
-        P |= 0x04;
+        push((doNMI ? (P & ~Flags::B) : (P)) | Flags::U | (doIRQ ? (P & 0xEF) : 0x30));
+        P |= Flags::I;
         uint8_t AddrLow = read(doNMI ? 0xFFFA : 0xFFFE);
         uint8_t AddrHigh = read(doNMI ? 0xFFFB : 0xFFFF);
         PC = ((AddrHigh*256)+AddrLow);
@@ -1897,8 +1904,8 @@ void CPU::execute(uint8_t opcode) {
 
 void CPU::SetZN(uint8_t value)
 {
-    P = (value == 0 ? P | 0x02 : P & ~0x02);
-    P = (value & 0x80 ? P | 0x80 : P & ~0x80);
+    P = (value == 0 ? P | Flags::Z : P & ~Flags::Z);
+    P = (value & 0x80 ? P | Flags::N : P & ~Flags::N);
 }
 
 uint8_t CPU::read(uint16_t addr) {
@@ -1915,11 +1922,11 @@ uint8_t CPU::read(uint16_t addr) {
 
                 ppu.Vblank = false;
                 ppu.WriteLatch = false;
-                return setOpenBus(status);
+                return (status);
             }
 
             case 4: // OAMDATA
-                return setOpenBus(ppu.OAM[ppu.OAMAddr]);
+                return (ppu.OAM[ppu.OAMAddr]);
 
             case 7: { // PPUDATA
                 uint16_t vaddr = ppu.VRAMAddr & 0x3FFF;
@@ -1929,11 +1936,9 @@ uint8_t CPU::read(uint16_t addr) {
                     ret = ppu.ReadBuffer;
                     uint16_t nt = vaddr & 0x0FFF;
                     if (vaddr < 0x2000) {
-                        ppu.ReadBuffer = globalROM.mapper->ppuRead(vaddr);
+                        ppu.ReadBuffer = ppu.readCHR(vaddr);
                     } else {
-                        if (ppu.Mirroring == MirrorMode::VERTICAL) nt &= 0x7FF;
-                        else nt = (nt & VRAM_SIZE) ? (nt - 0x400) : nt;
-                        ppu.ReadBuffer = ppu.VRAM[nt];
+                        ppu.ReadBuffer = ppu.readVRAM(vaddr);
                     }
                 } else {
                     uint16_t pal = vaddr & 0x1F;
@@ -2036,8 +2041,7 @@ void CPU::write(uint16_t addr, uint8_t value) {
 
                 if (vaddr < 0x2000) {
                     globalROM.mapper->ppuWrite(vaddr, value);
-                }
-                else if (vaddr < 0x3F00) {
+                } else if (vaddr < 0x3F00) {
                     uint16_t nt = vaddr & 0x0FFF;
                     if (ppu.Mirroring == MirrorMode::VERTICAL) { // vertical mirroring
                         nt &= 0x7FF;

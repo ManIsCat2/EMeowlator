@@ -1,6 +1,6 @@
 MeowNES is a completely broken NES Emulator made by a Cat, scrolling may be broken in some games.
 
-Uses nes_ntsc for the NTSC Video Filter which I got from Mesen2, Couldn't find the original source.
+Uses nes_ntsc for the NTSC Video Filter which I got from Mesen2, couldn't find the original source. It is modified to be used with MeowNES though.
 
 Supported mappers:
 - NROM (Mapper 0)
