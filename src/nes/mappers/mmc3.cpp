@@ -80,23 +80,23 @@ void MMC3::updatePRG() {
 
 void MMC3::updateCHR() {
     if (ChrMode == 0) {
-        setCHRPage(0, BankRegisters[0] & 0xFE);
-		setCHRPage(1, BankRegisters[0] | 0x01);
-		setCHRPage(2, BankRegisters[1] & 0xFE);
-		setCHRPage(3, BankRegisters[1] | 0x01);
-		setCHRPage(4, BankRegisters[2]);
-		setCHRPage(5, BankRegisters[3]);
-		setCHRPage(6, BankRegisters[4]);
-		setCHRPage(7, BankRegisters[5]);
+        setCHRPages(0, BankRegisters[0] & 0xFE);
+		setCHRPages(1, BankRegisters[0] | 0x01);
+		setCHRPages(2, BankRegisters[1] & 0xFE);
+		setCHRPages(3, BankRegisters[1] | 0x01);
+		setCHRPages(4, BankRegisters[2]);
+		setCHRPages(5, BankRegisters[3]);
+		setCHRPages(6, BankRegisters[4]);
+		setCHRPages(7, BankRegisters[5]);
     } else if (ChrMode == 1) {
-        setCHRPage(0, BankRegisters[2]);
-		setCHRPage(1, BankRegisters[3]);
-		setCHRPage(2, BankRegisters[4]);
-		setCHRPage(3, BankRegisters[5]);
-		setCHRPage(4, BankRegisters[0] & 0xFE);
-		setCHRPage(5, BankRegisters[0] | 0x01);
-		setCHRPage(6, BankRegisters[1] & 0xFE);
-		setCHRPage(7, BankRegisters[1] | 0x01);
+        setCHRPages(0, BankRegisters[2]);
+		setCHRPages(1, BankRegisters[3]);
+		setCHRPages(2, BankRegisters[4]);
+		setCHRPages(3, BankRegisters[5]);
+		setCHRPages(4, BankRegisters[0] & 0xFE);
+		setCHRPages(5, BankRegisters[0] | 0x01);
+		setCHRPages(6, BankRegisters[1] & 0xFE);
+		setCHRPages(7, BankRegisters[1] | 0x01);
     }
 }
 

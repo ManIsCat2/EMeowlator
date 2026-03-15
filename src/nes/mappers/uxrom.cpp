@@ -9,7 +9,7 @@ UxROM::UxROM() {
 void UxROM::reset() {
     setPRGPage(0, 0);
 	setPRGPage(1, -1);
-    setCHRPage(0, 0);
+    setCHRPages(0, 0);
 }
 
 void UxROM::cpuWrite(uint16_t addr, uint8_t value) {

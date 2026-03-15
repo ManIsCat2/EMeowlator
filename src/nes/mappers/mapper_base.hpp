@@ -5,14 +5,20 @@
 
 class MapperBase {
 public:
-    uint16_t subMapper = 0;
-
+    enum BankSize {
+        BANK_1K,
+        BANK_2K,
+        BANK_4K,
+        BANK_8K
+    };
     struct MemPage {
         uint8_t *ptr = nullptr;
         bool write = false;
     };
     struct MemPage PRGPages[256];
     struct MemPage CHRPages[32];
+
+    uint16_t subMapper = 0;
 
     uint8_t PRGRam[0x2000];
     uint8_t *SRAM = nullptr;
@@ -41,10 +47,7 @@ public:
     virtual void clockCPU(void) {}
     virtual void clockPPU(void) {}
 
-    void setCHRPage(uint16_t page, uint16_t val, uint32_t offset=0);
-    void setCHRPage8(uint16_t page, uint16_t val, uint32_t offset=0);
-    void setCHRPage4(uint16_t page, uint16_t val, uint32_t offset=0);
-    void setCHRPage2(uint16_t page, uint16_t val, uint32_t offset=0);
+    void setCHRPages(uint16_t page, uint16_t val, enum BankSize size=BANK_1K, uint32_t offset=0);
 
     void setPRGPage(uint16_t page, uint16_t val, uint32_t offset=0);
     void setPRGPage8(uint16_t page, uint16_t val, uint32_t offset=0);

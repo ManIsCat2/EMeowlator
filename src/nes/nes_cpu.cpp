@@ -74,8 +74,7 @@ void CPU::execute(uint8_t opcode) {
             uint16_t oldPC = PC;
             PC += offset;
             cycles += 1;
-            if ((oldPC & 0xFF00) != (PC & 0xFF00))
-                cycles += 1;
+            if ((oldPC & 0xFF00) != (PC & 0xFF00)) cycles += 1;
         }
     };
 

@@ -8,12 +8,12 @@ CNROM::CNROM() {
 
 void CNROM::reset() {
     setPRGPage(0, 0);
-    setCHRPage(0, 0);
+    setCHRPages(0, 0);
 }
 
 void CNROM::cpuWrite(uint16_t addr, uint8_t value) {
     if (addr >= 0x8000) {
-        setCHRPage(0, value);
+        setCHRPages(0, value);
         return;
     }
     MapperBase::cpuWrite(addr, value);

@@ -27,7 +27,7 @@ void SunSoftFME7::cpuWrite(uint16_t addr, uint8_t value) {
             switch(command) {
                 case 0: case 1: case 2: case 3:
                 case 4: case 5: case 6: case 7:
-                    setCHRPage(command, value);
+                    setCHRPages(command, value);
                     break;
 
                 case 8:

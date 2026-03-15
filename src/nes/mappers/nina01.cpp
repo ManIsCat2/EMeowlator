@@ -14,8 +14,8 @@ void NINA01::reset() {
 void NINA01::cpuWrite(uint16_t addr, uint8_t value) {
     switch(addr) {
         case 0x7FFD: setPRGPage(0, value & 0x01); return;
-        case 0x7FFE: setCHRPage(0, value & 0x0F); return;
-        case 0x7FFF: setCHRPage(1, value & 0x0F); return;
+        case 0x7FFE: setCHRPages(0, value & 0x0F); return;
+        case 0x7FFF: setCHRPages(1, value & 0x0F); return;
     }
     MapperBase::cpuWrite(addr, value);
 }

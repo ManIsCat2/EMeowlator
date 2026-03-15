@@ -66,9 +66,9 @@ void Namco163::cpuWrite(uint16_t addr, uint8_t value) {
         case 0x9800: {
             uint8_t bank = (addr - 0x8000) >> 11;
             if (value >= 0xE0) {
-                setCHRPage(bank, value & 1);
+                setCHRPages(bank, value & 1);
             } else {
-                setCHRPage(bank, value);
+                setCHRPages(bank, value);
             }
             break;
         }
@@ -79,9 +79,9 @@ void Namco163::cpuWrite(uint16_t addr, uint8_t value) {
         case 0xB800: {
             uint8_t bank = ((addr - 0xA000) >> 11) + 4;
             if (value >= 0xE0) {
-                setCHRPage(bank, value & 1);
+                setCHRPages(bank, value & 1);
             } else {
-                setCHRPage(bank, value);
+                setCHRPages(bank, value);
             }
             break;
         }
@@ -96,9 +96,9 @@ void Namco163::cpuWrite(uint16_t addr, uint8_t value) {
                 uint8_t bank = ((addr - 0xC000) >> 11) + 8;
 
                 if (value >= 0xE0)
-                    setCHRPage(bank, value & 1);
+                    setCHRPages(bank, value & 1);
                 else
-                    setCHRPage(bank, value);
+                    setCHRPages(bank, value);
             }
             break;
         }

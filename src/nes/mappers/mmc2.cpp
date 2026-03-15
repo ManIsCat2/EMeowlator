@@ -25,16 +25,16 @@ void MMC2::cpuWrite(uint16_t addr, uint8_t value) {
         setPRGPage(0, value & 0x0F);
     } else if (addr >= 0xB000 && addr <= 0xBFFF) {
         ChrBankFD[0] = value & 0x1f;
-        setCHRPage(0, ChrBankFD[Latch[0]]);
+        setCHRPages(0, ChrBankFD[Latch[0]]);
     } else if (addr >= 0xC000 && addr <= 0xCFFF) {
         ChrBankFD[1] = value & 0x1f;
-        setCHRPage(0, ChrBankFD[Latch[0]]);
+        setCHRPages(0, ChrBankFD[Latch[0]]);
     } else if (addr >= 0xD000 && addr <= 0xDFFF) {
         ChrBankFE[0] = value & 0x1f;
-        setCHRPage(1, ChrBankFE[Latch[1]]);
+        setCHRPages(1, ChrBankFE[Latch[1]]);
     } else if (addr >= 0xE000 && addr <= 0xEFFF) {
         ChrBankFE[1] = value & 0x1f;
-        setCHRPage(1, ChrBankFE[Latch[1]]);
+        setCHRPages(1, ChrBankFE[Latch[1]]);
     } else if (addr >= 0xF000) {
         ppu.Mirroring = ((value & 0x01) == 0x01) ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL;
     } else {
@@ -50,8 +50,8 @@ uint8_t MMC2::readCHR(uint16_t addr) {
     addr &= 0x1FFF;
 
     if (ChrUpdate) {
-        setCHRPage(0, ChrBankFD[Latch[0]]);
-		setCHRPage(1, ChrBankFE[Latch[1]]);
+        setCHRPages(0, ChrBankFD[Latch[0]]);
+		setCHRPages(1, ChrBankFE[Latch[1]]);
 		ChrUpdate = false;
     }
 

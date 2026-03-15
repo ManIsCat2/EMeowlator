@@ -171,24 +171,24 @@ void JyCompany::updateCHR() {
 
     switch(chrMode) {
         case 0:
-            setCHRPage8(0, chrRegs[0] << 3);
+            setCHRPages(0, chrRegs[0] << 3, BANK_8K);
             break;
 
         case 1:
-            setCHRPage4(0, chrRegs[chrLatch[0]] << 2);
-            setCHRPage4(1, chrRegs[chrLatch[1]] << 2);
+            setCHRPages(0, chrRegs[chrLatch[0]] << 2, BANK_4K);
+            setCHRPages(1, chrRegs[chrLatch[1]] << 2, BANK_4K);
             break;
 
         case 2:
-            setCHRPage2(0, chrRegs[0] << 1);
-            setCHRPage2(1, chrRegs[2] << 1);
-            setCHRPage2(2, chrRegs[4] << 1);
-            setCHRPage2(3, chrRegs[6] << 1);
+            setCHRPages(0, chrRegs[0] << 1, BANK_2K);
+            setCHRPages(1, chrRegs[2] << 1, BANK_2K);
+            setCHRPages(2, chrRegs[4] << 1, BANK_2K);
+            setCHRPages(3, chrRegs[6] << 1, BANK_2K);
             break;
 
         case 3:
             for (int i = 0; i < 8; i++) {
-                setCHRPage(i, chrRegs[i]);
+                setCHRPages(i, chrRegs[i]);
             }
             break;
     }

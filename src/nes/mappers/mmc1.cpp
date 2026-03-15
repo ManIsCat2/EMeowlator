@@ -104,10 +104,10 @@ void MMC1::updateBanks() {
     }
 
     if (ChrMode) {
-        setCHRPage(0, chrReg0);
-        setCHRPage(1, chrReg1);
+        setCHRPages(0, chrReg0);
+        setCHRPages(1, chrReg1);
     } else {
-        setCHRPage(0, chrReg0 & 0x1E);
-        setCHRPage(1, (chrReg0 & 0x1E) + 1);
+        setCHRPages(0, chrReg0 & 0x1E);
+        setCHRPages(1, (chrReg0 & 0x1E) + 1);
     }
 }

@@ -6,25 +6,29 @@ MapperBase::~MapperBase() {
     if (SRAM) delete[] SRAM;
 }
 
-void MapperBase::setCHRPage(uint16_t page, uint16_t val, uint32_t offset) {
-    uint32_t chrSlotSize = getCHRPageSize();
-    uint32_t bankOffset = ((val * chrSlotSize) + offset) & (globalROM.CHRRomSize - 1);
-    uint16_t ppuStart = page * chrSlotSize;
-    uint16_t ppuEnd = ppuStart + chrSlotSize - 1;
-
-    mapPPUMemory(ppuStart, ppuEnd, ppu.ChrData.data(), bankOffset, globalROM.CHRRomSize == 0);
-}
-void MapperBase::setCHRPage8(uint16_t page, uint16_t val, uint32_t offset) {
-    setCHRPage4(page, val, offset);
-    setCHRPage4(page*2+1, val+4, offset);
-}
-void MapperBase::setCHRPage4(uint16_t page, uint16_t val, uint32_t offset) {
-    setCHRPage2(page*2, val, offset);
-    setCHRPage2(page*2+1, val+2, offset);
-}
-void MapperBase::setCHRPage2(uint16_t page, uint16_t val, uint32_t offset) {
-    setCHRPage(page*2, val, offset);
-    setCHRPage(page*2+1, val+1, offset);
+void MapperBase::setCHRPages(uint16_t page, uint16_t val, enum BankSize size, uint32_t offset) {
+    switch (size) {
+        case BANK_1K: {
+            uint32_t chrSlotSize = getCHRPageSize();
+            uint32_t bankOffset = ((val * chrSlotSize) + offset) & (globalROM.CHRRomSize - 1);
+            uint16_t ppuStart = page * chrSlotSize;
+            uint16_t ppuEnd = ppuStart + chrSlotSize - 1;
+            mapPPUMemory(ppuStart, ppuEnd, ppu.ChrData.data(), bankOffset, globalROM.CHRRomSize == 0);
+            break;
+        }
+        case BANK_2K:
+            setCHRPages(page * 2, val, BANK_1K, offset);
+            setCHRPages(page * 2 + 1, val + 1, BANK_1K, offset);
+            break;
+        case BANK_4K:
+            setCHRPages(page * 2, val, BANK_2K, offset);
+            setCHRPages(page * 2 + 1, val + 2, BANK_2K, offset);
+            break;
+        case BANK_8K:
+            setCHRPages(page * 2, val, BANK_4K, offset);
+            setCHRPages(page * 2 + 1, val + 4, BANK_4K, offset);
+            break;
+    }
 }
 
 void MapperBase::setPRGPage(uint16_t page, uint16_t val, uint32_t offset) {

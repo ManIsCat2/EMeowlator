@@ -202,9 +202,9 @@ void PPU::Step() {
 	}
 }
 
-void PPU::LoadCHRROM(const uint8_t *chrData, int chrSize) {
+void PPU::LoadCHRROM(const uint8_t *data, int chrSize) {
     ChrData.resize(chrSize);
-    memcpy(ChrData.data(), chrData, chrSize);
+    memcpy(ChrData.data(), data, chrSize);
 }
 
 void PPU::blitPixels() {
