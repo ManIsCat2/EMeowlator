@@ -3,7 +3,7 @@
 #include "../nes_ppu.hpp"
 
 UxROM::UxROM() {
-    reset();
+
 }
 
 void UxROM::reset() {

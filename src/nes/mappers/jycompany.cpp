@@ -4,7 +4,7 @@
 #include <cstring>
 
 JyCompany::JyCompany() {
-    reset();
+
 }
 
 void JyCompany::reset() {

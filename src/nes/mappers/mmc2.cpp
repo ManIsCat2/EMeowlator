@@ -3,7 +3,7 @@
 #include "../nes_ppu.hpp"
 
 MMC2::MMC2() {
-    reset();
+
 }
 
 void MMC2::reset() {
@@ -46,7 +46,7 @@ const char* MMC2::getName(void) {
     return "MMC2";
 }
 
-uint8_t MMC2::ppuRead(uint16_t addr) {
+uint8_t MMC2::readCHR(uint16_t addr) {
     addr &= 0x1FFF;
 
     if (ChrUpdate) {
@@ -69,5 +69,5 @@ uint8_t MMC2::ppuRead(uint16_t addr) {
         ChrUpdate = true;
     }
 
-    return MapperBase::ppuRead(addr);
+    return MapperBase::readCHR(addr);
 }

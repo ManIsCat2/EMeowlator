@@ -1,7 +1,7 @@
 /* nes_ntsc 0.2.2. http://www.slack.net/~ant/ */
 
 /*
-* Modified to be used with MeowNES, grep for "MeowNES edit" to see the changes.
+* Modified to be used with MeowNES, grep "MeowNES edit" to see the changes.
 */
 
 #include "nes_ntsc.h"

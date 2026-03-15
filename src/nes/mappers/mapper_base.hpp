@@ -10,7 +10,6 @@ public:
     struct MemPage {
         uint8_t *ptr = nullptr;
         bool write = false;
-        bool battery = false;
     };
     struct MemPage PRGPages[256];
     struct MemPage CHRPages[32];
@@ -21,8 +20,10 @@ public:
     virtual ~MapperBase();
     virtual uint8_t cpuRead(uint16_t addr);
     virtual void cpuWrite(uint16_t addr, uint8_t value);
-    virtual uint8_t ppuRead(uint16_t addr);
-    virtual void ppuWrite(uint16_t addr, uint8_t value);
+    virtual uint8_t readCHR(uint16_t addr);
+    virtual void writeCHR(uint16_t addr, uint8_t value);
+    virtual uint8_t readVRAM(uint16_t addr);
+    virtual void writeVRAM(uint16_t addr, uint8_t value);
     virtual const char *getName(void) { return ""; }
     virtual void reset() {}
     void initialize();
@@ -50,9 +51,9 @@ public:
     void setPRGPage4(uint16_t page, uint16_t val, uint32_t offset=0);
     void setPRGPage2(uint16_t page, uint16_t val, uint32_t offset=0);
 
-    void mapCPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable, uint8_t pageNum, bool battery);
+    void mapCPUMemory(uint16_t start, uint16_t end, uint8_t *memory, uint32_t offset, bool writable, uint8_t pageNum);
     void unmapCPUMemory(uint16_t start, uint16_t end, uint8_t pageNum);
-    void mapPPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable);
+    void mapPPUMemory(uint16_t start, uint16_t end, uint8_t *memory, uint32_t offset, bool writable);
 
     void saveSRAM();
     void loadSRAM();

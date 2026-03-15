@@ -74,13 +74,9 @@ public:
     bool VRAMCorruption = false;
 
     void reset(void);
-
     void Step();
 
     void LoadCHRROM(const uint8_t* chrData, int chrSize);
-    uint8_t readCHR(uint16_t addr);
-    uint8_t readVRAM(uint16_t addr);
-
     void blitPixels();
 
     void Init();

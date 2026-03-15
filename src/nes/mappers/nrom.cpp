@@ -3,7 +3,7 @@
 #include "../nes_ppu.hpp"
 
 NROM::NROM() {
-    reset();
+
 }
 
 void NROM::reset() {

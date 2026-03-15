@@ -48,6 +48,7 @@ void PPU::reset(void) {
     memset(OAM, 0, 0x100);
     memset(paletteRAM.data(), 0, PALRAM_SIZE);
     memset(frameBuffer, 0, sizeof(frameBuffer));
+    memset(palIndexBuf, 0, sizeof(palIndexBuf));
     WriteLatch = false;
     VRAMAddr = 0;
     OAMAddr = 0;
@@ -106,7 +107,7 @@ void PPU::Step() {
                             if (spriteX < 8 && spriteY < spriteH) {
                                 uint16_t spriteTile = sprite[1];
                                 uint16_t spriteAddress = (use8x16Sprites ? spriteTile % 0x02 << 0x0C | spriteTile << 4 & -32 | sy * 0x02 & 0x10 : (spritePatternTable) << 0x09 | spriteTile << 0x04) | sy & 0x07;
-                                uint16_t spriteColor = readCHR(spriteAddress + 8) >> sx << 0x01 & 0x02 | readCHR(spriteAddress) >> sx & 0x01;
+                                uint16_t spriteColor = globalROM.mapper->readCHR(spriteAddress + 8) >> sx << 0x01 & 0x02 | globalROM.mapper->readCHR(spriteAddress) >> sx & 0x01;
                                 if (spriteColor) {
                                     if (!(sprite[2] & 0x20 && color)) {
                                         color = spriteColor;
@@ -136,16 +137,16 @@ void PPU::Step() {
 				uint16_t fetchAddress = ((FullPPUCTRL & 0x10) << 8) | (nametableByte << 4) | ((VRAMAddr >> 12) & 7);
 				switch ((Dot) & 7) {
                     case 1:
-                        nametableByte = readVRAM(VRAMAddr);
+                        nametableByte = globalROM.mapper->readVRAM(VRAMAddr);
                         break;
                     case 3:
-                        attributeByte = (readVRAM((VRAMAddr & 0xc00) | 0x3c0 | (VRAMAddr >> 4 & 0x38) | (VRAMAddr / 4 & 7)) >> ((VRAMAddr >> 5 & 2) | (VRAMAddr / 2 & 1)) * 2) % 4 * 0x5555;
+                        attributeByte = (globalROM.mapper->readVRAM((VRAMAddr & 0xc00) | 0x3c0 | (VRAMAddr >> 4 & 0x38) | (VRAMAddr / 4 & 7)) >> ((VRAMAddr >> 5 & 2) | (VRAMAddr / 2 & 1)) * 2) % 4 * 0x5555;
                         break;
                     case 5:
-                        patternTableLow = readCHR(fetchAddress);
+                        patternTableLow = globalROM.mapper->readCHR(fetchAddress);
                         break;
                     case 7: {
-                        patternTableHigh = readCHR(fetchAddress + 8);
+                        patternTableHigh = globalROM.mapper->readCHR(fetchAddress + 8);
                         if ((VRAMAddr & 0x001F) == 31) {
                             VRAMAddr &= 0xFFE0;
                             VRAMAddr ^= 0x0400;
@@ -201,34 +202,25 @@ void PPU::Step() {
 	}
 }
 
-uint8_t PPU::readVRAM(uint16_t addr) {
-    if (Mirroring == MirrorMode::HORIZONTAL) {
-        return VRAM[(addr & 0x3FF) | (addr & 0x800) >> 1];
-    } else {
-        return VRAM[addr & 0x7FF];
-    }
-}
-
-uint8_t PPU::readCHR(uint16_t addr) {
-    return globalROM.mapper ? globalROM.mapper->ppuRead(addr) : addr;
-}
-
 void PPU::LoadCHRROM(const uint8_t *chrData, int chrSize) {
     ChrData.resize(chrSize);
     memcpy(ChrData.data(), chrData, chrSize);
 }
 
 void PPU::blitPixels() {
-    int size = NES_WIDTH * NES_HEIGHT;
-    for (int i = 0; i < size; i++) {
-        if (palIndexBuf[i] == 254) frameBuffer[i] = getRainbowColor();
-        else frameBuffer[i] = nesPalette[palIndexBuf[i] & 0x3f];
+    for (int y = 0; y < NES_HEIGHT; y++) {
+        for (int x = 0; x < NES_WIDTH; x++) {
+            int i = y * NES_WIDTH + x;
+            if (palIndexBuf[i] == 254) frameBuffer[i] = getRainbowColor();
+            else frameBuffer[i] = nesPalette[palIndexBuf[i] & 0x3f];
+        }
     }
 }
 
 void PPU::Init() {
     InitFilter(VideoFilter::NONE);
     memset(frameBuffer, 0, sizeof(frameBuffer));
+    memset(palIndexBuf, 0, sizeof(palIndexBuf));
 }
 
 VFilterBase *PPU::GetVideoFilter(VideoFilter filter) {

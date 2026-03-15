@@ -3,7 +3,7 @@
 #include "../nes_ppu.hpp"
 
 MMC1::MMC1() {
-    reset();
+
 }
 
 void MMC1::reset() {
@@ -16,7 +16,7 @@ void MMC1::reset() {
     prgReg = 0;
 
     modifyRegister(0x8000, control);
-    mapCPUMemory(0x6000, 0x7FFF, globalROM.hasBattery ? SRAM : PRGRam, 0, true, 0x60, globalROM.hasBattery);
+    mapCPUMemory(0x6000, 0x7FFF, globalROM.hasBattery ? SRAM : PRGRam, 0, true, 0x60);
     updateBanks();
 }
 

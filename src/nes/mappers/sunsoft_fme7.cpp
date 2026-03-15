@@ -3,7 +3,7 @@
 #include "../nes_ppu.hpp"
 
 SunSoftFME7::SunSoftFME7() {
-    reset();
+
 }
 
 void SunSoftFME7::reset() {
@@ -82,11 +82,11 @@ void SunSoftFME7::clockCPU(void) {
 void SunSoftFME7::updateWRAM(void) {
     if (workRamValue & 0x40) {
         if (workRamValue & 0x80) {
-		    mapCPUMemory(0x6000, 0x7FFF, globalROM.hasBattery ? SRAM : PRGRam, 0, true, 0x60, globalROM.hasBattery);
+		    mapCPUMemory(0x6000, 0x7FFF, globalROM.hasBattery ? SRAM : PRGRam, 0, true, 0x60);
         } else {
             unmapCPUMemory(0x6000, 0x7FFF, 0x60);
         }
 	} else {
-		mapCPUMemory(0x6000, 0x7FFF, globalROM.ROM, 0, true, 0x60, false);
+		mapCPUMemory(0x6000, 0x7FFF, globalROM.ROM, 0, true, 0x60);
 	}
 }

@@ -3,7 +3,7 @@
 #include "../nes_ppu.hpp"
 
 BNROM::BNROM() {
-    reset();
+
 }
 
 void BNROM::reset() {

@@ -3,7 +3,7 @@
 #include "../nes_ppu.hpp"
 
 MMC3::MMC3() {
-    reset();
+
 }
 
 void MMC3::reset() {
@@ -18,7 +18,7 @@ void MMC3::reset() {
     IRQEnabled = false;
     LastA12 = false;
 
-    mapCPUMemory(0x6000, 0x7FFF, globalROM.hasBattery ? SRAM : PRGRam, 0, true, 0x60, globalROM.hasBattery);
+    mapCPUMemory(0x6000, 0x7FFF, globalROM.hasBattery ? SRAM : PRGRam, 0, true, 0x60);
     updatePRG();
     updateCHR();
 }

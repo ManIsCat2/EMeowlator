@@ -33,7 +33,7 @@ void MapperBase::setPRGPage(uint16_t page, uint16_t val, uint32_t offset) {
     uint16_t cpuStart = 0x8000 + (page * prgSlotSize);
     uint16_t cpuEnd = cpuStart + prgSlotSize - 1;
 
-    mapCPUMemory(cpuStart, cpuEnd, globalROM.ROM, bankOffset, false, cpuStart >> 8, false);
+    mapCPUMemory(cpuStart, cpuEnd, globalROM.ROM, bankOffset, false, cpuStart >> 8);
 }
 void MapperBase::setPRGPage8(uint16_t page, uint16_t val, uint32_t offset) {
     setPRGPage4(page, val, offset);
@@ -61,7 +61,7 @@ void MapperBase::cpuWrite(uint16_t addr, uint8_t value) {
     }
 }
 
-uint8_t MapperBase::ppuRead(uint16_t addr) {
+uint8_t MapperBase::readCHR(uint16_t addr) {
     addr &= 0x1FFF;
     if (!CHRPages[addr >> 8].ptr) {
         //DebugPrintLog("MAPPER", "tried reading from unmapped PPU memory at address 0x%x", addr);
@@ -70,20 +70,38 @@ uint8_t MapperBase::ppuRead(uint16_t addr) {
 
     return CHRPages[addr >> 8].ptr[addr & 0xFF];
 }
-void MapperBase::ppuWrite(uint16_t addr, uint8_t value) {
+void MapperBase::writeCHR(uint16_t addr, uint8_t value) {
     addr &= 0x1FFF;
     if (CHRPages[addr >> 8].write) {
         CHRPages[addr >> 8].ptr[addr & 0xFF] = value;
     }
 }
 
-void MapperBase::mapCPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable, uint8_t pageNum, bool battery) {
+uint8_t MapperBase::readVRAM(uint16_t addr) {
+    if (ppu.Mirroring == MirrorMode::HORIZONTAL) {
+        addr = (addr & 0x3FF) | (addr & 0x800) >> 1;
+        //addr = (addr & 0x800) ? (addr - 0x400) : addr;
+    } else {
+        addr &= 0x7FF;
+    }
+    return ppu.VRAM[addr];
+}
+void MapperBase::writeVRAM(uint16_t addr, uint8_t value) {
+    if (ppu.Mirroring == MirrorMode::HORIZONTAL) {
+        //addr = (addr & 0x3FF) | (addr & 0x800) >> 1;
+        addr = (addr & 0x800) ? (addr - 0x400) : addr;
+    } else {
+        addr &= 0x7FF;
+    }
+    ppu.VRAM[addr] = value;
+}
+
+void MapperBase::mapCPUMemory(uint16_t start, uint16_t end, uint8_t *memory, uint32_t offset, bool writable, uint8_t pageNum) {
     uint8_t page = pageNum;
     
     for (uint32_t addr = start; addr <= end; addr += 0x100) {
         PRGPages[page].ptr = memory + ((offset + (addr - start)) & (globalROM.PRGRomSize-1));
         PRGPages[page].write = writable;
-        PRGPages[page].battery = battery;
         page++;
     }
 }
@@ -93,12 +111,11 @@ void MapperBase::unmapCPUMemory(uint16_t start, uint16_t end, uint8_t pageNum) {
     for (uint32_t addr = start; addr <= end; addr += 0x100) {
         PRGPages[page].ptr = nullptr;
         PRGPages[page].write = false;
-        PRGPages[page].battery = false;
         page++;
     }
 }
 
-void MapperBase::mapPPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable) {
+void MapperBase::mapPPUMemory(uint16_t start, uint16_t end, uint8_t *memory, uint32_t offset, bool writable) {
     uint8_t page = start >> 8;
 
     for (uint32_t addr = start; addr <= end; addr += 0x100) {

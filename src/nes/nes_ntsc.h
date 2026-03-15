@@ -2,7 +2,7 @@
 /* NES NTSC video filter */
 
 /*
-* Modified to be used with MeowNES, grep for "MeowNES edit" to see the changes.
+* Modified to be used with MeowNES, grep "MeowNES edit" to see the changes.
 */
 
 /* nes_ntsc 0.2.2 */

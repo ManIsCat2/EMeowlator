@@ -3,12 +3,12 @@
 #include "../nes_ppu.hpp"
 
 NINA01::NINA01() {
-    reset();
+
 }
 
 void NINA01::reset() {
     setPRGPage(0, 0);
-    mapCPUMemory(0x6000, 0x7fff, PRGRam, 0, true, 0x60, false);
+    mapCPUMemory(0x6000, 0x7fff, PRGRam, 0, true, 0x60);
 }
 
 void NINA01::cpuWrite(uint16_t addr, uint8_t value) {
