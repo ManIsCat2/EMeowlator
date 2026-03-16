@@ -126,18 +126,18 @@ const char* JyCompany::getName() {
 void JyCompany::updatePrg() {
     switch(prgMode & 0x03) {
         case 0:
-            setPRGPage4(0, (prgMode & 0x04) ? prgRegs[3] : 0x3C);
+            setPRGPages(0, (prgMode & 0x04) ? prgRegs[3] : 0x3C, BANK_4K);
             break;
         case 1:
-            setPRGPage2(0, prgRegs[1] << 1);
-			setPRGPage2(1, (prgMode & 0x04) ? prgRegs[3] : 0x3E);
+            setPRGPages(0, prgRegs[1] << 1, BANK_2K);
+			setPRGPages(1, (prgMode & 0x04) ? prgRegs[3] : 0x3E, BANK_2K);
             break;
         case 2:
         case 3:
-            setPRGPage(0, prgRegs[0]);
-		    setPRGPage(1, prgRegs[1]);
-			setPRGPage(2, prgRegs[2]);
-			setPRGPage(3, (prgMode & 0x04) ? prgRegs[3] : 0x3F);
+            setPRGPages(0, prgRegs[0]);
+		    setPRGPages(1, prgRegs[1]);
+			setPRGPages(2, prgRegs[2]);
+			setPRGPages(3, (prgMode & 0x04) ? prgRegs[3] : 0x3F);
             break;
     }
 }

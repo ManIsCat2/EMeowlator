@@ -1891,7 +1891,7 @@ void CPU::execute(uint8_t opcode) {
 
         default:
             char errorMsg[256];
-            sprintf(errorMsg, "CPU crashed after reaching Unimplemented Opcode 0x%02X", opcode);
+            sprintf(errorMsg, "CPU crashed after reaching unimplemented opcode 0x%02X", opcode);
             romIsLoaded = false;
             reset();
             DebugPrintLog("CPU", "%s", errorMsg);
@@ -1901,8 +1901,7 @@ void CPU::execute(uint8_t opcode) {
    // DebugPrintLog("CPU", "Proccessed 0x%x", opcode);
 }
 
-void CPU::SetZN(uint8_t value)
-{
+void CPU::SetZN(uint8_t value) {
     P = (value == 0 ? P | Flags::Z : P & ~Flags::Z);
     P = (value & 0x80 ? P | Flags::N : P & ~Flags::N);
 }

@@ -66,15 +66,15 @@ const char* MMC3::getName(void) {
 
 void MMC3::updatePRG() {
     if (PrgMode == 0) {
-        setPRGPage(0, BankRegisters[6]);
-		setPRGPage(1, BankRegisters[7]);
-        setPRGPage(2, -2);
-		setPRGPage(3, -1);
+        setPRGPages(0, BankRegisters[6]);
+		setPRGPages(1, BankRegisters[7]);
+        setPRGPages(2, -2);
+		setPRGPages(3, -1);
     } else {
-        setPRGPage(0, -2);
-        setPRGPage(1, BankRegisters[7]);
-		setPRGPage(2, BankRegisters[6]);
-        setPRGPage(3, -1);
+        setPRGPages(0, -2);
+        setPRGPages(1, BankRegisters[7]);
+		setPRGPages(2, BankRegisters[6]);
+        setPRGPages(3, -1);
     }
 }
 

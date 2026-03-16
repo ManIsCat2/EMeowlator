@@ -47,12 +47,8 @@ public:
     virtual void clockCPU(void) {}
     virtual void clockPPU(void) {}
 
-    void setCHRPages(uint16_t page, uint16_t val, enum BankSize size=BANK_1K, uint32_t offset=0);
-
-    void setPRGPage(uint16_t page, uint16_t val, uint32_t offset=0);
-    void setPRGPage8(uint16_t page, uint16_t val, uint32_t offset=0);
-    void setPRGPage4(uint16_t page, uint16_t val, uint32_t offset=0);
-    void setPRGPage2(uint16_t page, uint16_t val, uint32_t offset=0);
+    void setCHRPages(uint16_t page, uint16_t val, enum BankSize size=BANK_1K);
+    void setPRGPages(uint16_t page, uint16_t val, enum BankSize size=BANK_1K);
 
     void mapCPUMemory(uint16_t start, uint16_t end, uint8_t *memory, uint32_t offset, bool writable, uint8_t pageNum);
     void unmapCPUMemory(uint16_t start, uint16_t end, uint8_t pageNum);

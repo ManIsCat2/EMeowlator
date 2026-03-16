@@ -14,7 +14,7 @@ void SunSoftFME7::reset() {
     irqCounterEnabled = false;
     irqCounter = 0;;
 
-    setPRGPage(3, -1);
+    setPRGPages(3, -1);
     updateWRAM();
 }
 
@@ -36,7 +36,7 @@ void SunSoftFME7::cpuWrite(uint16_t addr, uint8_t value) {
                     break;
 
                 case 9: case 0xA: case 0xB:
-                    setPRGPage(command - 9, value & 0x3F);
+                    setPRGPages(command - 9, value & 0x3F);
                     break;
 
                 case 0xC:

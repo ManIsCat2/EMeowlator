@@ -15,14 +15,14 @@ void MMC2::reset() {
     Latch[0] = 0;
     Latch[1] = 0;
 
-    setPRGPage(1, -3);
-	setPRGPage(2, -2);
-	setPRGPage(3, -1);
+    setPRGPages(1, -3);
+	setPRGPages(2, -2);
+	setPRGPages(3, -1);
 }
 
 void MMC2::cpuWrite(uint16_t addr, uint8_t value) {
     if (addr >= 0xA000 && addr <= 0xAFFF) {
-        setPRGPage(0, value & 0x0F);
+        setPRGPages(0, value & 0x0F);
     } else if (addr >= 0xB000 && addr <= 0xBFFF) {
         ChrBankFD[0] = value & 0x1f;
         setCHRPages(0, ChrBankFD[Latch[0]]);

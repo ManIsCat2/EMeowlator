@@ -7,8 +7,8 @@ NROM::NROM() {
 }
 
 void NROM::reset() {
-    setPRGPage(0, 0);
-	setPRGPage(1, 1);
+    setPRGPages(0, 0);
+	setPRGPages(1, 1);
     setCHRPages(0, 0);
 }
 

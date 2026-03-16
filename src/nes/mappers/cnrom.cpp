@@ -7,7 +7,7 @@ CNROM::CNROM() {
 }
 
 void CNROM::reset() {
-    setPRGPage(0, 0);
+    setPRGPages(0, 0);
     setCHRPages(0, 0);
 }
 

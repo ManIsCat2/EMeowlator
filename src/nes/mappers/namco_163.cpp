@@ -12,7 +12,7 @@ void Namco163::reset() {
     lowChrNtMode = false;
     highChrNtMode = false;
     irqCounter = 0;
-    setPRGPage(3, -1);
+    setPRGPages(3, -1);
     updateWorkRamMapping();
 }
 
@@ -103,7 +103,7 @@ void Namco163::cpuWrite(uint16_t addr, uint8_t value) {
             break;
         }
         case 0xE000:
-            setPRGPage(0, value & 0x3F);
+            setPRGPages(0, value & 0x3F);
             if (variant == NAMCO_340) {
                 switch((value >> 6) & 3) {
                     case 0: ppu.Mirroring = MirrorMode::SCREEN_A; break;
@@ -115,14 +115,14 @@ void Namco163::cpuWrite(uint16_t addr, uint8_t value) {
             break;
 
         case 0xE800:
-            setPRGPage(1, value & 0x3F);
+            setPRGPages(1, value & 0x3F);
 
             lowChrNtMode  = value & 0x40;
             highChrNtMode = value & 0x80;
             break;
 
         case 0xF000:
-            setPRGPage(2, value & 0x3F);
+            setPRGPages(2, value & 0x3F);
             break;
 
         case 0xF800:
