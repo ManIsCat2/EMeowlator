@@ -1,4 +1,4 @@
-#include "namco_163.hpp"
+#include "namco163.hpp"
 #include "../nes_cpu.hpp"
 #include "../nes_ppu.hpp"
 

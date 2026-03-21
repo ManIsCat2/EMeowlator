@@ -24,8 +24,7 @@ protected:
             auto *k = (QKeyEvent*)(event);
             updateControllers(k->key(), true);
             return false;
-        }
-        else if (event->type() == QEvent::KeyRelease) {
+        } else if (event->type() == QEvent::KeyRelease) {
             auto *k = (QKeyEvent*)(event);
             updateControllers(k->key(), false);
             return false;

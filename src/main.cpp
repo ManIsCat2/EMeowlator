@@ -79,8 +79,7 @@ std::string joinLines(std::vector<std::string> lines) {
     std::string result;
     for (size_t i = 0; i < lines.size(); ++i) {
         result += lines[i];
-        if (i != lines.size() - 1)
-            result += "\n";
+        if (i != lines.size() - 1) result += "\n";
     }
     return result;
 }
@@ -403,7 +402,7 @@ int main(int argc, char *argv[]) {
         char CHRSizeStr[128];
         sprintf(CHRSizeStr, "CHR Size: 0x%zx (%zu)", globalROM.CHRRomSize, globalROM.CHRRomSize);
         std::string mapperStr = "Mapper: " + std::string(globalROM.mapper ? globalROM.mapper->getName() : (globalROM.MapperID ? "Unknown" : "NROM")) + " (Mapper " + std::to_string(globalROM.MapperID)+")";
-        std::string subMapperStr = "Sub Mapper: " + std::to_string(globalROM.SubMapperID);
+        std::string subMapperStr = "Sub Mapper: " + std::to_string(globalROM.mapper->subMapper);
         std::string batteryStr = "Battery: " + std::string(globalROM.hasBattery ? "Yes" : "No");
         std::string CHRRamStr = "CHR-RAM: " + std::string(globalROM.CHRRomSize == 0 ? "Yes" : "No");
         char batterySizeStr[128];

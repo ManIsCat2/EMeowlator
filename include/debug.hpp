@@ -1,6 +1,6 @@
 #pragma once
 
-#define DebugPrintLog(ctx, ...) \
-    printf("[%s] ", ctx); \
+#define DebugPrintLog(title, ...) \
+    printf("[%s] ", title); \
     printf(__VA_ARGS__); \
     printf("\n");

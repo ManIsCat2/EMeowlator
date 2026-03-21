@@ -13,15 +13,15 @@ MapperBase *NesROM::GetMapper(void) {
         case 9: return new MMC2();
         case 19: return new Namco163();
         case 34: 
-            switch(SubMapperID) {
+            switch (SubMapperID) {
                 case 0: 
                     if (CHRRomSize > 0) {
-                        return new NINA01();
+                        return new Mapper34(true);
                     } else {
-                        return new BNROM();
+                        return new Mapper34();
                     }
-                case 1: return new NINA01();
-                case 2: default: return new BNROM();
+                case 1: return new Mapper34(true);
+                case 2: default: return new Mapper34();
             }
 			break;
         case 69: return new SunSoftFME7();
@@ -82,6 +82,8 @@ bool NesROM::LoadNES(const std::string &filename) {
         Version = HeaderVersion::INES;
     }
 
+    SubMapperID = 0;
+
     if (Version == HeaderVersion::NES2_0) {
         MapperID = ((flags8 & 0x0F) << 8) | (flags7 & 0xF0) | (flags6 >> 4);
         SubMapperID = flags8 >> 8;
@@ -93,7 +95,6 @@ bool NesROM::LoadNES(const std::string &filename) {
         CHRRomSize = ((chrNewVal << 8) | chrPages) * 8 * 1024;
     } else {
         MapperID = (flags7 & 0xF0) | (flags6 >> 4);
-        SubMapperID = 0;
 
         PRGRomSize = size_t(prgPages) * 16 * 1024;
         CHRRomSize = size_t(chrPages) * 8 * 1024;
