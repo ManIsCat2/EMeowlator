@@ -50,8 +50,8 @@ public:
     void setCHRPages(uint16_t page, uint16_t val, enum BankSize size=BANK_1K);
     void setPRGPages(uint16_t page, uint16_t val, enum BankSize size=BANK_1K);
 
-    void mapCPUMemory(uint16_t start, uint16_t end, uint8_t *memory, uint32_t offset, bool writable, uint8_t pageNum);
-    void unmapCPUMemory(uint16_t start, uint16_t end, uint8_t pageNum);
+    void mapCPUMemory(uint16_t start, uint16_t end, uint8_t *memory, uint32_t offset, bool writable);
+    void unmapCPUMemory(uint16_t start, uint16_t end);
     void mapPPUMemory(uint16_t start, uint16_t end, uint8_t *memory, uint32_t offset, bool writable);
 
     void saveSRAM();

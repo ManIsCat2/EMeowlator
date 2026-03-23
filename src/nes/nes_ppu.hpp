@@ -26,7 +26,7 @@ enum class VideoFilter {
 class PPU {
 public:
     std::vector<uint8_t> ChrData{};
-    std::array<uint8_t, VRAM_MIRRORED_SIZE> VRAM{};
+    std::array<uint8_t, VRAM_SIZE> VRAM{};
     std::array<uint8_t, PALRAM_SIZE> paletteRAM{};
     uint8_t OAM[0x100];
     uint32_t frameBuffer[NES_NTSC_OUT_WIDTH(256) * NES_HEIGHT];

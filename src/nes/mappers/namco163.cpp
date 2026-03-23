@@ -26,14 +26,14 @@ void Namco163::updateWorkRamMapping() {
     uint8_t *memory = globalROM.hasBattery ? SRAM : PRGRam;
     if (variant == Variant::NAMCO_163) {
 		bool WriteEnable = (writeProtect & 0x40) == 0x40;
-		mapCPUMemory(0x6000, 0x67FF, memory, 0, WriteEnable && (writeProtect & 0x01) == 0x00, 0x60);
-		mapCPUMemory(0x6800, 0x6FFF, memory, 0, WriteEnable && (writeProtect & 0x02) == 0x00, 0x68);
-		mapCPUMemory(0x7000, 0x77FF, memory, 0, WriteEnable && (writeProtect & 0x04) == 0x00, 0x70);
-		mapCPUMemory(0x7800, 0x7FFF, memory, 0, WriteEnable && (writeProtect & 0x08) == 0x00, 0x78);
+		mapCPUMemory(0x6000, 0x67FF, memory, 0, WriteEnable && (writeProtect & 0x01) == 0x00);
+		mapCPUMemory(0x6800, 0x6FFF, memory, 0, WriteEnable && (writeProtect & 0x02) == 0x00);
+		mapCPUMemory(0x7000, 0x77FF, memory, 0, WriteEnable && (writeProtect & 0x04) == 0x00);
+		mapCPUMemory(0x7800, 0x7FFF, memory, 0, WriteEnable && (writeProtect & 0x08) == 0x00);
 	} else if (variant == Variant::NAMCO_175) {
-		mapCPUMemory(0x6000, 0x7FFF, memory, 0, (writeProtect & 0x01) == 0x01, 0x60);
+		mapCPUMemory(0x6000, 0x7FFF, memory, 0, (writeProtect & 0x01) == 0x01);
 	} else {
-        unmapCPUMemory(0x6000, 0x7FFF, 0x60);
+        unmapCPUMemory(0x6000, 0x7FFF);
     }
 }
 

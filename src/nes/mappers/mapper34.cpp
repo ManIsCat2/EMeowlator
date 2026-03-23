@@ -11,7 +11,7 @@ void Mapper34::reset() {
     if (!nina01) { 
         setCHRPages(0, 0);
     } else {
-        mapCPUMemory(0x6000, 0x7fff, PRGRam, 0, true, 0x60);
+        mapCPUMemory(0x6000, 0x7fff, PRGRam, 0, true);
     }
 }
 
