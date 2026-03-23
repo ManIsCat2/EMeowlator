@@ -18,4 +18,6 @@
 #define STICK_LEFT      (1 << 6)
 #define STICK_RIGHT     (1 << 7)
 
+#define UNUSED __attribute__((unused))
+
 #include "debug.hpp"

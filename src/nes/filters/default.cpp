@@ -1,5 +1,4 @@
 #include "default.hpp"
 
-void DefaultFilter::applyFilter(void) {
-    ppu.blitPixels();
+void DefaultFilter::applyFilter(UNUSED uint32_t *pix, UNUSED int x, UNUSED int y) {
 }

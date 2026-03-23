@@ -5,7 +5,8 @@
 class NTSCFilter : public VFilterBase {
 public:
     void initialize(void) override;
-    void applyFilter(void) override;
+    bool hasCustomBlit(void) { return true; };
+    void blit(void) override;
 private:
     nes_ntsc_t NTSC;
     nes_ntsc_setup_t NTSCSetup;

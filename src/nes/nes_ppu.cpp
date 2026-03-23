@@ -44,7 +44,7 @@ uint32_t getRainbowColor() {
 }
 
 void PPU::reset(void) {
-    memset(VRAM.data(), 0, VRAM_MIRRORED_SIZE);
+    memset(VRAM.data(), 0, VRAM_SIZE);
     memset(OAM, 0, 0x100);
     memset(paletteRAM.data(), 0, PALRAM_SIZE);
     memset(frameBuffer, 0, sizeof(frameBuffer));
@@ -166,17 +166,17 @@ void PPU::Step() {
 					VRAMAddr += 0x1000;
 				} else {
 					VRAMAddr &= 0x0FFF;
-					int YScroll = (VRAMAddr & 0x03E0) >> 5;
-					if (YScroll == 29) {
-						YScroll = 0;
+					int y = (VRAMAddr & 0x03E0) >> 5;
+					if (y == 29) {
+						y = 0;
 						VRAMAddr ^= 0x0800;
-					} else if (YScroll == 31) {// tanks 100th_coin
-						YScroll = 0; 
+					} else if (y == 31) {// tanks 100th_coin
+						y = 0; 
 					} else {
-						YScroll++;
-						YScroll &= 0x1F;
+						y++;
+						y &= 0x1F;
 					}
-					VRAMAddr = ((VRAMAddr & 0xFC1F) | (YScroll << 5));
+					VRAMAddr = ((VRAMAddr & 0xFC1F) | (y << 5));
 				}
 			}
 
@@ -211,8 +211,9 @@ void PPU::blitPixels() {
     for (int y = 0; y < NES_HEIGHT; y++) {
         for (int x = 0; x < NES_WIDTH; x++) {
             int i = y * NES_WIDTH + x;
+            frameBuffer[i] = nesPalette[palIndexBuf[i] & 0x3f];
+            vfilter->applyFilter(&frameBuffer[i], x, y);
             if (palIndexBuf[i] == 254) frameBuffer[i] = getRainbowColor();
-            else frameBuffer[i] = nesPalette[palIndexBuf[i] & 0x3f];
         }
     }
 }

@@ -2050,6 +2050,7 @@ void CPU::write(uint16_t addr, uint8_t value) {
 
                 ppu.VRAMAddr += ppu.VRAMInc32Mode ? 32 : 1;
                 ppu.VRAMAddr &= 0x3FFF;
+                //peak options
                 if (ppu.VRAMCorruption && (rand() & 7) == 0) {
                     ppu.VRAMAddr ^= 2 << rand() & 7;
                 }

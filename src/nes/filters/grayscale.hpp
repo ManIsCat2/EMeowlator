@@ -3,5 +3,5 @@
 
 class GrayScaleFilter : public VFilterBase {
 public:
-    void applyFilter(void) override;
+    void applyFilter(uint32_t *pix, UNUSED int x, UNUSED int y) override;
 };
