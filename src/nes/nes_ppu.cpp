@@ -191,7 +191,7 @@ void PPU::Step() {
 			VRAMAddr = ((VRAMAddr & 0x41f) | (TempVRAMAddr & 0x7be0));
 		}
 
-        if (globalROM.mapper) globalROM.mapper->clockPPU();
+        globalROM.mapper->clockPPU();
 	}
 
 	Dot++;
@@ -205,6 +205,30 @@ void PPU::Step() {
 void PPU::LoadCHRROM(const uint8_t *data, int chrSize) {
     ChrData.resize(chrSize);
     memcpy(ChrData.data(), data, chrSize);
+}
+
+uint16_t PPU::mirrorNametable(uint16_t addr) {
+    uint16_t mirrored = addr;
+    switch (Mirroring) {
+        case MirrorMode::HORIZONTAL:
+            mirrored = (addr & 0x3FF) | ((addr & 0x800) >> 1);
+            break;
+        case MirrorMode::VERTICAL:
+            mirrored = addr & 0x7FF;
+            break;
+        case MirrorMode::SCREEN_A:
+            mirrored = addr & 0x3FF;
+            break;
+        case MirrorMode::SCREEN_B:
+            mirrored = (addr & 0x3FF) | 0x400;
+            break;
+        case MirrorMode::FOURSCREEN: {
+            uint16_t nt = (addr >> 10) & 0x03;
+            mirrored = (nt << 10) | (addr & 0x3FF);
+            break;
+        }
+    }
+    return mirrored;
 }
 
 void PPU::blitPixels() {

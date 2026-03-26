@@ -77,6 +77,7 @@ public:
     void Step();
 
     void LoadCHRROM(const uint8_t* chrData, int chrSize);
+    uint16_t mirrorNametable(uint16_t addr);
     void blitPixels();
 
     void Init();

@@ -85,20 +85,10 @@ void MapperBase::writeCHR(uint16_t addr, uint8_t value) {
 }
 
 uint8_t MapperBase::readVRAM(uint16_t addr) {
-    if (ppu.Mirroring == MirrorMode::HORIZONTAL) {
-        addr = (addr & 0x3FF) | ((addr & 0x800) >> 1);
-    } else {
-        addr &= 0x7FF;
-    }
-    return ppu.VRAM[addr];
+    return ppu.VRAM[ppu.mirrorNametable(addr)];
 }
 void MapperBase::writeVRAM(uint16_t addr, uint8_t value) {
-    if (ppu.Mirroring == MirrorMode::HORIZONTAL) {
-        addr = (addr & 0x3FF) | ((addr & 0x800) >> 1);
-    } else {
-        addr &= 0x7FF;
-    }
-    ppu.VRAM[addr] = value;
+    ppu.VRAM[ppu.mirrorNametable(addr)] = value;
 }
 
 void MapperBase::mapCPUMemory(uint16_t start, uint16_t end, uint8_t *memory, uint32_t offset, bool writable) {

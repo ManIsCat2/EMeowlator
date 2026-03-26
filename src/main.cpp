@@ -237,7 +237,6 @@ int main(int argc, char *argv[]) {
 
                 if (newColor.isValid()) {
                     nesPalette[i] =
-                        0xFF000000 | 
                         (newColor.red() << 16) |
                         (newColor.green() << 8) |
                         newColor.blue();
@@ -398,11 +397,12 @@ int main(int argc, char *argv[]) {
         HeaderHexStr = "Header: " + HeaderHexStr;
         std::string headVerStr = "Header Version: " + std::string(globalROM.Version == HeaderVersion::NES2_0 ? "NES2.0" : "INES");
         char PRGSizeStr[128];
-        sprintf(PRGSizeStr, "PRG Size: 0x%zx (%zu)", globalROM.PRGRomSize, globalROM.PRGRomSize);
+        sprintf(PRGSizeStr, "PRG Size: %uKiB (%u x 16KiB)", globalROM.PRGNumPages * 16, globalROM.PRGNumPages);
         char CHRSizeStr[128];
-        sprintf(CHRSizeStr, "CHR Size: 0x%zx (%zu)", globalROM.CHRRomSize, globalROM.CHRRomSize);
+        sprintf(CHRSizeStr, "CHR Size: %uKiB (%u x 8KiB)", globalROM.CHRNumPages * 8, globalROM.CHRNumPages);
         std::string mapperStr = "Mapper: " + std::string(globalROM.mapper ? globalROM.mapper->getName() : (globalROM.MapperID ? "Unknown" : "NROM")) + " (Mapper " + std::to_string(globalROM.MapperID)+")";
         std::string subMapperStr = "Sub Mapper: " + std::to_string(globalROM.SubMapperID);
+        std::string mirrorStr = "Mirroring: " + std::string(globalROM.Mirroring == MirrorMode::HORIZONTAL ? "Horizontal" : "Vertical");
         std::string batteryStr = "Battery: " + std::string(globalROM.hasBattery ? "Yes" : "No");
         std::string CHRRamStr = "CHR-RAM: " + std::string(globalROM.CHRRomSize == 0 ? "Yes" : "No");
         char batterySizeStr[128];
@@ -415,7 +415,7 @@ int main(int argc, char *argv[]) {
         dialog->setWindowTitle("ROM Info");
         dialog->setFixedSize(350, 250);
 
-        std::string fullInfo = joinLines({fileStr, HeaderHexStr, headVerStr, PRGSizeStr, CHRSizeStr, mapperStr, subMapperStr, batteryStr, CHRRamStr, batterySizeStr, RESETVecStr});
+        std::string fullInfo = joinLines({fileStr, HeaderHexStr, headVerStr, PRGSizeStr, CHRSizeStr, mapperStr, subMapperStr, mirrorStr, batteryStr, CHRRamStr, batterySizeStr, RESETVecStr});
         if (!romIsLoaded) fullInfo = "ROM isn't loaded!";
         QLabel* label = new QLabel(QString::fromStdString(fullInfo), dialog);
         label->setAlignment(Qt::AlignCenter);

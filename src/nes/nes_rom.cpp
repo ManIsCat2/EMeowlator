@@ -64,10 +64,10 @@ bool NesROM::LoadNES(const std::string &filename) {
 
     std::memcpy(Header, data.data(), 8);
 
-    ppu.Mirroring = (Header[6] & 1) ? MirrorMode::VERTICAL :  MirrorMode::HORIZONTAL;
+    Mirroring = ppu.Mirroring = (Header[6] & 1) ? MirrorMode::VERTICAL :  MirrorMode::HORIZONTAL;
 
-    uint8_t prgPages = data[4];
-    uint8_t chrPages = data[5];
+    uint8_t prgPages = PRGNumPages = data[4];
+    uint8_t chrPages = CHRNumPages = data[5];
     uint8_t flags6 = data[6];
     uint8_t flags7 = data[7];
     uint8_t flags8 = data[8];
@@ -91,8 +91,8 @@ bool NesROM::LoadNES(const std::string &filename) {
         uint16_t prgNewVal = flags9 & 0x0F;
         uint16_t chrNewVal = flags9 >> 4;
 
-        PRGRomSize = ((prgNewVal << 8) | prgPages) * 0x4000;
-        CHRRomSize = ((chrNewVal << 8) | chrPages) * 0x2000;
+        PRGRomSize = (PRGNumPages = ((prgNewVal << 8) | prgPages)) * 0x4000;
+        CHRRomSize = (CHRNumPages = ((chrNewVal << 8) | chrPages)) * 0x2000;
     } else {
         MapperID = (flags7 & 0xF0) | (flags6 >> 4);
 
