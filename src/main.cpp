@@ -169,8 +169,6 @@ int main(int argc, char *argv[]) {
             if (globalROM.LoadNES(file.toStdString().c_str())) {
                 cpu.reset();
                 romIsLoaded = true;
-            } else {
-                romIsLoaded = false;
             }
         }
     });
@@ -475,8 +473,6 @@ int main(int argc, char *argv[]) {
         if (globalROM.LoadNES(argv[1])) {
             cpu.reset();
             romIsLoaded = true;
-        } else {
-            romIsLoaded = false;
         }
     }
 

@@ -1,8 +1,8 @@
 #include "nes_rom.hpp"
 #include "../main.hpp"
 
-MapperBase *NesROM::GetMapper(void) {
-    switch (MapperID) {
+MapperBase *NesROM::GetMapper(uint16_t id, uint16_t subId) {
+    switch (id) {
         case 0: return new NROM();
         case 1: return new MMC1();
         case 2: return new UxROM();
@@ -13,7 +13,7 @@ MapperBase *NesROM::GetMapper(void) {
         case 9: return new MMC2();
         case 19: return new Namco163();
         case 34: 
-            switch (SubMapperID) {
+            switch (subId) {
                 case 0: 
                     if (CHRRomSize > 0) {
                         return new Mapper34(true);
@@ -30,7 +30,7 @@ MapperBase *NesROM::GetMapper(void) {
         case 210: return new Namco163();
         case 211: return new JyCompany();
         default: {
-            QMessageBox::critical((QMainWindow*)globalQTWin, "Error", ("Mapper " + std::to_string(MapperID) + " is Unimplemented, failed to open ROM").c_str());
+            QMessageBox::critical((QMainWindow*)globalQTWin, "Error", ("Mapper " + std::to_string(id) + " is Unimplemented, failed to open ROM").c_str());
             return nullptr;
         }
     }
@@ -62,62 +62,78 @@ bool NesROM::LoadNES(const std::string &filename) {
         return false;
     }
 
-    std::memcpy(Header, data.data(), 8);
+    uint8_t romHeader[8];
+    std::memcpy(romHeader, data.data(), 8);
 
-    Mirroring = ppu.Mirroring = (Header[6] & 1) ? MirrorMode::VERTICAL :  MirrorMode::HORIZONTAL;
+    MirrorMode romMirroring = (romHeader[6] & 1) ? MirrorMode::VERTICAL :  MirrorMode::HORIZONTAL;
 
-    uint8_t prgPages = PRGNumPages = data[4];
-    uint8_t chrPages = CHRNumPages = data[5];
+    uint8_t prgPages = data[4];
+    uint8_t chrPages = data[5];
     uint8_t flags6 = data[6];
     uint8_t flags7 = data[7];
     uint8_t flags8 = data[8];
     uint8_t flags9 = data[9];
 
-    bool hasTrainer = (flags6 & 0x04) != 0;
-    hasBattery = (flags6 & 0x02) != 0;
+    //bool hasTrainer = (flags6 & 0x04) != 0;
+    bool romHasBattery = (flags6 & 0x02) != 0;
+    HeaderVersion romVersion = HeaderVersion::INES;
 
     if ((flags7 & 0x0C) == 0x08) {
-        Version = HeaderVersion::NES2_0;
-    } else {
-        Version = HeaderVersion::INES;
+        romVersion = HeaderVersion::NES2_0;
     }
 
-    SubMapperID = 0;
+    uint16_t romSubMapperID = 0;
+    uint16_t romMapperID = 0;
+    size_t romPRGSize, romCHRSize = 0;
 
-    if (Version == HeaderVersion::NES2_0) {
-        MapperID = ((flags8 & 0x0F) << 8) | (flags7 & 0xF0) | (flags6 >> 4);
-        SubMapperID = flags8 >> 8;
+    uint16_t prgNewVal = flags9 & 0x0F;
+    uint16_t chrNewVal = flags9 >> 4;
+    uint16_t romPRGNumPages = prgPages;
+    uint16_t romCHRNumPages = chrPages;
 
-        uint16_t prgNewVal = flags9 & 0x0F;
-        uint16_t chrNewVal = flags9 >> 4;
+    if (romVersion == HeaderVersion::NES2_0) {
+        romMapperID = ((flags8 & 0x0F) << 8) | (flags7 & 0xF0) | (flags6 >> 4);
+        romSubMapperID = flags8 >> 8;
 
-        PRGRomSize = (PRGNumPages = ((prgNewVal << 8) | prgPages)) * 0x4000;
-        CHRRomSize = (CHRNumPages = ((chrNewVal << 8) | chrPages)) * 0x2000;
+        romPRGSize = (romPRGNumPages = ((prgNewVal << 8) | prgPages)) * 0x4000;
+        romCHRSize = (romCHRNumPages = ((chrNewVal << 8) | chrPages)) * 0x2000;
     } else {
-        MapperID = (flags7 & 0xF0) | (flags6 >> 4);
+        romMapperID = (flags7 & 0xF0) | (flags6 >> 4);
 
-        PRGRomSize = size_t(prgPages) * 0x4000;
-        CHRRomSize = size_t(chrPages) * 0x2000;
+        romPRGSize = size_t(prgPages) * 0x4000;
+        romCHRSize = size_t(chrPages) * 0x2000;
     }
 
     if (!prgPages) {
        // DebugPrintLog("ROM", "ROM has no PRG Pages");
        // QMessageBox::critical((QMainWindow*)globalQTWin, "Error", "ROM doesn't have any PRG Pages");
        // return false;
-        PRGRomSize = 0x400000; // 0x100 * 0x4000
+        romPRGSize = 0x400000; // 0x100 * 0x4000
     }
+        
+    if (!GetMapper(romMapperID, romSubMapperID)) { 
+        DebugPrintLog("ROM", "Unimplemented mapper: %u, failed to open ROM", MapperID)
+        return false;
+    } else {
+        if (mapper) { delete mapper; mapper = nullptr; }
+        std::memcpy(Header, romHeader, 8);
+        hasBattery = romHasBattery;
+        Mirroring = ppu.Mirroring = romMirroring;
+        Version = romVersion;
+        SubMapperID = romSubMapperID;
+        MapperID = romMapperID;
+        PRGRomSize = romPRGSize;
+        CHRRomSize = romCHRSize;
+        PRGNumPages = romPRGNumPages;
+        CHRNumPages = romCHRNumPages;
+        mapper = GetMapper(romMapperID, romSubMapperID);
+    }
+    mapper->subMapper = romSubMapperID;
 
     if (ROM) { delete[] ROM; ROM = nullptr; }
     ROM = new uint8_t[PRGRomSize];
 
     size_t offset = 16;
-    if (hasTrainer) {
-        if (data.size() < offset + 512) {
-            DebugPrintLog("ROM", "ROM too small");
-            return false;
-        }
-        offset += 512;
-    }
 
     std::memcpy(ROM, &data[offset], PRGRomSize);
     offset += PRGRomSize;
@@ -129,14 +145,6 @@ bool NesROM::LoadNES(const std::string &filename) {
         ppu.LoadCHRROM(&data[offset], CHRRomSize);
     }
     offset += CHRRomSize;
-        
-    if (mapper) { delete mapper; mapper = nullptr; }
-    mapper = GetMapper();
-    if (!mapper) { 
-        DebugPrintLog("ROM", "Unimplemented mapper: %u, failed to open ROM", MapperID)
-        return false;
-    }
-    mapper->subMapper = SubMapperID;
     mapper->initialize();
     DebugPrintLog("ROM", "Loaded NES ROM '%s'", Name.c_str());
     if (Version == HeaderVersion::NES2_0) {

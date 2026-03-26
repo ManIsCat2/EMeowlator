@@ -34,6 +34,6 @@ public:
     uint16_t SubMapperID = 0;
     MapperBase *mapper = nullptr;
 
-    MapperBase *GetMapper(void);
+    MapperBase *GetMapper(uint16_t id, uint16_t subId);
     bool LoadNES(const std::string &filename);
 };
