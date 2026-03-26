@@ -27,34 +27,33 @@ public:
     bool CPUPaused = false;
     uint8_t RAM[RAM_SIZE];
     uint8_t OpenBus = 0;
-
-    void reset();
-
     bool NMIDetector = false;
     bool doNMI = false;
     bool doIRQ = false;
     bool IRQPending = false;
 
+    void reset();
+
     uint8_t setOpenBus(uint8_t val) {
         return OpenBus = val;
     }
 
-    void GetInfo(uint8_t *AReg, uint8_t *XReg, uint8_t *YReg, uint16_t *PCPtr, uint8_t *SPPtr, uint8_t *PPtr) {
+    void GetInfo(uint8_t *AReg, uint8_t *XReg, uint8_t *YReg, uint16_t *PCReg, uint8_t *SPReg, uint8_t *PReg) {
         *AReg = A;
         *XReg = X;
         *YReg = Y;
-        *PCPtr = PC;
-        *SPPtr = SP;
-        *PPtr = P;
+        *PCReg = PC;
+        *SPReg = SP;
+        *PReg = P;
     }
 
-    void SetInfo(uint8_t AReg, uint8_t XReg, uint8_t YReg, uint16_t PCNew, uint8_t SPNew, uint8_t PNew) {
+    void SetInfo(uint8_t AReg, uint8_t XReg, uint8_t YReg, uint16_t PCReg, uint8_t SPReg, uint8_t PReg) {
         A = AReg;
         X = XReg;
         Y = YReg;
-        PC = PCNew;
-        SP = SPNew;
-        P = PNew;
+        PC = PCReg;
+        SP = SPReg;
+        P = PReg;
     }
 
     void run(uint32_t maxCycles);

@@ -2,7 +2,7 @@
 #include "qt/input_manager.hpp"
 #include "main.hpp"
 
-Config::Entry ConfigEntries[] = {
+static Config::Entry ConfigEntries[] = {
     {"a_button", &nesKeyBinds[0].key, Config::Type::KBIND},
     {"b_button", &nesKeyBinds[1].key, Config::Type::KBIND},
     {"stick_up", &nesKeyBinds[2].key, Config::Type::KBIND},

@@ -91,13 +91,20 @@ bool NesROM::LoadNES(const std::string &filename) {
         uint16_t prgNewVal = flags9 & 0x0F;
         uint16_t chrNewVal = flags9 >> 4;
 
-        PRGRomSize = ((prgNewVal << 8) | prgPages) * 16 * 1024;
-        CHRRomSize = ((chrNewVal << 8) | chrPages) * 8 * 1024;
+        PRGRomSize = ((prgNewVal << 8) | prgPages) * 0x4000;
+        CHRRomSize = ((chrNewVal << 8) | chrPages) * 0x2000;
     } else {
         MapperID = (flags7 & 0xF0) | (flags6 >> 4);
 
-        PRGRomSize = size_t(prgPages) * 16 * 1024;
-        CHRRomSize = size_t(chrPages) * 8 * 1024;
+        PRGRomSize = size_t(prgPages) * 0x4000;
+        CHRRomSize = size_t(chrPages) * 0x2000;
+    }
+
+    if (!prgPages) {
+       // DebugPrintLog("ROM", "ROM has no PRG Pages");
+       // QMessageBox::critical((QMainWindow*)globalQTWin, "Error", "ROM doesn't have any PRG Pages");
+       // return false;
+        PRGRomSize = 0x400000; // 0x100 * 0x4000
     }
 
     if (ROM) { delete[] ROM; ROM = nullptr; }
@@ -111,19 +118,13 @@ bool NesROM::LoadNES(const std::string &filename) {
         }
         offset += 512;
     }
-        
-    if (!prgPages) {
-        DebugPrintLog("ROM", "ROM has no PRG Pages");
-        QMessageBox::critical((QMainWindow*)globalQTWin, "Error", "ROM doesn't have any PRG Pages");
-        return false;
-    }
 
     std::memcpy(ROM, &data[offset], PRGRomSize);
     offset += PRGRomSize;
         
     if (chrPages == 0) {
-        uint8_t zeros[0x2000] = {};
-        ppu.LoadCHRROM(zeros, 0x2000);
+        uint8_t chrRam[0x2000] = {};
+        ppu.LoadCHRROM(chrRam, 0x2000);
     } else {
         ppu.LoadCHRROM(&data[offset], CHRRomSize);
     }
