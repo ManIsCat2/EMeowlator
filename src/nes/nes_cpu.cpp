@@ -24,7 +24,7 @@ void CPU::run(uint32_t maxCycles) {
     while (cyclesRun < maxCycles) {
         if (!romIsLoaded || CPUPaused || !globalROM.mapper) return;
         bool prevNMIDetect = NMIDetector;
-        NMIDetector = ppu.Vblank && ppu.enableNMI;
+        NMIDetector = ppu.Vblank && ppu.control.enableNMI;
         uint8_t opcode = 0x00;
         globalROM.mapper->clockCPU();
 
@@ -1944,7 +1944,7 @@ uint8_t CPU::read(uint16_t addr) {
                     ret = ppu.paletteRAM[pal];
                 }
 
-                ppu.VRAMAddr += ppu.VRAMInc32Mode ? 32 : 1;
+                ppu.VRAMAddr += ppu.control.VRAMInc32 ? 32 : 1;
                 ppu.VRAMAddr &= 0x3FFF;
                 return ret;
             }
@@ -1986,21 +1986,22 @@ void CPU::write(uint16_t addr, uint8_t value) {
     if (addr >= 0x2000 && addr < 0x4000) {
         switch (addr & 7) {
             case 0: // PPUCTRL
-                ppu.nametableSelect      = value & 0x03;
-                ppu.VRAMInc32Mode        = (value & 0x04) != 0;
-                ppu.spritePatternTable   = value & 0x08;
-                ppu.BGPatternTable       = value & 0x10;
-                ppu.use8x16Sprites       = (value & 0x20) != 0;
-                ppu.enableNMI            = (value & 0x80) != 0;
-                ppu.FullPPUCTRL = value;
-                ppu.TempVRAMAddr = (ppu.TempVRAMAddr & 0x73FF) | ((value & 0x03) << 10);
+                ppu.control.nametableSelect      = value & 0x03;
+                ppu.control.VRAMInc32            = (value & 0x04) != 0;
+                ppu.control.spritePatternTable   = value & 0x08;
+                ppu.control.BGPatternTable       = value & 0x10;
+                ppu.control.use8x16Sprites       = (value & 0x20) != 0;
+                ppu.control.enableNMI            = (value & 0x80) != 0;
+                ppu.control.combined = value;
+                ppu.TransferAddr = (ppu.TransferAddr & 0x73FF) | ((value & 0x03) << 10);
                 break;
 
             case 1: // PPUMASK
-                ppu.mask8pxMaskBG        = (value & 0x02) != 0;
-                ppu.mask8pxMaskSprites   = (value & 0x04) != 0;
-                ppu.maskRenderBG         = (value & 0x08) != 0;
-                ppu.maskRenderSprites    = (value & 0x10) != 0;
+                ppu.mask.background8pxMask = (value & 0x02) != 0;
+                ppu.mask.sprite8pxMask     = (value & 0x04) != 0;
+                ppu.mask.renderBackground  = (value & 0x08) != 0;
+                ppu.mask.renderSprites     = (value & 0x10) != 0;
+                ppu.mask.combined = value;
                 break;
 
             case 2: // PPUSTATUS
@@ -2017,19 +2018,19 @@ void CPU::write(uint16_t addr, uint8_t value) {
             case 5: // PPUSCROLL
                 if (!ppu.WriteLatch) {
                     ppu.scrollFineX = value & 7;
-                    ppu.TempVRAMAddr = (ppu.TempVRAMAddr & 0x7fe0) | (value >> 3);
+                    ppu.TransferAddr = (ppu.TransferAddr & 0x7fe0) | (value >> 3);
                 } else {
-                    ppu.TempVRAMAddr = (ushort)((ppu.TempVRAMAddr & 0xc1f) | (((value & 0xF8) << 2) | ((value & 7) << 12)));
+                    ppu.TransferAddr = (ushort)((ppu.TransferAddr & 0xc1f) | (((value & 0xF8) << 2) | ((value & 7) << 12)));
                 }
                 ppu.WriteLatch = !ppu.WriteLatch;
                 break;
 
             case 6: // PPUADDR
                 if (!ppu.WriteLatch) {
-                    ppu.TempVRAMAddr = (ppu.TempVRAMAddr & 0x00FF) | ((value & 0x3F) << 8);
+                    ppu.TransferAddr = (ppu.TransferAddr & 0x00FF) | ((value & 0x3F) << 8);
                 } else {
-                    ppu.TempVRAMAddr = (ppu.TempVRAMAddr & 0x7F00) | value;
-                    ppu.VRAMAddr = ppu.TempVRAMAddr;
+                    ppu.TransferAddr = (ppu.TransferAddr & 0x7F00) | value;
+                    ppu.VRAMAddr = ppu.TransferAddr;
                 }
                 ppu.WriteLatch = !ppu.WriteLatch;
                 break;
@@ -2048,7 +2049,7 @@ void CPU::write(uint16_t addr, uint8_t value) {
                     ppu.paletteRAM[pal] = value;
                 }
 
-                ppu.VRAMAddr += ppu.VRAMInc32Mode ? 32 : 1;
+                ppu.VRAMAddr += ppu.control.VRAMInc32 ? 32 : 1;
                 ppu.VRAMAddr &= 0x3FFF;
 
                 //peak option

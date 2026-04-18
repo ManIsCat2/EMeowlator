@@ -5,10 +5,10 @@
 static Config::Entry ConfigEntries[] = {
     {"a_button", &nesKeyBinds[0].key, Config::Type::KBIND},
     {"b_button", &nesKeyBinds[1].key, Config::Type::KBIND},
-    {"stick_up", &nesKeyBinds[2].key, Config::Type::KBIND},
-    {"stick_down", &nesKeyBinds[3].key, Config::Type::KBIND},
-    {"stick_left", &nesKeyBinds[4].key, Config::Type::KBIND},
-    {"stick_right", &nesKeyBinds[5].key, Config::Type::KBIND},
+    {"dpad_up", &nesKeyBinds[2].key, Config::Type::KBIND},
+    {"dpad_down", &nesKeyBinds[3].key, Config::Type::KBIND},
+    {"dpad_left", &nesKeyBinds[4].key, Config::Type::KBIND},
+    {"dpad_right", &nesKeyBinds[5].key, Config::Type::KBIND},
     {"start_button", &nesKeyBinds[6].key, Config::Type::KBIND},
     {"select_button", &nesKeyBinds[7].key, Config::Type::KBIND},
 };

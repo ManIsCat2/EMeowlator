@@ -37,30 +37,34 @@ public:
 
     MirrorMode Mirroring = MirrorMode::VERTICAL;
     bool WriteLatch = false;
-    unsigned short VRAMAddr = 0;
-    unsigned short OAMAddr = 0;
-    unsigned short TempVRAMAddr = 0;
+    uint16_t VRAMAddr = 0;
+    uint16_t OAMAddr = 0;
+    uint16_t TransferAddr = 0;
     uint8_t ReadBuffer = 0;
     int Dot = 0;
     int ScanLine = 0;
     bool Vblank = false;
     bool sprite0Hit = false;
 
-    bool mask8pxMaskBG = false;
-    bool mask8pxMaskSprites = false;
-    bool maskRenderBG = false;
-    bool maskRenderSprites = false;
-    uint8_t FullPPUCTRL = 0;
+    struct {
+        bool background8pxMask = false;
+        bool sprite8pxMask = false;
+        bool renderBackground = false;
+        bool renderSprites = false;
+        uint8_t combined = 0;
+    } mask;
 
-    int nametableSelect = 0; 
-    bool VRAMInc32Mode = false;
-    int spritePatternTable = 0;
-    int BGPatternTable = 0;
-    bool use8x16Sprites = false;
-    bool enableNMI = false;
+    struct {
+        int nametableSelect = 0; 
+        bool VRAMInc32 = false;
+        int spritePatternTable = 0;
+        int BGPatternTable = 0;
+        bool use8x16Sprites = false;
+        bool enableNMI = false;
+        uint8_t combined = 0;
+    } control;
 
     uint8_t scrollFineX = 0;
-
     uint8_t patternTableLow = 0;
     uint8_t patternTableHigh = 0;
     uint8_t nametableByte = 0;

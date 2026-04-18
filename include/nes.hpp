@@ -13,10 +13,10 @@
 #define B_BUTTON        (1 << 1)
 #define SELECT_BUTTON   (1 << 2)
 #define START_BUTTON    (1 << 3)
-#define STICK_UP        (1 << 4)
-#define STICK_DOWN      (1 << 5)
-#define STICK_LEFT      (1 << 6)
-#define STICK_RIGHT     (1 << 7)
+#define DPAD_UP        (1 << 4)
+#define DPAD_DOWN      (1 << 5)
+#define DPAD_LEFT      (1 << 6)
+#define DPAD_RIGHT     (1 << 7)
 
 #define UNUSED __attribute__((unused))
 

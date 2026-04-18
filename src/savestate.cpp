@@ -51,25 +51,25 @@ void SaveStateFile::WriteSaveStateToFile(const char *FileName) {
     WriteBytesPtr<uint8_t>(ppu.OAM, 0x100);
 
     WriteBytes<bool>(ppu.WriteLatch);
-    WriteBytes<unsigned short>(ppu.VRAMAddr);
-    WriteBytes<unsigned short>(ppu.OAMAddr);
-    WriteBytes<unsigned short>(ppu.TempVRAMAddr);
+    WriteBytes<uint16_t>(ppu.VRAMAddr);
+    WriteBytes<uint16_t>(ppu.OAMAddr);
+    WriteBytes<uint16_t>(ppu.TransferAddr);
     WriteBytes<uint8_t>(ppu.ReadBuffer);
     WriteBytes<int>(ppu.Dot);
     WriteBytes<int>(ppu.ScanLine);
     WriteBytes<bool>(ppu.Vblank);
 
-    WriteBytes<bool>(ppu.mask8pxMaskBG);
-    WriteBytes<bool>(ppu.mask8pxMaskSprites);
-    WriteBytes<bool>(ppu.maskRenderBG);
-    WriteBytes<bool>(ppu.maskRenderSprites);
+    WriteBytes<bool>(ppu.mask.background8pxMask);
+    WriteBytes<bool>(ppu.mask.sprite8pxMask);
+    WriteBytes<bool>(ppu.mask.renderBackground);
+    WriteBytes<bool>(ppu.mask.renderSprites);
 
-    WriteBytes<int>(ppu.nametableSelect);
-    WriteBytes<bool>(ppu.VRAMInc32Mode);
-    WriteBytes<int>(ppu.spritePatternTable);
-    WriteBytes<int>(ppu.BGPatternTable);
-    WriteBytes<bool>(ppu.use8x16Sprites);
-    WriteBytes<bool>(ppu.enableNMI);
+    WriteBytes<int>(ppu.control.nametableSelect);
+    WriteBytes<bool>(ppu.control.VRAMInc32);
+    WriteBytes<int>(ppu.control.spritePatternTable);
+    WriteBytes<int>(ppu.control.BGPatternTable);
+    WriteBytes<bool>(ppu.control.use8x16Sprites);
+    WriteBytes<bool>(ppu.control.enableNMI);
 
     WriteBytes<uint8_t>(ppu.scrollFineX);
 
@@ -97,25 +97,25 @@ void SaveStateFile::LoadSaveStateFromFile(const char *FileName) {
     ReadBytesPtr<uint8_t>(ppu.OAM, 0x100);
 
     ppu.WriteLatch      = ReadBytes<bool>();
-    ppu.VRAMAddr        = ReadBytes<unsigned short>();
-    ppu.OAMAddr         = ReadBytes<unsigned short>();
-    ppu.TempVRAMAddr    = ReadBytes<unsigned short>();
+    ppu.VRAMAddr        = ReadBytes<uint16_t>();
+    ppu.OAMAddr         = ReadBytes<uint16_t>();
+    ppu.TransferAddr    = ReadBytes<uint16_t>();
     ppu.ReadBuffer      = ReadBytes<uint8_t>();
     ppu.Dot             = ReadBytes<int>();
     ppu.ScanLine        = ReadBytes<int>();
     ppu.Vblank          = ReadBytes<bool>();
 
-    ppu.mask8pxMaskBG   = ReadBytes<bool>();
-    ppu.mask8pxMaskSprites = ReadBytes<bool>();
-    ppu.maskRenderBG    = ReadBytes<bool>();
-    ppu.maskRenderSprites = ReadBytes<bool>();
+    ppu.mask.background8pxMask   = ReadBytes<bool>();
+    ppu.mask.sprite8pxMask = ReadBytes<bool>();
+    ppu.mask.renderBackground    = ReadBytes<bool>();
+    ppu.mask.renderSprites = ReadBytes<bool>();
 
-    ppu.nametableSelect = ReadBytes<int>();
-    ppu.VRAMInc32Mode   = ReadBytes<bool>();
-    ppu.spritePatternTable = ReadBytes<int>();
-    ppu.BGPatternTable  = ReadBytes<int>();
-    ppu.use8x16Sprites  = ReadBytes<bool>();
-    ppu.enableNMI       = ReadBytes<bool>();
+    ppu.control.nametableSelect = ReadBytes<int>();
+    ppu.control.VRAMInc32   = ReadBytes<bool>();
+    ppu.control.spritePatternTable = ReadBytes<int>();
+    ppu.control.BGPatternTable  = ReadBytes<int>();
+    ppu.control.use8x16Sprites  = ReadBytes<bool>();
+    ppu.control.enableNMI       = ReadBytes<bool>();
 
     ppu.scrollFineX     = ReadBytes<uint8_t>();
 

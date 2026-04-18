@@ -52,24 +52,24 @@ void PPU::reset(void) {
     WriteLatch = false;
     VRAMAddr = 0;
     OAMAddr = 0;
-    TempVRAMAddr = 0;
+    TransferAddr = 0;
     ReadBuffer = 0;
     Dot = 0;
     ScanLine = 0;
     Vblank = false;
     sprite0Hit = false;
     
-    mask8pxMaskBG = false;
-    mask8pxMaskSprites = false;
-    maskRenderBG = false;
-    maskRenderSprites = false;
+    mask.background8pxMask = false;
+    mask.sprite8pxMask = false;
+    mask.renderBackground = false;
+    mask.renderSprites = false;
     
-    nametableSelect = 0; 
-    VRAMInc32Mode = false;
-    spritePatternTable = 0;
-    BGPatternTable = 0;
-    use8x16Sprites = false;
-    enableNMI = false;
+    control.nametableSelect = 0; 
+    control.VRAMInc32 = false;
+    control.spritePatternTable = 0;
+    control.BGPatternTable = 0;
+    control.use8x16Sprites = false;
+    control.enableNMI = false;
     
     scrollFineX = 0;
 }
@@ -82,20 +82,20 @@ void PPU::Step() {
 		sprite0Hit = false;
 	}
 
-	if (maskRenderBG || maskRenderSprites) {
+	if (mask.renderBackground || mask.renderSprites) {
 		if (ScanLine < 240) {
 			if (Dot - NES_WIDTH > 63u) {
 				if (Dot < NES_WIDTH) {
 					uint8_t color = 0;
                     uint8_t palette = 0;
-                    if (maskRenderBG && (Dot > 8 || mask8pxMaskBG)) {
+                    if (mask.renderBackground && (Dot > 8 || mask.background8pxMask)) {
                         color = (shiftRegHigh >> (0x0E - scrollFineX) & 0x02) | (shiftRegLow >> (0x0F - scrollFineX) & 0x01);
                         palette = shiftAttribute >> (0x1C - scrollFineX * 0x02) & 0x0C;
                     }
-                    if (maskRenderSprites && !DisableSprites) {
-                       for (int i = 0; i < 256; i += 4) {
+                    if (mask.renderSprites && !DisableSprites) {
+                        for (int i = 0; i < 256; i += 4) {
                             uint8_t *sprite = OAM + i;
-                            uint16_t spriteH = use8x16Sprites ? 16 : 8;
+                            uint16_t spriteH = control.use8x16Sprites ? 16 : 8;
                             uint16_t spriteX = Dot - sprite[3];
                             uint16_t spriteY = ScanLine - sprite[0] - 1;
 
@@ -106,16 +106,16 @@ void PPU::Step() {
                             uint16_t sy = spriteY ^ (flipV ? spriteH - 1 : 0);
                             if (spriteX < 8 && spriteY < spriteH) {
                                 uint16_t spriteTile = sprite[1];
-                                uint16_t spriteAddress = (use8x16Sprites ? spriteTile % 0x02 << 0x0C | spriteTile << 4 & -32 | sy * 0x02 & 0x10 : (spritePatternTable) << 0x09 | spriteTile << 0x04) | sy & 0x07;
+                                uint16_t spriteAddress = (control.use8x16Sprites ? spriteTile % 0x02 << 0x0C | spriteTile << 4 & -32 | sy * 0x02 & 0x10 : (control.spritePatternTable) << 0x09 | spriteTile << 0x04) | sy & 0x07;
                                 uint16_t spriteColor = globalROM.mapper->readCHR(spriteAddress + 8) >> sx << 0x01 & 0x02 | globalROM.mapper->readCHR(spriteAddress) >> sx & 0x01;
                                 if (spriteColor) {
                                     if (!(sprite[2] & 0x20 && color)) {
                                         color = spriteColor;
                                         palette = 0x10 | sprite[2] * 0x04 & 0x0C;
                                     }
-                                    if (i == 0 && color != 0 && maskRenderBG && maskRenderSprites) {
+                                    if (i == 0 && color != 0 && mask.renderBackground && mask.renderSprites) {
                                        // if (mask8pxMaskSprites && (Dot > 8 || mask8pxMaskSprites)) {
-                                            if ((mask8pxMaskSprites || Dot > 8) && Dot < 256 && Dot != 255) sprite0Hit = true;
+                                            if ((mask.sprite8pxMask || Dot > 8) && Dot < 256 && Dot != 255) sprite0Hit = true;
                                         //}
                                     }
                                     break;
@@ -134,7 +134,7 @@ void PPU::Step() {
 					shiftAttribute <<= 2;
 				}
 
-				uint16_t fetchAddress = ((FullPPUCTRL & 0x10) << 8) | (nametableByte << 4) | ((VRAMAddr >> 12) & 7);
+                uint16_t fetchAddress = ((control.BGPatternTable) ? 0x1000 : 0x0000) + (nametableByte << 4) + ((VRAMAddr >> 12) & 0x07);
 				switch ((Dot) & 7) {
                     case 1:
                         nametableByte = globalROM.mapper->readVRAM(VRAMAddr);
@@ -182,13 +182,13 @@ void PPU::Step() {
 
 			if (Dot == 257) {
                 // 0b0111101111100000, 0b0000010000011111
-				VRAMAddr = ((VRAMAddr & 0x7be0) | (TempVRAMAddr & 0x41f));
+				VRAMAddr = ((VRAMAddr & 0x7be0) | (TransferAddr & 0x41f));
 			}
 		}
 
 		if (Dot >= 280 && Dot <= 304 && ScanLine == 261) {
             // 0b0000010000011111, 0b0111101111100000
-			VRAMAddr = ((VRAMAddr & 0x41f) | (TempVRAMAddr & 0x7be0));
+			VRAMAddr = ((VRAMAddr & 0x41f) | (TransferAddr & 0x7be0));
 		}
 
         globalROM.mapper->clockPPU();

@@ -39,10 +39,10 @@ private:
             Controller &c = controllers[i];
             if (qtKey == nesKeyBinds[0].key) pressed ? c.state|=A_BUTTON : c.state&=~A_BUTTON;
             if (qtKey == nesKeyBinds[1].key) pressed ? c.state|=B_BUTTON : c.state&=~B_BUTTON;
-            if (qtKey == nesKeyBinds[2].key) pressed ? c.state|=STICK_UP : c.state&=~STICK_UP;
-            if (qtKey == nesKeyBinds[3].key) pressed ? c.state|=STICK_DOWN : c.state&=~STICK_DOWN;
-            if (qtKey == nesKeyBinds[4].key) pressed ? c.state|=STICK_LEFT : c.state&=~STICK_LEFT;
-            if (qtKey == nesKeyBinds[5].key) pressed ? c.state|=STICK_RIGHT : c.state&=~STICK_RIGHT;
+            if (qtKey == nesKeyBinds[2].key) pressed ? c.state|=DPAD_UP : c.state&=~DPAD_UP;
+            if (qtKey == nesKeyBinds[3].key) pressed ? c.state|=DPAD_DOWN : c.state&=~DPAD_DOWN;
+            if (qtKey == nesKeyBinds[4].key) pressed ? c.state|=DPAD_LEFT : c.state&=~DPAD_LEFT;
+            if (qtKey == nesKeyBinds[5].key) pressed ? c.state|=DPAD_RIGHT : c.state&=~DPAD_RIGHT;
             if (qtKey == nesKeyBinds[6].key) pressed ? c.state|=START_BUTTON : c.state&=~START_BUTTON;
             if (qtKey == nesKeyBinds[7].key) pressed ? c.state|=SELECT_BUTTON : c.state&=~SELECT_BUTTON;
         }
