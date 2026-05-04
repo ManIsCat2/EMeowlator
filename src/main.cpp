@@ -454,7 +454,7 @@ int main(int argc, char *argv[]) {
             if (rainbowHoverPhase > 1.0f) rainbowHoverPhase -= 1.0f;
         }
     });
-    cpuTimer.start(16);
+    cpuTimer.start(16); //60 fps
 
     window.setFixedSize(NES_WIDTH*3, NES_HEIGHT*3);
 

@@ -1935,7 +1935,15 @@ uint8_t CPU::read(uint16_t addr) {
                 } else {
                     uint16_t pal = vaddr & 0x1F;
                     if ((pal & 0x13) == 0x10) pal &= ~0x10;
+
                     ret = ppu.paletteRAM[pal];
+
+                    uint16_t underlying = (vaddr & 0x2FFF);
+                    if (underlying < 0x2000) {
+                        ppu.ReadBuffer = globalROM.mapper->readCHR(underlying);
+                    } else {
+                        ppu.ReadBuffer = globalROM.mapper->readVRAM(underlying & 0x0FFF);
+                    }
                 }
 
                 ppu.VRAMAddr += ppu.control.VRAMInc32 ? 32 : 1;
