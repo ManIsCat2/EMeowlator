@@ -74,6 +74,88 @@ void PPU::reset(void) {
     scrollFineX = 0;
 }
 
+void PPU::RenderScreen(void) {
+    if (Dot - NES_WIDTH > 63u) {
+        if (Dot < NES_WIDTH) {
+            uint8_t color = 0;
+            uint8_t palette = 0;
+            if (mask.renderBackground && (Dot > 8 || mask.background8pxMask)) {
+                color = (shiftRegHigh >> (0x0E - scrollFineX) & 0x02) | (shiftRegLow >> (0x0F - scrollFineX) & 0x01);
+                palette = shiftAttribute >> (0x1C - scrollFineX * 0x02) & 0x0C;
+            }
+            if (mask.renderSprites && !DisableSprites) {
+                for (int i = 0; i < 256; i += 4) {
+                    uint8_t *sprite = OAM + i;
+                    uint16_t spriteH = control.use8x16Sprites ? 16 : 8;
+                    uint16_t spriteX = Dot - sprite[3];
+                    uint16_t spriteY = ScanLine - sprite[0] - 1;
+
+                    int flipH = sprite[2] & 0x40;
+                    int flipV = sprite[2] & 0x80;
+                    
+                    uint16_t sx = spriteX ^ !(flipH) * 7;
+                    uint16_t sy = spriteY ^ (flipV ? spriteH - 1 : 0);
+                    if (spriteX < 8 && spriteY < spriteH) {
+                        uint16_t spriteTile = sprite[1];
+                        uint16_t spriteAddress = (control.use8x16Sprites ? spriteTile % 0x02 << 0x0C | spriteTile << 4 & -32 | sy * 0x02 & 0x10 : (control.spritePatternTable) << 0x09 | spriteTile << 0x04) | sy & 0x07;
+                        uint16_t spriteColor = globalROM.mapper->readCHR(spriteAddress + 8) >> sx << 0x01 & 0x02 | globalROM.mapper->readCHR(spriteAddress) >> sx & 0x01;
+                        if (spriteColor) {
+                            if (!(sprite[2] & 0x20 && color)) {
+                                color = spriteColor;
+                                palette = 0x10 | sprite[2] * 0x04 & 0x0C;
+                            }
+
+                            if (Dot > 0 && Dot < 255) {
+                                if (i == 0 && color != 0 && mask.renderBackground && mask.renderSprites) {
+                                    if (Dot > 8 || mask.sprite8pxMask) {
+                                        if (Dot > 1) sprite0Hit = true;
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            uint8_t finalPal = paletteRAM[color ? palette | color : 0] & 0x3f;
+            if (finalPal == hoveredPaletteIndex) finalPal = 254;
+			palIndexBuf[ScanLine * NES_WIDTH + Dot] = finalPal;
+		}
+                
+		if (Dot < 336) {
+            shiftRegHigh <<= 1;
+			shiftRegLow <<= 1;
+			shiftAttribute <<= 2;
+		}
+
+        uint16_t fetchAddress = ((control.BGPatternTable) ? 0x1000 : 0x0000) + (nametableByte << 4) + ((VRAMAddr >> 12) & 0x07);
+		switch (Dot & 7) {
+            case 1:
+                nametableByte = globalROM.mapper->readVRAM(VRAMAddr);
+                break;
+            case 3:
+                attributeByte = (globalROM.mapper->readVRAM((VRAMAddr & 0xc00) | 0x3c0 | (VRAMAddr >> 4 & 0x38) | (VRAMAddr / 4 & 7)) >> ((VRAMAddr >> 5 & 2) | (VRAMAddr / 2 & 1)) * 2) % 4 * 0x5555;
+                break;
+            case 5:
+                patternTableLow = globalROM.mapper->readCHR(fetchAddress);
+                break;
+            case 7: {
+                patternTableHigh = globalROM.mapper->readCHR(fetchAddress + 8);
+                if ((VRAMAddr & 0x001F) == 31) {
+                    VRAMAddr &= 0xFFE0;
+                    VRAMAddr ^= 0x0400;
+                } else {
+                    VRAMAddr++;
+                }
+                shiftRegHigh |= patternTableHigh;
+                shiftRegLow |= patternTableLow;
+                shiftAttribute |= attributeByte;
+                break;
+            }
+		}
+	}
+}
+
 void PPU::Step() {
 	if (Dot == 1 && ScanLine == 241)
 		Vblank = true;
@@ -84,101 +166,26 @@ void PPU::Step() {
 
 	if (mask.renderBackground || mask.renderSprites) {
 		if (ScanLine < 240) {
-			if (Dot - NES_WIDTH > 63u) {
-				if (Dot < NES_WIDTH) {
-					uint8_t color = 0;
-                    uint8_t palette = 0;
-                    if (mask.renderBackground && (Dot > 8 || mask.background8pxMask)) {
-                        color = (shiftRegHigh >> (0x0E - scrollFineX) & 0x02) | (shiftRegLow >> (0x0F - scrollFineX) & 0x01);
-                        palette = shiftAttribute >> (0x1C - scrollFineX * 0x02) & 0x0C;
+            RenderScreen();
+
+            if (Dot == 256) {
+                if ((VRAMAddr & 0x7000) != 0x7000) {
+                    VRAMAddr += 0x1000;
+                } else {
+                    VRAMAddr &= 0x0FFF;
+                    int y = (VRAMAddr & 0x03E0) >> 5;
+                    if (y == 29) {
+                        y = 0;
+                        VRAMAddr ^= 0x0800;
+                    } else if (y == 31) {// tanks 100th_coin
+                        y = 0; 
+                    } else {
+                        y++;
+                        y &= 0x1F;
                     }
-                    if (mask.renderSprites && !DisableSprites) {
-                        for (int i = 0; i < 256; i += 4) {
-                            uint8_t *sprite = OAM + i;
-                            uint16_t spriteH = control.use8x16Sprites ? 16 : 8;
-                            uint16_t spriteX = Dot - sprite[3];
-                            uint16_t spriteY = ScanLine - sprite[0] - 1;
-
-                            int flipH = sprite[2] & 0x40;
-                            int flipV = sprite[2] & 0x80;
-
-                            uint16_t sx = spriteX ^ !(flipH) * 7;
-                            uint16_t sy = spriteY ^ (flipV ? spriteH - 1 : 0);
-                            if (spriteX < 8 && spriteY < spriteH) {
-                                uint16_t spriteTile = sprite[1];
-                                uint16_t spriteAddress = (control.use8x16Sprites ? spriteTile % 0x02 << 0x0C | spriteTile << 4 & -32 | sy * 0x02 & 0x10 : (control.spritePatternTable) << 0x09 | spriteTile << 0x04) | sy & 0x07;
-                                uint16_t spriteColor = globalROM.mapper->readCHR(spriteAddress + 8) >> sx << 0x01 & 0x02 | globalROM.mapper->readCHR(spriteAddress) >> sx & 0x01;
-                                if (spriteColor) {
-                                    if (!(sprite[2] & 0x20 && color)) {
-                                        color = spriteColor;
-                                        palette = 0x10 | sprite[2] * 0x04 & 0x0C;
-                                    }
-                                    if (i == 0 && color != 0 && mask.renderBackground && mask.renderSprites) {
-                                       // if (mask8pxMaskSprites && (Dot > 8 || mask8pxMaskSprites)) {
-                                            if ((mask.sprite8pxMask || Dot > 8) && Dot < 256 && Dot != 255) sprite0Hit = true;
-                                        //}
-                                    }
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    uint8_t finalPal = paletteRAM[color ? palette | color : 0] & 0x3f;
-                    if (finalPal == hoveredPaletteIndex) finalPal = 254;
-					palIndexBuf[ScanLine * NES_WIDTH + Dot] = finalPal;
-				}
-
-				if (Dot < 336) {
-					shiftRegHigh <<= 1;
-					shiftRegLow <<= 1;
-					shiftAttribute <<= 2;
-				}
-
-                uint16_t fetchAddress = ((control.BGPatternTable) ? 0x1000 : 0x0000) + (nametableByte << 4) + ((VRAMAddr >> 12) & 0x07);
-				switch ((Dot) & 7) {
-                    case 1:
-                        nametableByte = globalROM.mapper->readVRAM(VRAMAddr);
-                        break;
-                    case 3:
-                        attributeByte = (globalROM.mapper->readVRAM((VRAMAddr & 0xc00) | 0x3c0 | (VRAMAddr >> 4 & 0x38) | (VRAMAddr / 4 & 7)) >> ((VRAMAddr >> 5 & 2) | (VRAMAddr / 2 & 1)) * 2) % 4 * 0x5555;
-                        break;
-                    case 5:
-                        patternTableLow = globalROM.mapper->readCHR(fetchAddress);
-                        break;
-                    case 7: {
-                        patternTableHigh = globalROM.mapper->readCHR(fetchAddress + 8);
-                        if ((VRAMAddr & 0x001F) == 31) {
-                            VRAMAddr &= 0xFFE0;
-                            VRAMAddr ^= 0x0400;
-                        } else {
-                            VRAMAddr++;
-                        }
-                        shiftRegHigh |= patternTableHigh;
-                        shiftRegLow |= patternTableLow;
-                        shiftAttribute |= attributeByte;
-                        break;
-                    }
-				}
-			}
-
-			if (Dot == 256) {
-				if ((VRAMAddr & 0x7000) != 0x7000) {
-					VRAMAddr += 0x1000;
-				} else {
-					VRAMAddr &= 0x0FFF;
-					int y = (VRAMAddr & 0x03E0) >> 5;
-					if (y == 29) {
-						y = 0;
-						VRAMAddr ^= 0x0800;
-					} else if (y == 31) {// tanks 100th_coin
-						y = 0; 
-					} else {
-						y++;
-						y &= 0x1F;
-					}
-					VRAMAddr = ((VRAMAddr & 0xFC1F) | (y << 5));
-				}
-			}
+                    VRAMAddr = ((VRAMAddr & 0xFC1F) | (y << 5));
+                }
+            }
 
 			if (Dot == 257) {
                 // 0b0111101111100000, 0b0000010000011111
@@ -195,7 +202,7 @@ void PPU::Step() {
 	}
 
 	Dot++;
-	if (Dot > 341) {
+	if (Dot >= 341) {
 		Dot = 0;
 		ScanLine++;
 		if (ScanLine > 261) ScanLine = 0;

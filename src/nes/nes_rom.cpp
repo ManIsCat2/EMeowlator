@@ -24,13 +24,15 @@ MapperBase *NesROM::GetMapper(uint16_t id, uint16_t subId) {
                 case 2: default: return new Mapper34();
             }
 			break;
+        case 62: return new XIn1();
         case 69: return new SunSoftFME7();
         case 90: return new JyCompany();
+        case 116: return new SL12();
         case 209: return new JyCompany();
         case 210: return new Namco163();
         case 211: return new JyCompany();
         default: {
-            QMessageBox::critical((QMainWindow*)globalQTWin, "Error", ("Mapper " + std::to_string(id) + " is Unimplemented, failed to open ROM").c_str());
+            QMessageBox::critical((QMainWindow*)globalQTWin, "Error", ("Mapper " + std::to_string(id) + " is unimplemented, failed to open ROM").c_str());
             return nullptr;
         }
     }
@@ -112,7 +114,7 @@ bool NesROM::LoadNES(const std::string &filename) {
     }
         
     if (!GetMapper(romMapperID, romSubMapperID)) { 
-        DebugPrintLog("ROM", "Unimplemented mapper: %u, failed to open ROM", MapperID)
+        DebugPrintLog("ROM", "Unimplemented mapper: %u, failed to open ROM", romMapperID)
         return false;
     } else {
         if (mapper) { delete mapper; mapper = nullptr; }

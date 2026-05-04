@@ -18,6 +18,8 @@
 #define DPAD_LEFT      (1 << 6)
 #define DPAD_RIGHT     (1 << 7)
 
+#define CYCLES_PER_FRAME (1789773.0 / 60.0)
+
 #define UNUSED __attribute__((unused))
 
 #include "debug.hpp"

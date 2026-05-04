@@ -43,18 +43,12 @@ void CPU::run(uint32_t maxCycles) {
         execute(opcode);
         cyclesRun += cycles;
 
-        // no proper timing yet
-        /*while (cycles) {
+        while (cycles) {
             cycles--;
             ppu.Step();
             ppu.Step();
             ppu.Step();
-        }*/
-        ppu.Step();
-        ppu.Step();
-        ppu.Step();
-
-        cycles = 0;
+        }
     }
 }
 

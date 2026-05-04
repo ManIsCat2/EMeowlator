@@ -7,5 +7,7 @@
 #include "mmc2.hpp"
 #include "namco163.hpp"
 #include "mapper34.hpp"
+#include "x_in_1.hpp"
 #include "sunsoft_fme7.hpp"
+#include "sl12.hpp"
 #include "jycompany.hpp"

@@ -56,7 +56,7 @@ uint8_t JyCompany::cpuRead(uint16_t addr) {
 }
 
 void JyCompany::cpuWrite(uint16_t addr, uint8_t value) {
-    if(addr < 0x8000) {
+    if (addr < 0x8000) {
         switch(addr & 0xF803) {
             case 0x5800: multiplyValue1 = value; break;
             case 0x5801: multiplyValue2 = value; break;

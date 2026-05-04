@@ -435,7 +435,7 @@ int main(int argc, char *argv[]) {
     QTimer cpuTimer;
     QObject::connect(&cpuTimer, &QTimer::timeout, [&]() {
         if (romIsLoaded) {
-            cpu.run((uint32_t)(89342 * CPUSpeed));
+            cpu.run((uint32_t)(CYCLES_PER_FRAME * CPUSpeed));
             if (ppu.filtering == VideoFilter::NTSC) {
                 screen->image = filteredOutputImage;
             } else {

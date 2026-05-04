@@ -78,6 +78,7 @@ public:
     bool VRAMCorruption = false;
 
     void reset(void);
+    void RenderScreen(void);
     void Step();
 
     void LoadCHRROM(const uint8_t* chrData, int chrSize);
