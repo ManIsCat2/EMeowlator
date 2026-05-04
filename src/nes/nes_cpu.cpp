@@ -333,10 +333,15 @@ void CPU::execute(uint8_t opcode) {
         case 0xB1: { // LDA (Indirect),Y
             uint8_t zp = fetch();
             uint16_t base = read(zp) | (read((zp + 1) & 0xFF) << 8);
+            uint16_t effective = base + Y;
+
+            uint16_t dummy = (base & 0xFF00) | (effective & 0x00FF);
+            read(dummy);
+
             lda_read(base, 5, true, Y);
-            //DEBUG_LOG("LDA Y ind 0x%x\n", zp);
             break;
         }
+
         case 0xB9: { // LDA absolute,Y
             uint16_t addr = fetch16();
             lda_read(addr, 4, true, Y);
@@ -351,8 +356,16 @@ void CPU::execute(uint8_t opcode) {
         }
         case 0xBD: { // LDA absolute,X
             uint16_t addr = fetch16();
-            lda_read(addr, 4, true, X);
-            //DEBUG_LOG("LDA X abs 0x%x\n", addr);
+            uint16_t base = addr;
+            uint16_t indexed = base + X;
+
+            if (((base & 0xFF00) != (indexed & 0xFF00))) read((base & 0xFF00) | (indexed & 0x00FF));
+            uint8_t value = read(indexed);
+
+            lda(value, 4);
+
+            if (((base & 0xFF00) != (indexed & 0xFF00)))
+                cycles += 1;
             break;
         }
         case 0xB5: { // LDA zero-page,X
@@ -436,11 +449,18 @@ void CPU::execute(uint8_t opcode) {
             break;
         }
         case 0x9D: { // STA absolute,X
-            uint16_t addr = fetch16();
-            st_reg(addr + X, A, 5);
-            //DEBUG_LOG("STA X abs 0x%04X\n", addr);
+            uint16_t base = fetch16();      // operand
+            uint16_t effective = base + X; // final store address
+
+            uint16_t dummy = (base & 0xFF00) | (effective & 0x00FF);
+            read(dummy);
+
+            write(effective, A);
+
+            cycles += 5;
             break;
         }
+
         case 0x95: { // STA zero-page,X
             uint8_t zp = fetch();
             st_reg((zp + X) & 0xFF, A, 4);
@@ -456,8 +476,12 @@ void CPU::execute(uint8_t opcode) {
         case 0x91: { // STA (Indirect),Y
             uint8_t zp = fetch();
             uint16_t base = read(zp) | (read((zp + 1) & 0xFF) << 8);
+            uint16_t effective = base + Y;
+
+            uint16_t dummy = (base & 0xFF00) | (effective & 0x00FF);
+            read(dummy);
+
             st_reg(base + Y, A, 6);
-            //DEBUG_LOG("STA Y ind 0x%x\n", zp);
             break;
         }
         case 0x99: { // STA absolute,Y
@@ -1836,19 +1860,19 @@ void CPU::execute(uint8_t opcode) {
         }
 
         case 0x04: case 0x44: case 0x64: { // NOP zp
-            fetch();
+            read(fetch());
             cycles += 3;
             //DEBUG_LOG2("NOP zp");
             break;
         }
         case 0x14: case 0x34: case 0x54: case 0x74: case 0xD4: case 0xF4: { // NOP zp,X
-            fetch();
+            read(fetch());
             cycles += 4;
             //DEBUG_LOG2("NOP X zp");
             break;
         }
         case 0x0C: case 0x1C: case 0x3C: case 0x5C: case 0x7C: case 0xDC: case 0xFC: { // NOP abs
-            fetch16();
+            read16(fetch16());
             cycles += 4;
             if ((opcode & 0x1C) != 0x0C) cycles++;
             //DEBUG_LOG2("NOP abs");
@@ -1860,7 +1884,7 @@ void CPU::execute(uint8_t opcode) {
             break;
         }
         case 0x80: case 0x82: case 0x89: case 0xC2: case 0xE2: { // NOP imm
-            fetch();
+            read(fetch());
             cycles += 2;
             //DEBUG_LOG2("NOP imm");
             break;
