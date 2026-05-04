@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-parentheses -O3 -marc
 find_package(Qt6 REQUIRED Widgets)
 
 if (WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")
+    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")
 endif()
 
 include_directories(include)

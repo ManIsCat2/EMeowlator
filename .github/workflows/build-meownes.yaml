@@ -32,7 +32,6 @@ jobs:
             mingw-w64-${{ matrix.arch.env }}-gcc
             mingw-w64-${{ matrix.arch.env }}-cmake
             mingw-w64-${{ matrix.arch.env }}-qt6
-            mingw-w64-${{ matrix.arch.env }}-qt6-static
             mingw-w64-${{ matrix.arch.env }}-pkg-config
 
       - name: Configure CMake
@@ -46,10 +45,10 @@ jobs:
           cd build
           make -j12
       
-      #- name: Deploy Qt Libraries
-      #  run: |
-      #    cd build
-      #    windeployqt MeowNES.exe --release
+      - name: Deploy Qt Libraries
+        run: |
+          cd build
+          windeployqt MeowNES.exe --release
           
       - name: Upload
         uses: actions/upload-artifact@v4
