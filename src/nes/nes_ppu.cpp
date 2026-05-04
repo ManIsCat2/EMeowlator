@@ -85,7 +85,7 @@ void PPU::RenderScreen(void) {
             }
             if (mask.renderSprites && !DisableSprites) {
                 for (int i = 0; i < 256; i += 4) {
-                    uint8_t *sprite = OAM + i;
+                    uint8_t *sprite = &OAM[i];
                     uint16_t spriteH = control.use8x16Sprites ? 16 : 8;
                     uint16_t spriteX = Dot - sprite[3];
                     uint16_t spriteY = ScanLine - sprite[0] - 1;
