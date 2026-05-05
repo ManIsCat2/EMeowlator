@@ -141,9 +141,9 @@ void PPU::RenderScreen(void) {
                 break;
             case 7: {
                 patternTableHigh = globalROM.mapper->readCHR(fetchAddress + 8);
-                if ((VRAMAddr & 0x001F) == 31) {
-                    VRAMAddr &= 0xFFE0;
-                    VRAMAddr ^= 0x0400;
+                if ((VRAMAddr & VRAM_COX) == VRAM_COX) {
+                    VRAMAddr &= ~VRAM_COX;
+                    VRAMAddr ^= VRAM_X_NT;
                 } else {
                     VRAMAddr++;
                 }
@@ -169,14 +169,14 @@ void PPU::Step() {
             RenderScreen();
 
             if (Dot == 256) {
-                if ((VRAMAddr & 0x7000) != 0x7000) {
+                if ((VRAMAddr & VRAM_FIY) != VRAM_FIY) {
                     VRAMAddr += 0x1000;
                 } else {
                     VRAMAddr &= 0x0FFF;
-                    int y = (VRAMAddr & 0x03E0) >> 5;
+                    int y = (VRAMAddr & VRAM_COY) >> 5;
                     if (y == 29) {
                         y = 0;
-                        VRAMAddr ^= 0x0800;
+                        VRAMAddr ^= VRAM_Y_NT;
                     } else if (y == 31) {// tanks 100th_coin
                         y = 0; 
                     } else {

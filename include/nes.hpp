@@ -20,6 +20,12 @@
 
 #define CYCLES_PER_FRAME (1789773.0 / 60.0)
 
+#define VRAM_FIY 0x7000 //0b111000000000000, fine Y
+#define VRAM_X_NT 0x0400 //0b000010000000000, X nametable
+#define VRAM_Y_NT 0x0800 //0b000100000000000, Y nametable
+#define VRAM_COY 0x03E0 //0b000001111100000, coarse Y
+#define VRAM_COX 0x001F //0b000000000011111, coarse X
+
 #define UNUSED __attribute__((unused))
 
 #include "debug.hpp"

@@ -449,8 +449,8 @@ void CPU::execute(uint8_t opcode) {
             break;
         }
         case 0x9D: { // STA absolute,X
-            uint16_t base = fetch16();      // operand
-            uint16_t effective = base + X; // final store address
+            uint16_t base = fetch16();
+            uint16_t effective = base + X;
 
             uint16_t dummy = (base & 0xFF00) | (effective & 0x00FF);
             read(dummy);
