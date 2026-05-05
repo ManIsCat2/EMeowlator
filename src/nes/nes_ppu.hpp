@@ -51,6 +51,7 @@ public:
     bool sprite0Hit = false;
 
     struct {
+        bool grayscaleMode = false;
         bool background8pxMask = false;
         bool sprite8pxMask = false;
         bool renderBackground = false;

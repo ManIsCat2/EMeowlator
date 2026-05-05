@@ -1967,7 +1967,8 @@ uint8_t CPU::read(uint16_t addr) {
                     uint16_t pal = vaddr & 0x1F;
                     if ((pal & 0x13) == 0x10) pal &= ~0x10;
 
-                    ret = ppu.paletteRAM[pal];
+                    uint8_t palBitmask = ppu.mask.grayscaleMode ? 0x30 : 0x3F;
+                    ret = (ppu.paletteRAM[pal] & palBitmask) | (ppu.dataBus & 0xC0);
 
                     uint16_t underlying = (vaddr & 0x2FFF);
                     if (underlying < 0x2000) {
@@ -2033,6 +2034,7 @@ void CPU::write(uint16_t addr, uint8_t value) {
                 break;
 
             case 1: // PPUMASK
+                ppu.mask.grayscaleMode     = (value & 0x01) != 0;
                 ppu.mask.background8pxMask = (value & 0x02) != 0;
                 ppu.mask.sprite8pxMask     = (value & 0x04) != 0;
                 ppu.mask.renderBackground  = (value & 0x08) != 0;
