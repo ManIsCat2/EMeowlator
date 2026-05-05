@@ -49,6 +49,7 @@ void CPU::run(uint32_t maxCycles) {
             ppu.Step();
             ppu.Step();
         }
+        if (ppu.dataBus != 0) ppu.decayDataBus();
     }
 }
 
@@ -1931,18 +1932,24 @@ uint8_t CPU::read(uint16_t addr) {
 
     if (addr >= 0x2000 && addr < 0x4000) {
         switch (addr & 7) {
-            case 2: { // PPUSTATUS
-                uint8_t status = 0;
-                status |= (ppu.Vblank ? 0x80 : 0);
-                status |= (ppu.sprite0Hit ? 0x40 : 0);
+            case 0: case 1: case 3: case 5: case 6: return ppu.dataBus;
+            case 2: {
+                uint8_t result = 0;
+
+                result |= (ppu.Vblank ? 0x80 : 0x00);
+                result |= (ppu.sprite0Hit ? 0x40 : 0x00);
+                result |= (ppu.dataBus & 0x1F);
 
                 ppu.Vblank = false;
                 ppu.WriteLatch = false;
-                return status;
+                ppu.dataBus = result;
+
+                return result;
             }
 
             case 4: // OAMDATA
-                return ppu.OAM[ppu.OAMAddr];
+                ppu.resetBusDecayTimers();
+                return ppu.dataBus = ppu.OAM[ppu.OAMAddr];
 
             case 7: { // PPUDATA
                 uint16_t vaddr = ppu.VRAMAddr & 0x3FFF;
@@ -1969,6 +1976,8 @@ uint8_t CPU::read(uint16_t addr) {
                         ppu.ReadBuffer = globalROM.mapper->readVRAM(underlying & 0x0FFF);
                     }
                 }
+
+                ppu.resetBusDecayTimers();
 
                 ppu.VRAMAddr += ppu.control.VRAMInc32 ? 32 : 1;
                 ppu.VRAMAddr &= 0x3FFF;
@@ -2018,8 +2027,9 @@ void CPU::write(uint16_t addr, uint8_t value) {
                 ppu.control.BGPatternTable       = value & 0x10;
                 ppu.control.use8x16Sprites       = (value & 0x20) != 0;
                 ppu.control.enableNMI            = (value & 0x80) != 0;
-                ppu.control.combined = value;
+                ppu.dataBus = ppu.control.combined = value;
                 ppu.TransferAddr = (ppu.TransferAddr & 0x73FF) | ((value & 0x03) << 10);
+                ppu.resetBusDecayTimers();
                 break;
 
             case 1: // PPUMASK
@@ -2027,18 +2037,23 @@ void CPU::write(uint16_t addr, uint8_t value) {
                 ppu.mask.sprite8pxMask     = (value & 0x04) != 0;
                 ppu.mask.renderBackground  = (value & 0x08) != 0;
                 ppu.mask.renderSprites     = (value & 0x10) != 0;
-                ppu.mask.combined = value;
+                ppu.dataBus = ppu.mask.combined = value;
+                ppu.resetBusDecayTimers();
                 break;
 
             case 2: // PPUSTATUS
+                ppu.dataBus = value;
+                ppu.resetBusDecayTimers();
                 break;
 
             case 3: // OAMADDR
-                ppu.OAMAddr = value;
+                ppu.dataBus = ppu.OAMAddr = value;
+                ppu.resetBusDecayTimers();
                 break;
 
             case 4: // OAMDATA
-                ppu.OAM[ppu.OAMAddr++] = value;
+                ppu.dataBus = ppu.OAM[ppu.OAMAddr++] = value;
+                ppu.resetBusDecayTimers();
                 break;
 
             case 5: // PPUSCROLL
@@ -2049,6 +2064,8 @@ void CPU::write(uint16_t addr, uint8_t value) {
                     ppu.TransferAddr = (ushort)((ppu.TransferAddr & 0xc1f) | (((value & 0xF8) << 2) | ((value & 7) << 12)));
                 }
                 ppu.WriteLatch = !ppu.WriteLatch;
+                ppu.dataBus = value;
+                ppu.resetBusDecayTimers();
                 break;
 
             case 6: // PPUADDR
@@ -2059,6 +2076,8 @@ void CPU::write(uint16_t addr, uint8_t value) {
                     ppu.VRAMAddr = ppu.TransferAddr;
                 }
                 ppu.WriteLatch = !ppu.WriteLatch;
+                ppu.dataBus = value;
+                ppu.resetBusDecayTimers();
                 break;
 
             case 7: { // PPUDATA
@@ -2077,6 +2096,8 @@ void CPU::write(uint16_t addr, uint8_t value) {
 
                 ppu.VRAMAddr += ppu.control.VRAMInc32 ? 32 : 1;
                 ppu.VRAMAddr &= 0x3FFF;
+                ppu.dataBus = value;
+                ppu.resetBusDecayTimers();
 
                 //peak option
                 if (ppu.VRAMCorruption && (rand() & 7) == 0) {

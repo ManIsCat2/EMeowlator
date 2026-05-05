@@ -36,6 +36,10 @@ public:
     VideoFilter filtering = VideoFilter::NONE;
 
     MirrorMode Mirroring = MirrorMode::VERTICAL;
+    int busDecayTimers[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    // random numbers i wrote :pray:
+    const uint8_t busDecayMasks[8] = {0xff, 0xf9, 0xf1, 0xe9, 0x8d, 0xf3, 0x32, 0xfe};
+    uint8_t dataBus = 0;
     bool WriteLatch = false;
     uint16_t VRAMAddr = 0;
     uint16_t OAMAddr = 0;
@@ -74,10 +78,11 @@ public:
     int shiftAttribute = 0;
 
     bool DisableSprites = false;
-    int MaxSprites = 64;
     bool VRAMCorruption = false;
 
     void reset(void);
+    void resetBusDecayTimers(void);
+    void decayDataBus(void);
     void RenderScreen(void);
     void Step();
 

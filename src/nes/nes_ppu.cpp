@@ -49,6 +49,8 @@ void PPU::reset(void) {
     memset(paletteRAM.data(), 0, PALRAM_SIZE);
     memset(frameBuffer, 0, sizeof(frameBuffer));
     memset(palIndexBuf, 0, sizeof(palIndexBuf));
+    dataBus = 0;
+    for (int i = 0; i < 8; i++) { busDecayTimers[i] = 0; }
     WriteLatch = false;
     VRAMAddr = 0;
     OAMAddr = 0;
@@ -72,6 +74,24 @@ void PPU::reset(void) {
     control.enableNMI = false;
     
     scrollFineX = 0;
+}
+
+void PPU::resetBusDecayTimers(void) {
+    for (int i = 0; i < 8; i++) { busDecayTimers[i] = 1200000; }
+}
+
+void PPU::decayDataBus(void) {
+    int i = 0;
+
+    while (i < 8) {
+        if (busDecayTimers[i] != 0) {
+            busDecayTimers[i]--;
+            if (busDecayTimers[i] == 0) {
+                dataBus &= busDecayMasks[i];
+            }
+        }
+        i++;
+    }
 }
 
 void PPU::RenderScreen(void) {
