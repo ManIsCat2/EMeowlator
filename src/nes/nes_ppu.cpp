@@ -81,16 +81,13 @@ void PPU::resetBusDecayTimers(void) {
 }
 
 void PPU::decayDataBus(void) {
-    int i = 0;
-
-    while (i < 8) {
+    for (int i = 0; i < 8; i++) {
         if (busDecayTimers[i] != 0) {
             busDecayTimers[i]--;
             if (busDecayTimers[i] == 0) {
                 dataBus &= busDecayMasks[i];
             }
         }
-        i++;
     }
 }
 

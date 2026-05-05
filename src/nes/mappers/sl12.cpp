@@ -151,7 +151,6 @@ void SL12::updateMirroring(void) {
     switch (mode & 0x03) {
 		case 0: ppu.Mirroring = (VRC2Mirroring & 0x01) ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL; break;
 		case 1: ppu.Mirroring = (MMC3Mirroring & 0x01) ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL; break;
-
 		case 2:
 		case 3:
 			switch (MMC1Regs[0] & 0x03) {
