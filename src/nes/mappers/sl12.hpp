@@ -24,8 +24,7 @@ private:
 	uint8_t MMC3Ctrl = 0;
 	uint8_t MMC3Mirroring = 0;
 
-	uint8_t VRC2Chr[8] = {};
-	uint8_t VRC2Prg[2] = {};
+	uint8_t VRC2Regs[10] = {};
 	uint8_t VRC2Mirroring = 0;
 
 	uint8_t MMC1Regs[4] = {};

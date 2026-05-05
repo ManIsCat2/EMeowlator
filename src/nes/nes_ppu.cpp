@@ -43,14 +43,26 @@ uint32_t getRainbowColor() {
     return  (r << 16) | (g << 8) | b;
 }
 
+PPU::PPU() {
+    frameBuffer = new uint32_t[PPU_PIXEL_COUNT_NTSC];
+    palIndexBuf = new uint8_t[PPU_PIXEL_COUNT];
+}
+
+PPU::~PPU() {
+    delete[] frameBuffer;
+    delete[] palIndexBuf;
+}
+
 void PPU::reset(void) {
     memset(VRAM.data(), 0, VRAM_SIZE);
     memset(OAM, 0, 0x100);
     memset(paletteRAM.data(), 0, PALRAM_SIZE);
-    memset(frameBuffer, 0, sizeof(frameBuffer));
-    memset(palIndexBuf, 0, sizeof(palIndexBuf));
+    memset(frameBuffer, 0, sizeof(uint32_t) * PPU_PIXEL_COUNT_NTSC);
+    memset(palIndexBuf, 0, PPU_PIXEL_COUNT);
     dataBus = 0;
-    for (int i = 0; i < 8; i++) { busDecayTimers[i] = 0; }
+    for (int i = 0; i < 8; i++) { 
+        busDecayTimers[i] = 0;
+    }
     WriteLatch = false;
     VRAMAddr = 0;
     OAMAddr = 0;
@@ -77,7 +89,9 @@ void PPU::reset(void) {
 }
 
 void PPU::resetBusDecayTimers(void) {
-    for (int i = 0; i < 8; i++) { busDecayTimers[i] = 1200000; }
+    for (int i = 0; i < 8; i++) { 
+        busDecayTimers[i] = PPU_BUS_DECAY_TIME;
+    }
 }
 
 void PPU::decayDataBus(void) {

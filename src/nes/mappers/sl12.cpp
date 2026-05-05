@@ -34,16 +34,16 @@ void SL12::reset() {
     MMC1Regs[3] = 0;
 
     VRC2Mirroring = 0;
-    VRC2Chr[0] = -1;
-    VRC2Chr[1] = -1;
-    VRC2Chr[2] = -1;
-    VRC2Chr[3] = -1;
-    VRC2Chr[4] = 4;
-    VRC2Chr[5] = 5;
-    VRC2Chr[6] = 6;
-    VRC2Chr[7] = 7;
-    VRC2Prg[0] = 0;
-    VRC2Prg[1] = 1;
+    VRC2Regs[0] = -1;
+    VRC2Regs[1] = -1;
+    VRC2Regs[2] = -1;
+    VRC2Regs[3] = -1;
+    VRC2Regs[4] = 4;
+    VRC2Regs[5] = 5;
+    VRC2Regs[6] = 6;
+    VRC2Regs[7] = 7;
+    VRC2Regs[8] = 0;
+    VRC2Regs[9] = 1;
 
     update();
 }
@@ -78,8 +78,8 @@ void SL12::cpuWrite(uint16_t addr, uint8_t value) {
 void SL12::updatePRG(void) {
     switch (mode & 0x03) {
 		case 0:
-			setPRGPages(0, VRC2Prg[0]);
-			setPRGPages(1, VRC2Prg[1]);
+			setPRGPages(0, VRC2Regs[8]);
+			setPRGPages(1, VRC2Regs[9]);
 			setPRGPages(2, -2);
 			setPRGPages(3, -1);
 			break;
@@ -117,7 +117,7 @@ void SL12::updateCHR(void) {
 	switch (mode & 0x03) {
 		case 0:
 			for (int i = 0; i < 8; i++) {
-				setCHRPages(i, bank | VRC2Chr[i]);
+				setCHRPages(i, bank | VRC2Regs[i]);
 			}
 			break;
 
@@ -177,16 +177,16 @@ void SL12::writeVRC2(uint16_t addr, uint8_t value) {
     if (addr >= 0xB000 && addr <= 0xE003) {
         int id = ((((addr & 0x02) | (addr >> 0x0A)) >> 1) + 0x02) & 0x07;
         int nibble = ((addr & 1) << 2);
-        VRC2Chr[id] = (VRC2Chr[id] & (0xF0 >> nibble)) | ((value & 0x0F) << nibble);
+        VRC2Regs[id] = (VRC2Regs[id] & (0xF0 >> nibble)) | ((value & 0x0F) << nibble);
         updateCHR();
     } else {
         switch (addr & 0xF000) {
             case 0x8000: 
-                VRC2Prg[0] = value;
+                VRC2Regs[8] = value;
                 updatePRG();
             break;
             case 0xA000:
-                VRC2Prg[1] = value;
+                VRC2Regs[9] = value;
                 updatePRG();
             break;
             case 0x9000:
