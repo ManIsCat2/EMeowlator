@@ -70,7 +70,6 @@ private:
     uint8_t P;
 
     uint8_t fetch() { return dataBus = read(PC++); }
-
     uint16_t fetch16() { return fetch() | (fetch() << 8); }
 };
 

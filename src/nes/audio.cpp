@@ -3,7 +3,7 @@
 
 Audio audioSystem;
 
-void SDLCALL audioCallback(void* userdata, Uint8* stream, int len) {
+void SDLCALL audioCallback(void* userdata, uint8_t* stream, int len) {
     Audio* audio = (Audio*)(userdata);
     int16_t* out = (int16_t*)(stream);
     int samplesRequested = len / sizeof(int16_t);
