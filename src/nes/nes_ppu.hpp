@@ -31,8 +31,8 @@ public:
     std::array<uint8_t, VRAM_SIZE> VRAM{};
     std::array<uint8_t, PALRAM_SIZE> paletteRAM{};
     uint8_t OAM[0x100];
-    uint32_t frameBuffer[PPU_PIXEL_COUNT_NTSC];
-    uint8_t palIndexBuf[PPU_PIXEL_COUNT];
+    uint32_t *frameBuffer = nullptr;
+    uint8_t *palIndexBuf = nullptr;
 
     VFilterBase *vfilter = nullptr;
     VideoFilter filtering = VideoFilter::NONE;

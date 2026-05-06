@@ -44,3 +44,5 @@ struct Keybind {
     Qt::Key key;
 };
 extern Keybind nesKeyBinds[];
+extern QImage *rawOutputImage;
+extern QImage *filteredOutputImage;

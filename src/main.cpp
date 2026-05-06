@@ -92,8 +92,8 @@ QAction *makeQBool(const QString &text, QObject *parent, bool defaultBool) {
     return newAction;
 }
 
-QImage rawOutputImage((uint8_t*)(ppu.frameBuffer), NES_WIDTH, NES_HEIGHT, QImage::Format_RGB32);
-QImage filteredOutputImage((uint8_t*)(ppu.frameBuffer), NES_NTSC_OUT_WIDTH(NES_WIDTH), NES_HEIGHT, QImage::Format_RGB32);
+QImage *rawOutputImage = nullptr;
+QImage *filteredOutputImage = nullptr;
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
@@ -427,7 +427,7 @@ int main(int argc, char *argv[]) {
     });
 
     ScreenWidget *screen = new ScreenWidget(&window);
-    screen->image = rawOutputImage;
+    screen->image = *rawOutputImage;
     window.setCentralWidget(screen);
     InputManager inputMgr;
     inputMgr.install(&window);
@@ -439,9 +439,9 @@ int main(int argc, char *argv[]) {
         if (romIsLoaded) {
             cpu.run((uint32_t)(CYCLES_PER_FRAME * CPUSpeed));
             if (ppu.filtering == VideoFilter::NTSC) {
-                screen->image = filteredOutputImage;
+                screen->image = *filteredOutputImage;
             } else {
-                screen->image = rawOutputImage;
+                screen->image = *rawOutputImage;
             }
             if (ppu.vfilter->hasCustomBlit()) {
                 ppu.vfilter->blit();
