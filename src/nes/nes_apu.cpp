@@ -1,7 +1,9 @@
 // apu base provided by aldi0123_10445 on discord, slightly changed by me
+// audio.cpp is by me
 
 #include "nes_apu.hpp"
 #include "nes_cpu.hpp"
+#include "audio.hpp"
 
 APU apu;
 
@@ -223,4 +225,42 @@ void APU::step() {
     }
 
     clockCounter++;
+    audioSystem.advance();
+}
+
+double APU::getOutputSample() {
+    double p1 = 0, p2 = 0, t = 0, n = 0;
+    
+    if (pulse1.enable && pulse1.lengthCounter > 0 && pulse1.timerReload > 8) {
+        p1 = DutyTable[pulse1.duty][pulse1.dutySeq] ? (pulse1.constantVolume ? pulse1.volume : pulse1.envVol) : 0;
+    }
+    
+    if (pulse2.enable && pulse2.lengthCounter > 0 && pulse2.timerReload > 8) {
+        p2 = DutyTable[pulse2.duty][pulse2.dutySeq] ? (pulse2.constantVolume ? pulse2.volume : pulse2.envVol) : 0;
+    }
+    
+    if (triangle.enable && triangle.lengthCounter > 0 && triangle.linearCounter > 0) {
+        t = TriTable[triangle.dutySeq];
+    }
+    
+    if (noise.enable && noise.lengthCounter > 0 && (noise.shiftRegister & 0x0001) == 0) {
+        n = noise.constantVolume ? noise.volume : noise.envVol;
+    }
+
+    p1 *= (pulse1Volume / 50.0);
+    p2 *= (pulse2Volume / 50.0);
+    t  *= (triangleVolume / 50.0);
+    n  *= (noiseVolume / 50.0);
+
+    double pulseOut = 0.0;
+    if (p1 + p2 > 0.0) {
+        pulseOut = 95.88 / ((8128.0 / (p1 + p2)) + 100.0);
+    }
+    
+    double tndOut = 0.0;
+    if (t + n > 0.0) {
+        tndOut = 159.79 / ((1.0 / ((t / 8227.0) + (n / 12241.0))) + 100.0);
+    }
+
+    return pulseOut + tndOut;
 }

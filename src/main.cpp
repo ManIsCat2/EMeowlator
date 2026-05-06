@@ -1,5 +1,6 @@
 #include "nes/nes_cpu.hpp"
 #include "nes/nes_rom.hpp"
+#include "nes/audio.hpp"
 
 #include "main.hpp"
 #include "qt/screen_widget.hpp"
@@ -432,6 +433,7 @@ int main(int argc, char *argv[]) {
     inputMgr.install(&window);
 
     ppu.Init();
+    audioSystem.init();
     QTimer cpuTimer;
     QObject::connect(&cpuTimer, &QTimer::timeout, [&]() {
         if (romIsLoaded) {
@@ -466,6 +468,7 @@ int main(int argc, char *argv[]) {
 
     QObject::connect(&app, &QApplication::aboutToQuit, [&]() {
         globalROM.mapper->saveSRAM();
+        audioSystem.close();
         Config::Write("meowconf.txt");
     });
 

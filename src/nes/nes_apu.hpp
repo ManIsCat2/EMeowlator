@@ -73,6 +73,7 @@ public:
     float pulse2Volume = 50.0f;
     float triangleVolume = 50.0f;
     float noiseVolume = 50.0f;
+    double getOutputSample();
 private:
     PulseChannel pulse1;
     PulseChannel pulse2;

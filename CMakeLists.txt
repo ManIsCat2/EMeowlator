@@ -22,6 +22,7 @@ file(GLOB_RECURSE SOURCES
 add_executable(MeowNES ${SOURCES})
 
 target_link_libraries(MeowNES Qt6::Widgets)
+target_link_libraries(MeowNES SDL2)
 #target_compile_options(MeowNES PRIVATE -fsanitize=address)
 #target_link_options(MeowNES PRIVATE -fsanitize=address)
 
