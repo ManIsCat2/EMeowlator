@@ -1,7 +1,7 @@
 DIRS := src src/nes src/nes/mappers src/nes/filters
 TARGET := MeowNES
 BUILD_DIR := build
-CXX := g++
+CXX := clang++
 CXXFLAGS := -Wall -Wextra -Wno-parentheses -Iinclude $(shell pkg-config --cflags Qt6Widgets) #-fsanitize=address -fsanitize=undefined
 LDFLAGS := -lSDL2 $(shell pkg-config --libs Qt6Widgets) #-fsanitize=address -fsanitize=undefined
 ifeq ($(OS),Windows_NT)
