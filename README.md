@@ -14,5 +14,7 @@ Supported mappers:
 - Namco163 / Namco129 (Mapper 19)
 - Nina001 (Mapper 34, SubMapper 1)
 - BNROM (Mapper 34, SubMapper 2)
+- X in 1 (Mapper 62)
 - SunSoft FME-7 (Mapper 69)
+- SL12 (?) (Mapper 116)
 - J.Y. Company ASIC (Mapper 90, 209 and 211) (WIP)

@@ -58,9 +58,9 @@ void MapperBase::setPRGPages(uint16_t page, uint16_t val, enum BankSize size) {
 uint8_t MapperBase::cpuRead(uint16_t addr) {
     if (!PRGPages[addr >> 8].ptr) {
         //DebugPrintLog("MAPPER", "tried reading from unmapped CPU memory at address 0x%x", addr);
-        return cpu.OpenBus;
+        return cpu.dataBus;
     }
-    return cpu.setOpenBus(PRGPages[addr >> 8].ptr[addr & 0xFF]);
+    return cpu.dataBus = (PRGPages[addr >> 8].ptr[addr & 0xFF]);
 }
 void MapperBase::cpuWrite(uint16_t addr, uint8_t value) {
     if (PRGPages[addr >> 8].write) {

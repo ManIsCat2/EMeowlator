@@ -1927,12 +1927,12 @@ void CPU::SetZN(uint8_t value) {
 
 uint8_t CPU::read(uint16_t addr) {
     if (addr < RAM_MIRRORED_SIZE) {
-        return setOpenBus(RAM[addr & 0x7ff]);
+        return dataBus = RAM[addr & 0x7ff];
     }
 
     if (addr >= 0x2000 && addr < 0x4000) {
         switch (addr & 7) {
-            case 0: case 1: case 3: case 5: case 6: return ppu.dataBus;
+            case 0: case 1: case 3: case 5: case 6: return dataBus = ppu.dataBus;
             case 2: {
                 uint8_t result = 0;
 
@@ -1982,30 +1982,25 @@ uint8_t CPU::read(uint16_t addr) {
 
                 ppu.VRAMAddr += ppu.control.VRAMInc32 ? 32 : 1;
                 ppu.VRAMAddr &= 0x3FFF;
-                return ret;
+                return dataBus = ret;
             }
 
             default:
-                return OpenBus;
+                return 0;
         }
     }
 
     switch (addr) {
-        case 0x4015: // apu
-            return 0;
-        case 0x4016: {
-            uint8_t ret = controllers[0].shift & 1;
-            if (!controllers[0].strobe) {
-                controllers[0].shift >>= 1;
-            }
-            return ret | 0x40;
-        }
+        case 0x4015:
+            return dataBus;
+        case 0x4016:
         case 0x4017: {
-            uint8_t ret = controllers[1].shift & 1;
-            if (!controllers[1].strobe) {
-                controllers[1].shift >>= 1;
+            int controllerId = (addr == 0x4016 ? 0 : 1);
+            uint8_t ret = controllers[controllerId].shift & 1;
+            if (!controllers[controllerId].strobe) {
+                controllers[controllerId].shift >>= 1;
             }
-            return ret | 0x40;
+            return ret | (dataBus & 0xE0);
         }
     }
 
@@ -2013,7 +2008,7 @@ uint8_t CPU::read(uint16_t addr) {
 }
 
 void CPU::write(uint16_t addr, uint8_t value) {
-    setOpenBus(value);
+    dataBus = value;
     if (addr < RAM_MIRRORED_SIZE) {
         RAM[addr & 0x7ff] = value;
         return;

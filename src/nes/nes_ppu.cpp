@@ -282,8 +282,8 @@ void PPU::blitPixels() {
 
 void PPU::Init() {
     InitFilter(VideoFilter::NONE);
-    memset(frameBuffer, 0, sizeof(frameBuffer));
-    memset(palIndexBuf, 0, sizeof(palIndexBuf));
+    memset(frameBuffer, 0, sizeof(uint32_t) * PPU_PIXEL_COUNT_NTSC);
+    memset(palIndexBuf, 0, PPU_PIXEL_COUNT);
 }
 
 VFilterBase *PPU::GetVideoFilter(VideoFilter filter) {

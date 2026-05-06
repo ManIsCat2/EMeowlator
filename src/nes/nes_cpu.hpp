@@ -26,17 +26,13 @@ public:
 
     bool CPUPaused = false;
     uint8_t RAM[RAM_SIZE];
-    uint8_t OpenBus = 0;
+    uint8_t dataBus = 0;
     bool NMIDetector = false;
     bool doNMI = false;
     bool doIRQ = false;
     bool IRQPending = false;
 
     void reset();
-
-    uint8_t setOpenBus(uint8_t val) {
-        return OpenBus = val;
-    }
 
     void GetInfo(uint8_t *AReg, uint8_t *XReg, uint8_t *YReg, uint16_t *PCReg, uint8_t *SPReg, uint8_t *PReg) {
         *AReg = A;
@@ -73,7 +69,7 @@ private:
     uint8_t SP;
     uint8_t P;
 
-    uint8_t fetch() { return read(PC++); }
+    uint8_t fetch() { return dataBus = read(PC++); }
 
     uint16_t fetch16() { return fetch() | (fetch() << 8); }
 };
