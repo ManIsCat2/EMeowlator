@@ -34,15 +34,8 @@ jobs:
             mingw-w64-${{ matrix.arch.env }}-qt6
             mingw-w64-${{ matrix.arch.env }}-pkg-config
 
-      - name: Configure CMake
-        run: |
-          mkdir build
-          cd build
-          cmake -G "MSYS Makefiles" -DCMAKE_BUILD_TYPE=Release ..
-      
       - name: Build
         run: |
-          cd build
           make -j12
       
       - name: Deploy Qt Libraries
