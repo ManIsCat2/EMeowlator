@@ -44,13 +44,13 @@ uint32_t getRainbowColor() {
 }
 
 PPU::PPU() {
-    frameBuffer = new uint32_t[PPU_PIXEL_COUNT_NTSC];
-    palIndexBuf = new uint8_t[PPU_PIXEL_COUNT];
+    //frameBuffer = new uint32_t[PPU_PIXEL_COUNT_NTSC];
+   // palIndexBuf = new uint8_t[PPU_PIXEL_COUNT];
 }
 
 PPU::~PPU() {
-    delete[] frameBuffer;
-    delete[] palIndexBuf;
+   // delete[] frameBuffer;
+    //delete[] palIndexBuf;
 }
 
 void PPU::reset(void) {
