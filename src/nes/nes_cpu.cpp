@@ -1,4 +1,5 @@
 #include "nes_cpu.hpp"
+#include "nes_apu.hpp"
 #include "nes_controller.hpp"
 
 CPU cpu;
@@ -32,8 +33,9 @@ void CPU::run(uint32_t maxCycles) {
         if (!prevNMIDetect && NMIDetector) {
             opcode = 0x00;
             doNMI = true;
-        } else if (IRQPending && !(P & Flags::I)) {
+        } else if ((IRQPending || apu.IRQPending) && !(P & Flags::I)) {
             IRQPending = false;
+            apu.IRQPending = false;
             opcode = 0x00;
             doIRQ = true;
         } else {
@@ -45,6 +47,7 @@ void CPU::run(uint32_t maxCycles) {
 
         while (cycles) {
             cycles--;
+            apu.step();
             ppu.Step();
             ppu.Step();
             ppu.Step();
@@ -1990,17 +1993,18 @@ uint8_t CPU::read(uint16_t addr) {
         }
     }
 
-    switch (addr) {
-        case 0x4015:
-            return dataBus;
-        case 0x4016:
-        case 0x4017: {
-            int controllerId = (addr == 0x4016 ? 0 : 1);
-            uint8_t ret = controllers[controllerId].shift & 1;
-            if (!controllers[controllerId].strobe) {
-                controllers[controllerId].shift >>= 1;
+    if (addr < 0x4020) {
+        switch (addr) {
+            case 0x4016:
+            case 0x4017: {
+                int controllerId = (addr == 0x4016 ? 0 : 1);
+                uint8_t ret = controllers[controllerId].shift & 1;
+                if (!controllers[controllerId].strobe) {
+                    controllers[controllerId].shift >>= 1;
+                }
+                return ret | (dataBus & 0xE0);
             }
-            return ret | (dataBus & 0xE0);
+            default: return apu.read(addr);
         }
     }
 
@@ -2114,7 +2118,6 @@ void CPU::write(uint16_t addr, uint8_t value) {
                     ppu.OAM[i] = read(base + i);
                 break;
             }
-            case 0x4015: break; // apu status
             case 0x4016: {
                 controllers[0].strobe = value & 1;
                 if (controllers[0].strobe) {
@@ -2123,7 +2126,7 @@ void CPU::write(uint16_t addr, uint8_t value) {
                 }
                 break;
             }
-            case 0x4017: break; // apu framecnt
+            default: apu.write(addr, value);
         }
         return;
     }
