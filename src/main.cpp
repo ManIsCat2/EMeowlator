@@ -1,4 +1,5 @@
 #include "nes/nes_cpu.hpp"
+#include "nes/nes_apu.hpp"
 #include "nes/nes_rom.hpp"
 #include "nes/audio.hpp"
 
@@ -124,6 +125,7 @@ int main(int argc, char *argv[]) {
     QAction *disableSpritesAction = makeQBool("Disable Sprites", &window, ppu.DisableSprites);
     QAction *paletteEditorAction = new QAction("Palette Editor", &window);
     QAction *keyEditAction = new QAction("Input Config", &window);
+    QAction *audioConfAction = new QAction("Audio Config", &window);
     // misc
     QAction *romInfoAction = new QAction("ROM Info", &window);
     QAction *exitAction = new QAction("Exit", &window);
@@ -153,6 +155,7 @@ int main(int argc, char *argv[]) {
     settingsMenu->addAction(paletteEditorAction);
     settingsMenu->addSeparator();
     settingsMenu->addAction(keyEditAction);
+    settingsMenu->addAction(audioConfAction);
 
     miscMenu->addAction(romInfoAction);
     miscMenu->addAction(exitAction);
@@ -358,6 +361,52 @@ int main(int argc, char *argv[]) {
         dialog->setLayout(layout);
         dialog->exec();
     });
+    QObject::connect(audioConfAction, &QAction::triggered, [&]() {
+        QDialog *dialog = new QDialog(&window);
+        dialog->setWindowTitle("Audio Config");
+        dialog->setFixedSize(500, 340);
+
+        QVBoxLayout *mainLayout = new QVBoxLayout(dialog);
+        QGroupBox *volumeBox = new QGroupBox("Volume", dialog);
+        QHBoxLayout *volumeLayout = new QHBoxLayout(volumeBox);
+        volumeLayout->setSpacing(5);
+        volumeLayout->setContentsMargins(10,10,10,10);
+
+        const std::string volumeNames[] = {"Square 1", "Square 2", "Triangle", "Noise", "DMC", "Master"};
+        float *volumePtrs[] = { &apu.pulse1Volume, &apu.pulse2Volume, &apu.triangleVolume, &apu.noiseVolume, &apu.dmcVolume, &apu.masterVolume };
+
+        for (int i = 0; i < 6; ++i) {
+            QWidget *pairWidget = new QWidget(volumeBox);
+            QVBoxLayout *pairLayout = new QVBoxLayout(pairWidget);
+            pairLayout->setContentsMargins(0,0,0,0);
+            pairLayout->setSpacing(5);
+
+            QLabel *label = new QLabel(QString::fromStdString(volumeNames[i]), pairWidget);
+            label->setAlignment(Qt::AlignHCenter);
+            pairLayout->addWidget(label);
+
+            QSlider *slider = new QSlider(Qt::Vertical, pairWidget);
+            slider->setRange(0, 50);
+            slider->setValue((int)(*volumePtrs[i]));
+            slider->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+            slider->setTickPosition(QSlider::TicksRight);
+            slider->setTickInterval(10);
+            pairLayout->addWidget(slider);
+
+            QObject::connect(slider, &QSlider::valueChanged, [volumePtrs, i](int value) {
+                *volumePtrs[i] = (float)(value);
+            });
+
+            volumeLayout->addWidget(pairWidget);
+        }
+
+        volumeBox->setLayout(volumeLayout);
+        mainLayout->addWidget(volumeBox);
+        dialog->setLayout(mainLayout);
+
+        dialog->exec();
+    });
+
     QObject::connect(saveSaveStateAction, &QAction::triggered, [&]() {
         QString file = QFileDialog::getSaveFileName(
             &window,

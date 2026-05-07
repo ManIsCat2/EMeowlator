@@ -46,12 +46,19 @@ struct NoiseChannel {
 
 struct DMCChannel {
     bool enable = false;
-    uint16_t lengthCounter = 0;
-    uint16_t reloadLength = 1;
+    bool loop = false;
     uint16_t timer = 0;
     uint16_t timerReload = 428;
-    uint8_t bitCounter = 0;
-    bool loop = false;
+    uint16_t currentAddress = 0;
+    uint16_t sampleAddress = 0xC000;
+    uint16_t currentLength = 0;
+    uint16_t sampleLength = 1;
+    uint8_t shiftRegister = 0;
+    uint8_t bitsRemaining = 8;
+    uint8_t sampleBuffer = 0;
+    bool sampleBufferEmpty = true;
+    uint8_t outputLevel = 0;
+    bool silence = true;
 };
 
 class APU {
@@ -73,6 +80,8 @@ public:
     float pulse2Volume = 50.0f;
     float triangleVolume = 50.0f;
     float noiseVolume = 50.0f;
+    float dmcVolume = 50.0f;
+    float masterVolume = 50.0f;
     double getOutputSample();
 private:
     PulseChannel pulse1;
@@ -90,6 +99,7 @@ private:
     uint8_t delayedFrameMode = 0;
     
     void clockEnvelopes();
+    void clockDMC();
     void clockLengths();
 };
 

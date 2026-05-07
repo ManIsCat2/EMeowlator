@@ -46,6 +46,7 @@ void APU::reset() {
     DMCIrqEnable = false;
     frameCounterResetDelay = 0;
     delayedFrameMode = 0;
+    noise.shiftRegister = 1;
 }
 
 void APU::write(uint16_t addr, uint8_t data) {
@@ -66,34 +67,57 @@ void APU::write(uint16_t addr, uint8_t data) {
         case 0x400E: noise.mode = (data & 0x80); noise.timerReload = NoiseTimerTable[data & 0x0F]; break;
         case 0x400F: if (noise.enable) noise.lengthCounter = LengthTable[(data & 0xF8) >> 3]; noise.envStart = true; break;
 
-        case 0x4010: 
-            DMCIrqEnable = (data & 0x80) > 0; 
-            dmc.loop = (data & 0x40) > 0;
+        case 0x4010:
+            DMCIrqEnable = (data & 0x80) != 0;
+            dmc.loop = (data & 0x40) != 0;
             dmc.timerReload = DMCRateTable[data & 0x0F];
-            if (!DMCIrqEnable) DMCIrqPending = false; 
+
+            if (!DMCIrqEnable)
+                DMCIrqPending = false;
             break;
-            
+
+        case 0x4011:
+            dmc.outputLevel = data & 0x7F;
+            break;
+
+        case 0x4012:
+            dmc.sampleAddress = 0xC000 + (data * 64);
+            break;
+
         case 0x4013:
-            dmc.reloadLength = (data * 16) + 1;
+            dmc.sampleLength = (data * 16) + 1;
             break;
 
          case 0x4015:
-            pulse1.enable = data & 0x01; if (!pulse1.enable) pulse1.lengthCounter = 0;
-            pulse2.enable = data & 0x02; if (!pulse2.enable) pulse2.lengthCounter = 0;
-            triangle.enable = data & 0x04; if (!triangle.enable) triangle.lengthCounter = 0;
-            noise.enable = data & 0x08; if (!noise.enable) noise.lengthCounter = 0;
-            
+            pulse1.enable = data & 0x01;
+            if (!pulse1.enable)
+                pulse1.lengthCounter = 0;
+
+            pulse2.enable = data & 0x02;
+            if (!pulse2.enable)
+                pulse2.lengthCounter = 0;
+
+            triangle.enable = data & 0x04;
+            if (!triangle.enable)
+                triangle.lengthCounter = 0;
+
+            noise.enable = data & 0x08;
+            if (!noise.enable)
+                noise.lengthCounter = 0;
+
             if ((data & 0x10) == 0) {
                 dmc.enable = false;
-                dmc.lengthCounter = 0;
+                dmc.currentLength = 0;
             } else {
                 dmc.enable = true;
-                if (dmc.lengthCounter == 0) {
-                    dmc.lengthCounter = dmc.reloadLength;
-                    dmc.bitCounter = 0;
+
+                if (dmc.currentLength == 0) {
+                    dmc.currentAddress = dmc.sampleAddress;
+                    dmc.currentLength = dmc.sampleLength;
                 }
             }
-            DMCIrqPending = false; 
+
+            DMCIrqPending = false;
             break;
             
         case 0x4017:
@@ -116,7 +140,7 @@ uint8_t APU::read(uint16_t addr) {
         if (triangle.lengthCounter > 0) data |= 0x04;
         if (noise.lengthCounter > 0) data |= 0x08;
         
-        if (dmc.lengthCounter > 0) data |= 0x10;
+        if (dmc.currentLength > 0) data |= 0x10;
         
         if (IRQPending) data |= 0x40; 
         if (DMCIrqPending) data |= 0x80; 
@@ -124,6 +148,54 @@ uint8_t APU::read(uint16_t addr) {
         IRQPending = false; 
     }
     return data;
+}
+
+void APU::clockDMC() {
+    if (dmc.timer > 0) {
+        dmc.timer--;
+        return;
+    }
+
+    dmc.timer = dmc.timerReload;
+
+    if (!dmc.silence) {
+        if (dmc.shiftRegister & 1) {
+            if (dmc.outputLevel <= 125) dmc.outputLevel += 2;
+        } else {
+            if (dmc.outputLevel >= 2) dmc.outputLevel -= 2;
+        }
+    }
+
+    dmc.shiftRegister >>= 1;
+    dmc.bitsRemaining--;
+    if (dmc.bitsRemaining == 0) {
+        dmc.bitsRemaining = 8;
+        if (dmc.sampleBufferEmpty) {
+            dmc.silence = true;
+        } else {
+            dmc.silence = false;
+            dmc.shiftRegister = dmc.sampleBuffer;
+            dmc.sampleBufferEmpty = true;
+        }
+
+        if (dmc.sampleBufferEmpty && dmc.currentLength > 0) {
+            dmc.sampleBuffer = cpu.read(dmc.currentAddress);
+            dmc.sampleBufferEmpty = false;
+            dmc.currentAddress++;
+            if (dmc.currentAddress == 0)
+                dmc.currentAddress = 0x8000;
+
+            dmc.currentLength--;
+            if (dmc.currentLength == 0) {
+                if (dmc.loop) {
+                    dmc.currentAddress = dmc.sampleAddress;
+                    dmc.currentLength = dmc.sampleLength;
+                } else if (DMCIrqEnable) {
+                    DMCIrqPending = true;
+                }
+            }
+        }
+    }
 }
 
 void APU::clockEnvelopes() {
@@ -186,26 +258,7 @@ void APU::step() {
             uint16_t bit2 = (noise.shiftRegister >> shiftAmount) & 0x0001;
             noise.shiftRegister = (noise.shiftRegister >> 1) | ((bit1 ^ bit2) << 14);
         }
-    }
-
-    if (dmc.timer > 0) {
-        dmc.timer--;
-    } else {
-        dmc.timer = dmc.timerReload;
-        if (dmc.lengthCounter > 0) {
-            dmc.bitCounter++;
-            if (dmc.bitCounter >= 8) {
-                dmc.bitCounter = 0;
-                dmc.lengthCounter--;
-                if (dmc.lengthCounter == 0) {
-                    if (dmc.loop) {
-                        dmc.lengthCounter = dmc.reloadLength;
-                    } else if (DMCIrqEnable) {
-                        DMCIrqPending = true; 
-                    }
-                }
-            }
-        }
+        clockDMC();
     }
 
     frameCounter++;
@@ -229,37 +282,47 @@ void APU::step() {
 }
 
 double APU::getOutputSample() {
-    double p1 = 0, p2 = 0, t = 0, n = 0;
-    
+    double p1 = 0.0;
+    double p2 = 0.0;
+    double t  = 0.0;
+    double n  = 0.0;
+    double d  = 0.0;
+
     if (pulse1.enable && pulse1.lengthCounter > 0 && pulse1.timerReload > 8) {
         p1 = DutyTable[pulse1.duty][pulse1.dutySeq] ? (pulse1.constantVolume ? pulse1.volume : pulse1.envVol) : 0;
     }
-    
+
     if (pulse2.enable && pulse2.lengthCounter > 0 && pulse2.timerReload > 8) {
         p2 = DutyTable[pulse2.duty][pulse2.dutySeq] ? (pulse2.constantVolume ? pulse2.volume : pulse2.envVol) : 0;
     }
-    
+
     if (triangle.enable && triangle.lengthCounter > 0 && triangle.linearCounter > 0) {
         t = TriTable[triangle.dutySeq];
     }
-    
+
     if (noise.enable && noise.lengthCounter > 0 && (noise.shiftRegister & 0x0001) == 0) {
         n = noise.constantVolume ? noise.volume : noise.envVol;
     }
 
-    p1 *= (pulse1Volume / 50.0);
-    p2 *= (pulse2Volume / 50.0);
-    t  *= (triangleVolume / 50.0);
-    n  *= (noiseVolume / 50.0);
+    if (dmc.enable) {
+        d = dmc.outputLevel;
+    }
+
+    p1 *= (pulse1Volume   / 50.0) * (masterVolume / 50.0);
+    p2 *= (pulse2Volume   / 50.0) * (masterVolume / 50.0);
+    t  *= (triangleVolume / 50.0) * (masterVolume / 50.0);
+    n  *= (noiseVolume    / 50.0) * (masterVolume / 50.0);
+    d  *= (dmcVolume      / 50.0) * (masterVolume / 50.0);
 
     double pulseOut = 0.0;
-    if (p1 + p2 > 0.0) {
+    if ((p1 + p2) > 0.0) {
         pulseOut = 95.88 / ((8128.0 / (p1 + p2)) + 100.0);
     }
-    
+
+    double tnd = (t / 8227.0) + (n / 12241.0) + (d / 22638.0);
     double tndOut = 0.0;
-    if (t + n > 0.0) {
-        tndOut = 159.79 / ((1.0 / ((t / 8227.0) + (n / 12241.0))) + 100.0);
+    if (tnd > 0.0) {
+        tndOut = 159.79 / ((1.0 / tnd) + 100.0);
     }
 
     return pulseOut + tndOut;

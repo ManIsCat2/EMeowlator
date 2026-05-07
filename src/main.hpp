@@ -33,6 +33,8 @@
 #include <QPushButton>
 #include <QColorDialog>
 #include <QStyleFactory>
+#include <QSlider>
+#include <QGroupBox>
 
 extern bool romIsLoaded;
 extern NesROM globalROM;

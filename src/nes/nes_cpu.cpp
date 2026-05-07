@@ -28,7 +28,6 @@ void CPU::run(uint32_t maxCycles) {
         bool prevNMIDetect = NMIDetector;
         NMIDetector = ppu.Vblank && ppu.control.enableNMI;
         uint8_t opcode = 0x00;
-        globalROM.mapper->clockCPU();
 
         // nmi "overrides" irq
         if (!prevNMIDetect && NMIDetector) {
@@ -49,6 +48,7 @@ void CPU::run(uint32_t maxCycles) {
 
         while (cycles) {
             cycles--;
+            globalROM.mapper->clockCPU();
             apu.step();
             ppu.Step();
             ppu.Step();
@@ -1995,18 +1995,16 @@ uint8_t CPU::read(uint16_t addr) {
         }
     }
 
-    if (addr < 0x4020) {
-        switch (addr) {
-            case 0x4016:
-            case 0x4017: {
-                int controllerId = (addr == 0x4016 ? 0 : 1);
-                uint8_t ret = controllers[controllerId].shift & 1;
-                if (!controllers[controllerId].strobe) {
-                    controllers[controllerId].shift >>= 1;
-                }
-                return ret | (dataBus & 0xE0);
+    switch (addr) {
+        case 0x4015: return apu.read(addr);
+        case 0x4016:
+        case 0x4017: {
+            int controllerId = (addr == 0x4016 ? 0 : 1);
+            uint8_t ret = controllers[controllerId].shift & 1;
+            if (!controllers[controllerId].strobe) {
+                controllers[controllerId].shift >>= 1;
             }
-            default: return apu.read(addr);
+            return ret | (dataBus & 0xE0);
         }
     }
 
