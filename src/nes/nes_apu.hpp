@@ -66,7 +66,7 @@ public:
     void reset();
 
     bool IRQPending = false;
-    bool DMCIrq = false; 
+    bool DMCIrqPending = false; 
     bool DMCIrqEnable = false;
 
     float pulse1Volume = 50.0f;

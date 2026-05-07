@@ -42,7 +42,7 @@ void APU::reset() {
     frameMode = 0;
     IRQInhibit = false;
     IRQPending = false;
-    DMCIrq = false;
+    DMCIrqPending = false;
     DMCIrqEnable = false;
     frameCounterResetDelay = 0;
     delayedFrameMode = 0;
@@ -70,7 +70,7 @@ void APU::write(uint16_t addr, uint8_t data) {
             DMCIrqEnable = (data & 0x80) > 0; 
             dmc.loop = (data & 0x40) > 0;
             dmc.timerReload = DMCRateTable[data & 0x0F];
-            if (!DMCIrqEnable) DMCIrq = false; 
+            if (!DMCIrqEnable) DMCIrqPending = false; 
             break;
             
         case 0x4013:
@@ -93,7 +93,7 @@ void APU::write(uint16_t addr, uint8_t data) {
                     dmc.bitCounter = 0;
                 }
             }
-            DMCIrq = false; 
+            DMCIrqPending = false; 
             break;
             
         case 0x4017:
@@ -119,7 +119,7 @@ uint8_t APU::read(uint16_t addr) {
         if (dmc.lengthCounter > 0) data |= 0x10;
         
         if (IRQPending) data |= 0x40; 
-        if (DMCIrq) data |= 0x80; 
+        if (DMCIrqPending) data |= 0x80; 
         
         IRQPending = false; 
     }
@@ -201,7 +201,7 @@ void APU::step() {
                     if (dmc.loop) {
                         dmc.lengthCounter = dmc.reloadLength;
                     } else if (DMCIrqEnable) {
-                        DMCIrq = true; 
+                        DMCIrqPending = true; 
                     }
                 }
             }

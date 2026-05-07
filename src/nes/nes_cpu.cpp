@@ -34,8 +34,9 @@ void CPU::run(uint32_t maxCycles) {
         if (!prevNMIDetect && NMIDetector) {
             opcode = 0x00;
             doNMI = true;
-        } else if ((IRQPending || apu.IRQPending) && !(P & Flags::I)) {
+        } else if ((IRQPending || apu.DMCIrqPending || apu.IRQPending) && !(P & Flags::I)) {
             IRQPending = false;
+            apu.DMCIrqPending = false;
             apu.IRQPending = false;
             opcode = 0x00;
             doIRQ = true;

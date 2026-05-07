@@ -1,4 +1,5 @@
 #include "audio.hpp"
+#include "nes.hpp"
 #include "nes_apu.hpp"
 
 Audio audioSystem;
@@ -42,6 +43,7 @@ void Audio::init() {
     }
     
     SDL_PauseAudioDevice(device, 0);
+    DebugPrintLog("APU", "Initialized SDL2 Audio System");
 }
 
 
@@ -50,6 +52,7 @@ void Audio::close() {
         SDL_CloseAudioDevice(device);
         device = 0;
     }
+    DebugPrintLog("APU", "Closed SDL2 Audio System");
 }
 
 void Audio::advance() {
