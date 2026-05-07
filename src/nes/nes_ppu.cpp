@@ -115,8 +115,15 @@ void PPU::RenderScreen(void) {
             uint8_t color = 0;
             uint8_t palette = 0;
             if (mask.renderBackground && (Dot > 8 || mask.background8pxMask)) {
-                color = (shiftRegHigh >> (0x0E - scrollFineX) & 0x02) | (shiftRegLow >> (0x0F - scrollFineX) & 0x01);
-                palette = shiftAttribute >> (0x1C - scrollFineX * 0x02) & 0x0C;
+                uint16_t bit = 0x8000 >> scrollFineX;
+
+                uint8_t bgLow  = (shiftRegLow  & bit) ? 1 : 0;
+                uint8_t bgHigh = (shiftRegHigh & bit) ? 2 : 0;
+                color = bgLow | bgHigh;
+
+                uint8_t palLow  = (shiftAttrLow  & bit) ? 1 : 0;
+                uint8_t palHigh = (shiftAttrHigh & bit) ? 2 : 0;
+                palette = (palLow | palHigh) << 2;
             }
             if (mask.renderSprites && !DisableSprites) {
                 for (int i = 0; i < 256; i += 4) {
@@ -160,11 +167,25 @@ void PPU::RenderScreen(void) {
 		if (Dot < 336) {
             shiftRegHigh <<= 1;
 			shiftRegLow <<= 1;
-			shiftAttribute <<= 2;
+			shiftAttrLow <<= 1;
+			shiftAttrHigh <<= 1;
 		}
 
         uint16_t fetchAddress = ((control.BGPatternTable) ? 0x1000 : 0x0000) + (nametableByte << 4) + ((VRAMAddr >> 12) & 0x07);
-		switch (Dot & 7) {
+		switch ((Dot+1) & 7) {
+            case 0:
+                shiftRegHigh = (shiftRegHigh & 0xFF00) | patternTableHigh;
+                shiftRegLow = (shiftRegLow & 0xFF00) | patternTableLow;
+                shiftAttrLow = (shiftAttrLow & 0xFF00) | ((attributeByte & 1) ? 0xFF : 0x00);
+                shiftAttrHigh = (shiftAttrHigh & 0xFF00) | ((attributeByte & 2) ? 0xFF : 0x00);
+
+                if ((VRAMAddr & VRAM_COX) == VRAM_COX) {
+                    VRAMAddr &= ~VRAM_COX;
+                    VRAMAddr ^= VRAM_X_NT;
+                } else {
+                    VRAMAddr++;
+                }
+                break;
             case 1:
                 nametableByte = globalROM.mapper->readVRAM(VRAMAddr);
                 break;
@@ -176,15 +197,6 @@ void PPU::RenderScreen(void) {
                 break;
             case 7: {
                 patternTableHigh = globalROM.mapper->readCHR(fetchAddress + 8);
-                if ((VRAMAddr & VRAM_COX) == VRAM_COX) {
-                    VRAMAddr &= ~VRAM_COX;
-                    VRAMAddr ^= VRAM_X_NT;
-                } else {
-                    VRAMAddr++;
-                }
-                shiftRegHigh |= patternTableHigh;
-                shiftRegLow |= patternTableLow;
-                shiftAttribute |= attributeByte;
                 break;
             }
 		}

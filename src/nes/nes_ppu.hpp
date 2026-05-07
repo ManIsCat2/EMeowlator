@@ -77,8 +77,9 @@ public:
     uint8_t nametableByte = 0;
     uint16_t shiftRegHigh = 0;
     uint16_t shiftRegLow = 0;
+    uint16_t shiftAttrHigh = 0;
+    uint16_t shiftAttrLow = 0;
     uint16_t attributeByte = 0;
-    int shiftAttribute = 0;
 
     bool DisableSprites = false;
     bool VRAMCorruption = false;
