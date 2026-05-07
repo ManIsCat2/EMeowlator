@@ -88,22 +88,18 @@ void APU::write(uint16_t addr, uint8_t data) {
             dmc.sampleLength = (data * 16) + 1;
             break;
 
-         case 0x4015:
+        case 0x4015:
             pulse1.enable = data & 0x01;
-            if (!pulse1.enable)
-                pulse1.lengthCounter = 0;
+            if (!pulse1.enable) pulse1.lengthCounter = 0;
 
             pulse2.enable = data & 0x02;
-            if (!pulse2.enable)
-                pulse2.lengthCounter = 0;
+            if (!pulse2.enable) pulse2.lengthCounter = 0;
 
             triangle.enable = data & 0x04;
-            if (!triangle.enable)
-                triangle.lengthCounter = 0;
+            if (!triangle.enable) triangle.lengthCounter = 0;
 
             noise.enable = data & 0x08;
-            if (!noise.enable)
-                noise.lengthCounter = 0;
+            if (!noise.enable) noise.lengthCounter = 0;
 
             if ((data & 0x10) == 0) {
                 dmc.enable = false;
@@ -114,6 +110,8 @@ void APU::write(uint16_t addr, uint8_t data) {
                 if (dmc.currentLength == 0) {
                     dmc.currentAddress = dmc.sampleAddress;
                     dmc.currentLength = dmc.sampleLength;
+                    dmc.sampleBufferEmpty = true;
+                    dmc.bitsRemaining = 8;
                 }
             }
 
@@ -151,6 +149,26 @@ uint8_t APU::read(uint16_t addr) {
 }
 
 void APU::clockDMC() {
+    if (dmc.sampleBufferEmpty && dmc.currentLength > 0) {
+        dmc.sampleBuffer = cpu.read(dmc.currentAddress);
+        dmc.sampleBufferEmpty = false;
+
+        dmc.currentAddress++;
+        if (dmc.currentAddress == 0)
+            dmc.currentAddress = 0x8000;
+
+        dmc.currentLength--;
+
+        if (dmc.currentLength == 0) {
+            if (dmc.loop) {
+                dmc.currentAddress = dmc.sampleAddress;
+                dmc.currentLength = dmc.sampleLength;
+            } else if (DMCIrqEnable) {
+                DMCIrqPending = true;
+            }
+        }
+    }
+
     if (dmc.timer > 0) {
         dmc.timer--;
         return;
@@ -160,40 +178,27 @@ void APU::clockDMC() {
 
     if (!dmc.silence) {
         if (dmc.shiftRegister & 1) {
-            if (dmc.outputLevel <= 125) dmc.outputLevel += 2;
+            if (dmc.outputLevel <= 125)
+                dmc.outputLevel += 2;
         } else {
-            if (dmc.outputLevel >= 2) dmc.outputLevel -= 2;
+            if (dmc.outputLevel >= 2)
+                dmc.outputLevel -= 2;
         }
     }
 
     dmc.shiftRegister >>= 1;
+
     dmc.bitsRemaining--;
+
     if (dmc.bitsRemaining == 0) {
         dmc.bitsRemaining = 8;
+
         if (dmc.sampleBufferEmpty) {
             dmc.silence = true;
         } else {
             dmc.silence = false;
             dmc.shiftRegister = dmc.sampleBuffer;
             dmc.sampleBufferEmpty = true;
-        }
-
-        if (dmc.sampleBufferEmpty && dmc.currentLength > 0) {
-            dmc.sampleBuffer = cpu.read(dmc.currentAddress);
-            dmc.sampleBufferEmpty = false;
-            dmc.currentAddress++;
-            if (dmc.currentAddress == 0)
-                dmc.currentAddress = 0x8000;
-
-            dmc.currentLength--;
-            if (dmc.currentLength == 0) {
-                if (dmc.loop) {
-                    dmc.currentAddress = dmc.sampleAddress;
-                    dmc.currentLength = dmc.sampleLength;
-                } else if (DMCIrqEnable) {
-                    DMCIrqPending = true;
-                }
-            }
         }
     }
 }
