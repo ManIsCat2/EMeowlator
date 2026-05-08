@@ -15,6 +15,12 @@ struct PulseChannel {
     bool envStart = false;
     uint8_t envVol = 0;
     uint8_t envDivider = 0;
+    bool sweepEnable = false;
+    uint8_t sweepPeriod = 0;
+    bool sweepNegate = false;
+    uint8_t sweepShift = 0;
+    bool sweepReload = false;
+    uint8_t sweepDivider = 0;
 };
 
 struct TriangleChannel {
@@ -98,9 +104,12 @@ private:
     int frameCounterResetDelay = 0;
     uint8_t delayedFrameMode = 0;
     
+    bool pulseSweepMuted(PulseChannel &p, bool isPulse1);
+    void clockSweep(PulseChannel &p, bool isPulse1);
     void clockEnvelopes();
     void clockDMC();
     void clockLengths();
+    void clockPulse();
 };
 
 extern APU apu;

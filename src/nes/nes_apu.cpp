@@ -1,4 +1,4 @@
-// apu base provided by aldi0123_10445 on discord, slightly changed by me
+// apu base provided by aldi0123_10445 on discord, heavily rewritten by me
 // audio.cpp is by me
 
 #include "nes_apu.hpp"
@@ -52,10 +52,24 @@ void APU::reset() {
 void APU::write(uint16_t addr, uint8_t data) {
     switch (addr) {
         case 0x4000: pulse1.duty = (data & 0xC0) >> 6; pulse1.lengthHalt = (data & 0x20); pulse1.constantVolume = (data & 0x10); pulse1.volume = (data & 0x0F); break;
+        case 0x4001:
+            pulse1.sweepEnable = (data & 0x80) != 0;
+            pulse1.sweepPeriod = (data >> 4) & 0x07;
+            pulse1.sweepNegate = (data & 0x08) != 0;
+            pulse1.sweepShift  = data & 0x07;
+            pulse1.sweepReload = true;
+            break;
         case 0x4002: pulse1.timerReload = (pulse1.timerReload & 0xFF00) | data; break;
         case 0x4003: pulse1.timerReload = (pulse1.timerReload & 0x00FF) | ((data & 0x07) << 8); pulse1.timer = pulse1.timerReload; if (pulse1.enable) pulse1.lengthCounter = LengthTable[(data & 0xF8) >> 3]; pulse1.dutySeq = 0; pulse1.envStart = true; break;
 
         case 0x4004: pulse2.duty = (data & 0xC0) >> 6; pulse2.lengthHalt = (data & 0x20); pulse2.constantVolume = (data & 0x10); pulse2.volume = (data & 0x0F); break;
+        case 0x4005:
+            pulse2.sweepEnable = (data & 0x80) != 0;
+            pulse2.sweepPeriod = (data >> 4) & 0x07;
+            pulse2.sweepNegate = (data & 0x08) != 0;
+            pulse2.sweepShift  = data & 0x07;
+            pulse2.sweepReload = true;
+            break;
         case 0x4006: pulse2.timerReload = (pulse2.timerReload & 0xFF00) | data; break;
         case 0x4007: pulse2.timerReload = (pulse2.timerReload & 0x00FF) | ((data & 0x07) << 8); pulse2.timer = pulse2.timerReload; if (pulse2.enable) pulse2.lengthCounter = LengthTable[(data & 0xF8) >> 3]; pulse2.dutySeq = 0; pulse2.envStart = true; break;
 
@@ -148,6 +162,57 @@ uint8_t APU::read(uint16_t addr) {
     return data;
 }
 
+bool APU::pulseSweepMuted(PulseChannel &p, bool isPulse1) {
+    if (p.timerReload < 8)
+        return true;
+
+    uint16_t change = p.timerReload >> p.sweepShift;
+    uint16_t target = p.timerReload;
+
+    if (p.sweepNegate) {
+        target -= change;
+        if (isPulse1) target--;
+    } else {
+        target += change;
+    }
+
+    return target > 0x7FF;
+}
+
+void APU::clockSweep(PulseChannel &p, bool isPulse1) {
+    if (p.sweepReload) {
+        p.sweepReload = false;
+        p.sweepDivider = p.sweepPeriod == 0 ? 8 : p.sweepPeriod;
+        return;
+    }
+
+    if (p.sweepDivider > 0) {
+        p.sweepDivider--;
+        return;
+    }
+
+    p.sweepDivider = p.sweepPeriod == 0 ? 8 : p.sweepPeriod;
+
+    if (!p.sweepEnable || p.sweepShift == 0 || p.timerReload < 8)
+        return;
+
+    uint16_t change = p.timerReload >> p.sweepShift;
+    uint16_t target = p.timerReload;
+
+    if (p.sweepNegate) {
+        target -= change;
+        if (isPulse1) target--;
+    } else {
+        target += change;
+    }
+
+    if (target > 0x7FF) {
+        return;
+    }
+
+    p.timerReload = target;
+}
+
 void APU::clockDMC() {
     if (dmc.sampleBufferEmpty && dmc.currentLength > 0) {
         dmc.sampleBuffer = cpu.read(dmc.currentAddress);
@@ -231,6 +296,12 @@ void APU::clockLengths() {
     if (noise.lengthCounter > 0 && !noise.lengthHalt) noise.lengthCounter--;
 }
 
+void APU::clockPulse() {
+    clockLengths();
+    clockSweep(pulse1, true);
+    clockSweep(pulse2, false);
+}
+
 void APU::step() {
     if (frameCounterResetDelay > 0) {
         frameCounterResetDelay--;
@@ -238,7 +309,7 @@ void APU::step() {
             frameCounter = 0;
             frameMode = delayedFrameMode;
             if (frameMode == 1) { 
-                clockLengths();
+                clockPulse();
                 clockEnvelopes();
             }
         }
@@ -254,8 +325,18 @@ void APU::step() {
     }
 
     if (clockCounter % 2 == 0) {
-        if (pulse1.timer > 0) pulse1.timer--; else { pulse1.timer = pulse1.timerReload; pulse1.dutySeq = (pulse1.dutySeq + 1) % 8; }
-        if (pulse2.timer > 0) pulse2.timer--; else { pulse2.timer = pulse2.timerReload; pulse2.dutySeq = (pulse2.dutySeq + 1) % 8; }
+        if (pulse1.timer == 0) {
+            pulse1.timer = pulse1.timerReload;
+            pulse1.dutySeq = (pulse1.dutySeq + 1) & 7;
+        } else {
+            pulse1.timer--;
+        }
+        if (pulse2.timer == 0) {
+            pulse2.timer = pulse2.timerReload;
+            pulse2.dutySeq = (pulse2.dutySeq + 1) & 7;
+        } else {
+            pulse2.timer--;
+        }
         if (noise.timer > 0) noise.timer--; else {
             noise.timer = noise.timerReload;
             uint16_t shiftAmount = noise.mode ? 6 : 1;
@@ -269,16 +350,16 @@ void APU::step() {
     frameCounter++;
     if (frameMode == 0) { 
         if (frameCounter == 7457)  { clockEnvelopes(); }
-        if (frameCounter == 14913) { clockEnvelopes(); clockLengths(); }
+        if (frameCounter == 14913) { clockEnvelopes(); clockPulse(); }
         if (frameCounter == 22371) { clockEnvelopes(); }
         if (frameCounter == 29828) { if (!IRQInhibit) IRQPending = true; }
-        if (frameCounter == 29829) { if (!IRQInhibit) IRQPending = true; clockEnvelopes(); clockLengths(); }
+        if (frameCounter == 29829) { if (!IRQInhibit) IRQPending = true; clockEnvelopes(); clockPulse(); }
         if (frameCounter == 29830) { if (!IRQInhibit) IRQPending = true; frameCounter = 0; }
     } else { 
         if (frameCounter == 7457)  { clockEnvelopes(); }
-        if (frameCounter == 14913) { clockEnvelopes(); clockLengths(); }
+        if (frameCounter == 14913) { clockEnvelopes(); clockPulse();}
         if (frameCounter == 22371) { clockEnvelopes(); }
-        if (frameCounter == 37281) { clockEnvelopes(); clockLengths(); }
+        if (frameCounter == 37281) { clockEnvelopes(); clockPulse();}
         if (frameCounter == 37282) { frameCounter = 0; }
     }
 
@@ -293,11 +374,11 @@ double APU::getOutputSample() {
     double n  = 0.0;
     double d  = 0.0;
 
-    if (pulse1.enable && pulse1.lengthCounter > 0 && pulse1.timerReload > 8) {
+    if (pulse1.enable && pulse1.lengthCounter > 0 && !pulseSweepMuted(pulse1, true)) {
         p1 = DutyTable[pulse1.duty][pulse1.dutySeq] ? (pulse1.constantVolume ? pulse1.volume : pulse1.envVol) : 0;
     }
 
-    if (pulse2.enable && pulse2.lengthCounter > 0 && pulse2.timerReload > 8) {
+    if (pulse2.enable && pulse2.lengthCounter > 0 && !pulseSweepMuted(pulse2, false)) {
         p2 = DutyTable[pulse2.duty][pulse2.dutySeq] ? (pulse2.constantVolume ? pulse2.volume : pulse2.envVol) : 0;
     }
 
