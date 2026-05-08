@@ -38,6 +38,33 @@ MapperBase *NesROM::GetMapper(uint16_t id, uint16_t subId) {
     }
 }
 
+ConsoleRegion NesROM::GetRegion(void) {
+    ConsoleRegion romRegion = ConsoleRegion::NTSC;
+    if (Version == HeaderVersion::NES2_0) {
+        switch (Header[12] & 0x03) {
+            case 1:
+                romRegion = ConsoleRegion::PAL;
+                break;
+            case 3:
+                romRegion = ConsoleRegion::DENDY;
+                break;
+            default:
+                romRegion = ConsoleRegion::NTSC;
+                break;
+        }
+    } else {
+        romRegion = (Header[9] & 1) ? ConsoleRegion::PAL : ConsoleRegion::NTSC;
+    }
+
+    if (Name.find("(E)") != std::string::npos || Name.find("(e)") != std::string::npos) {
+        if (romRegion == ConsoleRegion::NTSC) {
+            romRegion = ConsoleRegion::PAL;
+        }
+    }
+
+    return romRegion;
+}
+
 bool NesROM::LoadNES(const std::string &filename) {
     std::ifstream rom(filename, std::ios::binary | std::ios::ate);
     if (!rom) {
@@ -64,8 +91,8 @@ bool NesROM::LoadNES(const std::string &filename) {
         return false;
     }
 
-    uint8_t romHeader[8];
-    std::memcpy(romHeader, data.data(), 8);
+    uint8_t romHeader[16];
+    std::memcpy(romHeader, data.data(), 16);
 
     MirrorMode romMirroring = (romHeader[6] & 1) ? MirrorMode::VERTICAL :  MirrorMode::HORIZONTAL;
 
@@ -118,10 +145,11 @@ bool NesROM::LoadNES(const std::string &filename) {
         return false;
     } else {
         if (mapper) { delete mapper; mapper = nullptr; }
-        std::memcpy(Header, romHeader, 8);
+        std::memcpy(Header, romHeader, 16);
         hasBattery = romHasBattery;
         Mirroring = ppu.Mirroring = romMirroring;
         Version = romVersion;
+        Region = GetRegion();
         SubMapperID = romSubMapperID;
         MapperID = romMapperID;
         PRGRomSize = romPRGSize;
@@ -152,5 +180,8 @@ bool NesROM::LoadNES(const std::string &filename) {
     if (Version == HeaderVersion::NES2_0) {
         DebugPrintLog("ROM", "Detected NES2.0 Header with Submapper %u", SubMapperID)
     }
+    std::string regionNames[] = {"NTSC", "PAL", "Dendy"};
+    std::string fullRegionStr = "ROM uses " + regionNames[(int)Region] + " mode";
+    DebugPrintLog("ROM", "%s", fullRegionStr.c_str());
     return true;
 }

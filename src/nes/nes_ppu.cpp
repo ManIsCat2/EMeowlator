@@ -204,15 +204,20 @@ void PPU::RenderScreen(void) {
 }
 
 void PPU::Step() {
-	if (Dot == 1 && ScanLine == 241)
-		Vblank = true;
-	if (Dot == 1 && ScanLine == 261) {
-		Vblank = false;
-		sprite0Hit = false;
-	}
+    const bool isPal = /*globalROM.Region == ConsoleRegion::PAL*/ false;
+    const int preRenderLine = (isPal) ? 311 : 261;
+    const int totalScanlines = (isPal) ? 312 : 262;
 
-	if (mask.renderBackground || mask.renderSprites) {
-		if (ScanLine < 240) {
+    if (Dot == 1 && ScanLine == 241)
+        Vblank = true;
+
+    if (Dot == 1 && ScanLine == preRenderLine) {
+        Vblank = false;
+        sprite0Hit = false;
+    }
+
+    if (mask.renderBackground || mask.renderSprites) {
+        if (ScanLine < 240) {
             RenderScreen();
 
             if (Dot == 256) {
@@ -224,8 +229,8 @@ void PPU::Step() {
                     if (y == 29) {
                         y = 0;
                         VRAMAddr ^= VRAM_Y_NT;
-                    } else if (y == 31) {// tanks 100th_coin
-                        y = 0; 
+                    } else if (y == 31) {
+                        y = 0;
                     } else {
                         y++;
                         y &= 0x1F;
@@ -234,26 +239,25 @@ void PPU::Step() {
                 }
             }
 
-			if (Dot == 257) {
-                // 0b0111101111100000, 0b0000010000011111
-				VRAMAddr = ((VRAMAddr & 0x7be0) | (TransferAddr & 0x41f));
-			}
-		}
+            if (Dot == 257) {
+                VRAMAddr = ((VRAMAddr & 0x7be0) | (TransferAddr & 0x41f));
+            }
+        }
 
-		if (Dot >= 280 && Dot <= 304 && ScanLine == 261) {
-            // 0b0000010000011111, 0b0111101111100000
-			VRAMAddr = ((VRAMAddr & 0x41f) | (TransferAddr & 0x7be0));
-		}
-
+        if (Dot >= 280 &&
+            Dot <= 304 &&
+            ScanLine == preRenderLine) {
+            VRAMAddr = ((VRAMAddr & 0x41f) | (TransferAddr & 0x7be0));
+        }
         globalROM.mapper->clockPPU();
-	}
+    }
 
-	Dot++;
-	if (Dot >= 341) {
-		Dot = 0;
-		ScanLine++;
-		if (ScanLine > 261) ScanLine = 0;
-	}
+    Dot++;
+    if (Dot >= 341) {
+        Dot = 0;
+        ScanLine++;
+        if (ScanLine >= totalScanlines) ScanLine = 0;
+    }
 }
 
 void PPU::LoadCHRROM(const uint8_t *data, int chrSize) {

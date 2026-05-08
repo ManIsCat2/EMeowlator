@@ -5,6 +5,12 @@ enum class HeaderVersion {
     INES,
 };
 
+enum class ConsoleRegion {
+    NTSC,
+    PAL,
+    DENDY,
+};
+
 #include <cstdint>
 #include <iostream>
 #include <array>
@@ -19,9 +25,10 @@ enum class HeaderVersion {
 
 class NesROM {
 public:
-    uint8_t Header[8];
+    uint8_t Header[16];
     bool hasBattery = false;
     HeaderVersion Version = HeaderVersion::INES;
+    ConsoleRegion Region = ConsoleRegion::NTSC;
     uint8_t *ROM = nullptr;
     std::string Name = "";
     uint16_t ResetVec = 0;
@@ -35,5 +42,6 @@ public:
     MapperBase *mapper = nullptr;
 
     MapperBase *GetMapper(uint16_t id, uint16_t subId);
+    ConsoleRegion GetRegion(void);
     bool LoadNES(const std::string &filename);
 };

@@ -1,6 +1,7 @@
 #include "audio.hpp"
 #include "nes.hpp"
 #include "nes_apu.hpp"
+#include "../main.hpp"
 
 Audio audioSystem;
 
@@ -56,6 +57,10 @@ void Audio::close() {
 }
 
 void Audio::advance() {
+    double cyclesPerSample = CYCLES_PER_SAMPLE_NTSC;
+    if (globalROM.Region == ConsoleRegion::PAL) {
+        cyclesPerSample = CYCLES_PER_SAMPLE_PAL;
+    }
     cycleCounter += 1;
     while (cycleCounter >= cyclesPerSample) {
         cycleCounter -= cyclesPerSample;

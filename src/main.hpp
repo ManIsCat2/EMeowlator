@@ -50,3 +50,4 @@ struct Keybind {
 extern Keybind nesKeyBinds[];
 extern QImage *rawOutputImage;
 extern QImage *filteredOutputImage;
+//extern QTimer cpuTimer;

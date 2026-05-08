@@ -49,7 +49,6 @@ NesROM globalROM;
 
 bool romIsLoaded = false;
 static bool fullscreen = false;
-static float CPUSpeed = 1.f;
 static bool unlimitFPS = false;
 int hoveredPaletteIndex = -1;
 
@@ -95,6 +94,15 @@ QAction *makeQBool(const QString &text, QObject *parent, bool defaultBool) {
 
 QImage *rawOutputImage = nullptr;
 QImage *filteredOutputImage = nullptr;
+QTimer cpuTimer;
+
+void startCPUTimer(void) {
+    if (globalROM.Region == ConsoleRegion::NTSC) {
+        cpuTimer.start(16);
+    } else {
+        cpuTimer.start(20);
+    }
+}
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
@@ -173,6 +181,7 @@ int main(int argc, char *argv[]) {
             if (globalROM.LoadNES(file.toStdString().c_str())) {
                 cpu.reset();
                 romIsLoaded = true;
+                startCPUTimer();
             }
         }
     });
@@ -284,7 +293,7 @@ int main(int argc, char *argv[]) {
     QObject::connect(displayConfAction, &QAction::triggered, [&]() {
         QDialog *dialog = new QDialog(&window);
         dialog->setWindowTitle("Display Config");
-        dialog->setFixedSize(300, 520);
+        dialog->setFixedSize(300, 590);
 
         QVBoxLayout *mainLayout = new QVBoxLayout(dialog);
         QGroupBox *settingsBox = new QGroupBox("Settings", dialog);
@@ -305,6 +314,27 @@ int main(int argc, char *argv[]) {
         QObject::connect(disableSpritesCheckBox, &QCheckBox::toggled, [&](bool checked) {
             ppu.DisableSprites = checked;
         });
+
+        //region
+        QGroupBox *regionBox = new QGroupBox("Region", dialog);
+        QVBoxLayout *regionLayout = new QVBoxLayout(regionBox);
+        QComboBox *tvtypeComboBox = new QComboBox(regionBox);
+        std::array<std::string, 3> regionStrs = {"NTSC", "PAL", "Dendy"};
+
+        for (int i = 0; i < regionStrs.size(); ++i) {
+            tvtypeComboBox->addItem(QString::fromStdString(regionStrs[i]), i);
+        }
+
+        tvtypeComboBox->setCurrentIndex((int)(globalROM.Region));
+
+        QComboBox::connect(tvtypeComboBox, &QComboBox::currentIndexChanged, [&](int index) {
+            globalROM.Region = (ConsoleRegion)index;
+            startCPUTimer();
+            DebugPrintLog("SETTINGS", "Set Region to %d", index);
+        });
+
+        regionLayout->addWidget(tvtypeComboBox);
+        regionLayout->addStretch();
 
         //palettes
         QGroupBox *paletteBox = new QGroupBox("Palette", dialog);
@@ -439,6 +469,7 @@ int main(int argc, char *argv[]) {
         filterLayout->addStretch();
 
         mainLayout->addWidget(settingsBox);
+        mainLayout->addWidget(regionBox);
         mainLayout->addWidget(paletteBox);
         mainLayout->addWidget(filterBox);
         mainLayout->addStretch();
@@ -520,10 +551,14 @@ int main(int argc, char *argv[]) {
 
     ppu.Init();
     audioSystem.init();
-    QTimer cpuTimer;
+    cpuTimer.setTimerType(Qt::PreciseTimer);
     QObject::connect(&cpuTimer, &QTimer::timeout, [&]() {
         if (romIsLoaded) {
-            cpu.run((uint32_t)(CYCLES_PER_FRAME * CPUSpeed));
+            uint32_t speed = CYCLES_PER_FRAME_NTSC;
+            if (globalROM.Region == ConsoleRegion::PAL) {
+                speed = CYCLES_PER_FRAME_PAL;
+            }
+            cpu.run(speed);
             if (ppu.filtering == VideoFilter::NTSC) {
                 screen->image = *filteredOutputImage;
             } else {
@@ -542,7 +577,6 @@ int main(int argc, char *argv[]) {
             if (rainbowHoverPhase > 1.0f) rainbowHoverPhase -= 1.0f;
         }
     });
-    cpuTimer.start(16); //60 fps
 
     window.setFixedSize(NES_WIDTH*3, NES_HEIGHT*3);
 
@@ -562,6 +596,7 @@ int main(int argc, char *argv[]) {
         if (globalROM.LoadNES(argv[1])) {
             cpu.reset();
             romIsLoaded = true;
+            startCPUTimer();
         }
     }
 
