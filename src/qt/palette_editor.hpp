@@ -12,7 +12,7 @@ public:
     int index;
 
     PaletteButton(int i, QWidget *parent = nullptr) : QPushButton(parent), index(i) {
-        setFixedSize(20, 20);
+        setFixedSize(23, 23);
         setAttribute(Qt::WA_Hover);
     }
 

@@ -8,6 +8,11 @@ ifeq ($(OS),Windows_NT)
 	LDFLAGS += -lmingw32 -lSDL2main -lSDL2
 endif
 
+BLUE := $(shell printf "\033[34m")
+GREEN := $(shell printf "\033[32m")
+WHITE := $(shell printf "\033[97m")
+RESET := $(shell printf "\033[0m")
+
 #ifeq ($(OS),Windows_NT)
 #   LDFLAGS += -static-libstdc++ -static-libgcc
 #	CXX := g++
@@ -19,16 +24,19 @@ OBJECTS := $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 all: $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)
 
 $(BUILD_DIR)/$(TARGET): $(OBJECTS)
-	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
+	@echo "$(BLUE)Linking Object files...$(RESET)"
+	@$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
+	@echo "$(BLUE)Built $(TARGET)!$(RESET)"
 
 $(BUILD_DIR)/%.o: %.cpp
+	@echo "$(BLUE)Compiling: $(GREEN)$<$(WHITE) -> $(GREEN)$@$(RESET)"
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 $(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
+	@mkdir -p $(BUILD_DIR)
 
 clean:
-	rm -rf $(BUILD_DIR)
+	@rm -rf $(BUILD_DIR)
 
 .PHONY: all clean

@@ -71,6 +71,8 @@ public:
         uint8_t combined = 0;
     } control;
 
+    bool DisableSprites = false;
+    bool VRAMCorruption = false;
     uint8_t scrollFineX = 0;
     uint8_t patternTableLow = 0;
     uint8_t patternTableHigh = 0;
@@ -80,9 +82,6 @@ public:
     uint16_t shiftAttrHigh = 0;
     uint16_t shiftAttrLow = 0;
     uint16_t attributeByte = 0;
-
-    bool DisableSprites = false;
-    bool VRAMCorruption = false;
 
     void reset(void);
     void resetBusDecayTimers(void);

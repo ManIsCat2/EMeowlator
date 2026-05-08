@@ -35,6 +35,8 @@
 #include <QStyleFactory>
 #include <QSlider>
 #include <QGroupBox>
+#include <QCheckBox>
+#include <QComboBox>
 
 extern bool romIsLoaded;
 extern NesROM globalROM;
