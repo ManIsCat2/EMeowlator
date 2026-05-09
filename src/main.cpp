@@ -293,32 +293,21 @@ int main(int argc, char *argv[]) {
     QObject::connect(displayConfAction, &QAction::triggered, [&]() {
         QDialog *dialog = new QDialog(&window);
         dialog->setWindowTitle("Display Config");
-        dialog->setFixedSize(300, 590);
+        dialog->setFixedSize(560, 420);
 
-        QVBoxLayout *mainLayout = new QVBoxLayout(dialog);
+        QGridLayout *mainLayout = new QGridLayout(dialog);
         QGroupBox *settingsBox = new QGroupBox("Settings", dialog);
-        QHBoxLayout *settingsLayout = new QHBoxLayout(settingsBox);
-       
-        QCheckBox *VRAMCorruptCheckBox = new QCheckBox("VRAM Corruption", settingsBox);
-        VRAMCorruptCheckBox->setChecked(ppu.VRAMCorruption);
+        QGridLayout *settingsLayout = new QGridLayout(settingsBox);
 
-        QCheckBox *disableSpritesCheckBox = new QCheckBox("Disable Sprites", settingsBox);
-        disableSpritesCheckBox->setChecked(ppu.DisableSprites);
-
-        settingsLayout->addWidget(VRAMCorruptCheckBox);
-        settingsLayout->addWidget(disableSpritesCheckBox);
-
-        QObject::connect(VRAMCorruptCheckBox, &QCheckBox::toggled, [&](bool checked) {
-            ppu.VRAMCorruption = checked;
-        });
-        QObject::connect(disableSpritesCheckBox, &QCheckBox::toggled, [&](bool checked) {
-            ppu.DisableSprites = checked;
-        });
+        settingsBox->setMinimumSize(270, 120);
+        //printf("dihh %u %u\n", settingsBox->size().width(), settingsBox->size().height());
 
         //region
         QGroupBox *regionBox = new QGroupBox("Region", dialog);
         QVBoxLayout *regionLayout = new QVBoxLayout(regionBox);
         QComboBox *tvtypeComboBox = new QComboBox(regionBox);
+
+       // regionBox->setFixedSize(90, 90);
         std::array<std::string, 3> regionStrs = {"NTSC", "PAL", "Dendy"};
 
         for (int i = 0; i < regionStrs.size(); ++i) {
@@ -334,12 +323,59 @@ int main(int argc, char *argv[]) {
         });
 
         regionLayout->addWidget(tvtypeComboBox);
-        regionLayout->addStretch();
+        //regionLayout->addStretch();
+        
+        //ppu settings
+        QGroupBox *ppuSettingsBox = new QGroupBox("PPU Settings", dialog);
+        QGridLayout *ppuSettingsLayout = new QGridLayout(ppuSettingsBox);
+        QCheckBox *VRAMCorruptCheckBox = new QCheckBox("VRAM Corruption", ppuSettingsBox);
+
+        ppuSettingsBox->setFixedSize(270, 160);
+
+        VRAMCorruptCheckBox->setChecked(ppu.VRAMCorruption);
+
+        QCheckBox *disableSpritesCheckBox = new QCheckBox("Disable Sprites", ppuSettingsBox);
+        disableSpritesCheckBox->setChecked(ppu.DisableSprites);
+
+        ppuSettingsLayout->addWidget(VRAMCorruptCheckBox, 0, 0, Qt::AlignLeft | Qt::AlignTop);
+        ppuSettingsLayout->addWidget(disableSpritesCheckBox, 0, 1, Qt::AlignLeft | Qt::AlignTop);
+
+        QObject::connect(VRAMCorruptCheckBox, &QCheckBox::toggled, [&](bool checked) {
+            ppu.VRAMCorruption = checked;
+        });
+        QObject::connect(disableSpritesCheckBox, &QCheckBox::toggled, [&](bool checked) {
+            ppu.DisableSprites = checked;
+        });
+
+        //nt
+
+        QGroupBox *ntmirrorBox = new QGroupBox("NT Mirroring", dialog);
+        QVBoxLayout *ntmirrorLayout = new QVBoxLayout(ntmirrorBox);
+        QComboBox *ntmirrorComboBox = new QComboBox(ntmirrorBox);
+
+       // regionBox->setFixedSize(90, 90);
+        std::array<std::string, 5> ntmirrorStrs = {"Horizontal", "Vertical", "Screen A", "Screen B", "Fourscreen"};
+
+        for (int i = 0; i < ntmirrorStrs.size(); ++i) {
+            ntmirrorComboBox->addItem(QString::fromStdString(ntmirrorStrs[i]), i);
+        }
+
+        ntmirrorComboBox->setCurrentIndex((int)(ppu.Mirroring));
+
+        QComboBox::connect(ntmirrorComboBox, &QComboBox::currentIndexChanged, [&](int index) {
+            ppu.Mirroring = (MirrorMode)index;
+            DebugPrintLog("SETTINGS", "Set NT Mirroring to %d", index);
+        });
+
+        ntmirrorLayout->addWidget(ntmirrorComboBox);
+        ppuSettingsLayout->addWidget(ntmirrorBox);
 
         //palettes
         QGroupBox *paletteBox = new QGroupBox("Palette", dialog);
         QGridLayout *paletteLayout = new QGridLayout(paletteBox);
         PaletteButton* buttons[64];
+
+        paletteBox->setFixedHeight(400);
 
         auto updateAllButtonsColor = [&]() {
             for (int i = 0; i < 64; i++) {
@@ -468,11 +504,23 @@ int main(int argc, char *argv[]) {
         filterLayout->addWidget(filterComboBox);
         filterLayout->addStretch();
 
-        mainLayout->addWidget(settingsBox);
-        mainLayout->addWidget(regionBox);
-        mainLayout->addWidget(paletteBox);
-        mainLayout->addWidget(filterBox);
-        mainLayout->addStretch();
+        settingsBox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        ppuSettingsBox->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+        QVBoxLayout *leftLayout = new QVBoxLayout();
+        leftLayout->setAlignment(Qt::AlignTop);
+
+        leftLayout->addWidget(settingsBox);
+        leftLayout->addWidget(ppuSettingsBox);
+        leftLayout->addStretch();
+
+        mainLayout->addLayout(leftLayout, 0, 0);
+        mainLayout->addWidget(paletteBox, 0, 1);
+
+        settingsLayout->addWidget(regionBox, 2, 0);
+        settingsLayout->addWidget(filterBox, 2, 1);
+        dialog->setLayout(mainLayout);
+        //mainLayout->addStretch();
         dialog->exec();
     });
     QObject::connect(saveSaveStateAction, &QAction::triggered, [&]() {

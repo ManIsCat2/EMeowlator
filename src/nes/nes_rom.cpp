@@ -73,7 +73,7 @@ bool NesROM::LoadNES(const std::string &filename) {
     }
 
     std::filesystem::path Path(filename);
-    Name = Path.filename().string();
+    std::string romName = Path.filename().string();
 
     std::streamsize fsize = rom.tellg();
     rom.seekg(0, std::ios::beg);
@@ -145,6 +145,7 @@ bool NesROM::LoadNES(const std::string &filename) {
         return false;
     } else {
         if (mapper) { delete mapper; mapper = nullptr; }
+        Name = romName;
         std::memcpy(Header, romHeader, 16);
         hasBattery = romHasBattery;
         Mirroring = ppu.Mirroring = romMirroring;
