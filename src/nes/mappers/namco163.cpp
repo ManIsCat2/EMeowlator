@@ -13,7 +13,7 @@ void Namco163::reset() {
     highChrNtMode = false;
     irqCounter = 0;
     setPRGPages(3, -1);
-    updateWorkRamMapping();
+    updateWorkRam();
 }
 
 const char* Namco163::getName(void) {
@@ -22,7 +22,7 @@ const char* Namco163::getName(void) {
     return "Namco163";
 }
 
-void Namco163::updateWorkRamMapping() {
+void Namco163::updateWorkRam() {
     uint8_t *memory = globalROM.hasBattery ? SRAM : PRGRam;
     if (variant == Variant::NAMCO_163) {
 		bool WriteEnable = (writeProtect & 0x40) == 0x40;
@@ -91,7 +91,7 @@ void Namco163::cpuWrite(uint16_t addr, uint8_t value) {
         case 0xD800: {
             if (variant == NAMCO_175) {
                 writeProtect = value;
-                updateWorkRamMapping();
+                updateWorkRam();
             } else {
                 uint8_t bank = ((addr - 0xC000) >> 11) + 8;
 
@@ -127,7 +127,7 @@ void Namco163::cpuWrite(uint16_t addr, uint8_t value) {
 
         case 0xF800:
             writeProtect = value;
-            updateWorkRamMapping();
+            updateWorkRam();
             break;
     }
     MapperBase::cpuWrite(addr, value);

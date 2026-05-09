@@ -175,8 +175,8 @@ bool NesROM::LoadNES(const std::string &filename) {
         ppu.LoadCHRROM(&data[offset], CHRRomSize);
     }
     offset += CHRRomSize;
-    mapper->initialize();
     DebugPrintLog("ROM", "Loaded NES ROM '%s'", Name.c_str());
+    mapper->initialize();
     if (Version == HeaderVersion::NES2_0) {
         DebugPrintLog("ROM", "Detected NES2.0 Header with Submapper %u", SubMapperID)
     }

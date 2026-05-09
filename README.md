@@ -1,6 +1,6 @@
 # MeowNES
 
-MeowNES is a completely broken NES Emulator made by a Cat.
+MeowNES is a NES Emulator made by a Cat.
 
 Uses nes_ntsc for the NTSC Video Filter which I got from Mesen2, couldn't find the original source. It is modified to be used with MeowNES though.
 

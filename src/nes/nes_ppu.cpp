@@ -204,12 +204,19 @@ void PPU::RenderScreen(void) {
 }
 
 void PPU::Step() {
+    // this breaks everything??? idk why
     const bool isPal = /*globalROM.Region == ConsoleRegion::PAL*/ false;
-    const int preRenderLine = (isPal) ? 311 : 261;
-    const int totalScanlines = (isPal) ? 312 : 262;
+    const int preRenderLine = isPal ? 311 : 261;
+    const int totalScanlines = isPal ? 312 : 262;
 
-    if (Dot == 1 && ScanLine == 241)
-        Vblank = true;
+    if (Dot == 1 && ScanLine == 241) Vblank = true;
+    if (Dot == 0 && ScanLine == 241) {
+        if (vfilter->hasCustomBlit()) {
+            vfilter->blit();
+        } else {
+            blitPixels();
+        }
+    }
 
     if (Dot == 1 && ScanLine == preRenderLine) {
         Vblank = false;

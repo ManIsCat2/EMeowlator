@@ -564,11 +564,6 @@ int main(int argc, char *argv[]) {
             } else {
                 screen->image = *rawOutputImage;
             }
-            if (ppu.vfilter->hasCustomBlit()) {
-                ppu.vfilter->blit();
-            } else {
-                ppu.blitPixels();
-            }
             screen->update();
             rainbowHoverPhase += 0.002f;
             if (ppu.filtering == VideoFilter::NTSC) {

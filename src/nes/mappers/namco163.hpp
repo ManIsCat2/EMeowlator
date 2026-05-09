@@ -29,5 +29,5 @@ private:
     bool highChrNtMode;
     uint16_t irqCounter;
 
-    void updateWorkRamMapping();
+    void updateWorkRam();
 };
