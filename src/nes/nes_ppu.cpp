@@ -55,6 +55,7 @@ PPU::~PPU() {
     delete[] palIndexBuf;
     delete rawOutputImage;
     delete filteredOutputImage;
+    delete vfilter;
 }
 
 void PPU::reset(void) {

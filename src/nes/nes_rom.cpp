@@ -1,6 +1,13 @@
 #include "nes_rom.hpp"
 #include "../main.hpp"
 
+NesROM::NesROM() {
+}
+NesROM::~NesROM() {
+    delete mapper;
+    delete[] ROM;
+}
+
 MapperBase *NesROM::GetMapper(uint16_t id, uint16_t subId) {
     switch (id) {
         case 0: return new NROM();
@@ -139,8 +146,9 @@ bool NesROM::LoadNES(const std::string &filename) {
        // return false;
         romPRGSize = 0x400000; // 0x100 * 0x4000
     }
-        
-    if (!GetMapper(romMapperID, romSubMapperID)) { 
+
+    MapperBase *romMapperNew = GetMapper(romMapperID, romSubMapperID);
+    if (!romMapperNew) { 
         DebugPrintLog("ROM", "Unimplemented mapper: %u, failed to open ROM", romMapperID)
         return false;
     } else {
@@ -157,7 +165,7 @@ bool NesROM::LoadNES(const std::string &filename) {
         CHRRomSize = romCHRSize;
         PRGNumPages = romPRGNumPages;
         CHRNumPages = romCHRNumPages;
-        mapper = GetMapper(romMapperID, romSubMapperID);
+        mapper = romMapperNew;
     }
     mapper->subMapper = romSubMapperID;
 

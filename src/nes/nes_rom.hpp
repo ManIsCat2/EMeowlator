@@ -25,6 +25,8 @@ enum class ConsoleRegion {
 
 class NesROM {
 public:
+    NesROM();
+    ~NesROM();
     uint8_t Header[16];
     bool hasBattery = false;
     HeaderVersion Version = HeaderVersion::INES;
