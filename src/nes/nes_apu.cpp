@@ -252,7 +252,6 @@ void APU::clockDMC() {
     }
 
     dmc.shiftRegister >>= 1;
-
     dmc.bitsRemaining--;
 
     if (dmc.bitsRemaining == 0) {
@@ -319,7 +318,7 @@ void APU::step() {
         triangle.timer--;
     } else {
         triangle.timer = triangle.timerReload;
-        if (triangle.linearCounter > 0 && triangle.lengthCounter > 0 && triangle.timerReload > 2) {
+        if (triangle.linearCounter > 0 && triangle.lengthCounter > 0 && triangle.timerReload >= 2) {
             triangle.dutySeq = (triangle.dutySeq + 1) % 32;
         }
     }
@@ -339,13 +338,14 @@ void APU::step() {
         }
         if (noise.timer > 0) noise.timer--; else {
             noise.timer = noise.timerReload;
-            uint16_t shiftAmount = noise.mode ? 6 : 1;
-            uint16_t bit1 = noise.shiftRegister & 0x0001;
-            uint16_t bit2 = (noise.shiftRegister >> shiftAmount) & 0x0001;
-            noise.shiftRegister = (noise.shiftRegister >> 1) | ((bit1 ^ bit2) << 14);
+            uint16_t tap = noise.mode ? 6 : 1;
+            uint16_t feedback = (noise.shiftRegister & 1) ^ ((noise.shiftRegister >> tap) & 1);
+
+            noise.shiftRegister >>= 1;
+            noise.shiftRegister |= (feedback << 14);
         }
-        clockDMC();
     }
+    clockDMC();
 
     frameCounter++;
     if (frameMode == 0) { 
@@ -401,14 +401,15 @@ double APU::getOutputSample() {
     d  *= (dmcVolume      / 50.0) * (masterVolume / 50.0);
 
     double pulseOut = 0.0;
-    if ((p1 + p2) > 0.0) {
-        pulseOut = 95.88 / ((8128.0 / (p1 + p2)) + 100.0);
+    double pulseSum = p1 + p2;
+    if (pulseSum > 0.0) {
+        pulseOut = 95.52 / ((8128.0 / pulseSum) + 100.0);
     }
 
-    double tnd = (t / 8227.0) + (n / 12241.0) + (d / 22638.0);
+    double tndIndex = (3.0 * t) + (2.0 * n) + d;
     double tndOut = 0.0;
-    if (tnd > 0.0) {
-        tndOut = 159.79 / ((1.0 / tnd) + 100.0);
+    if (tndIndex > 0.0) {
+        tndOut = 163.67 / ((24329.0 / tndIndex) + 100.0);
     }
 
     return pulseOut + tndOut;

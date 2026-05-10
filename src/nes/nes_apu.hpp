@@ -93,8 +93,8 @@ private:
     PulseChannel pulse1;
     PulseChannel pulse2;
     TriangleChannel triangle;
-    NoiseChannel noise;       
-    DMCChannel dmc; 
+    NoiseChannel noise;
+    DMCChannel dmc;
 
     uint32_t clockCounter = 0;
     uint32_t frameCounter = 0;
