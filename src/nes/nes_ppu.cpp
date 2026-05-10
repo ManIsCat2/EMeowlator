@@ -46,8 +46,8 @@ uint32_t getRainbowColor() {
 PPU::PPU() {
     frameBuffer = new uint32_t[PPU_PIXEL_COUNT_NTSC];
     palIndexBuf = new uint8_t[PPU_PIXEL_COUNT];
-    rawOutputImage = new QImage((uint8_t*)(ppu.frameBuffer), NES_WIDTH, NES_HEIGHT, QImage::Format_RGB32);
-    filteredOutputImage = new QImage((uint8_t*)(ppu.frameBuffer), NES_NTSC_OUT_WIDTH(256), NES_HEIGHT, QImage::Format_RGB32);
+    rawOutputImage = new QImage((uint8_t*)(frameBuffer), NES_WIDTH, NES_HEIGHT, QImage::Format_RGB32);
+    filteredOutputImage = new QImage((uint8_t*)(frameBuffer), NES_NTSC_OUT_WIDTH(256), NES_HEIGHT, QImage::Format_RGB32);
 }
 
 PPU::~PPU() {

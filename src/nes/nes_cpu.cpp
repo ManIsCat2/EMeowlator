@@ -53,8 +53,8 @@ void CPU::run(uint32_t maxCycles) {
             ppu.Step();
             ppu.Step();
             ppu.Step();
+            if (ppu.dataBus != 0) ppu.decayDataBus();
         }
-        if (ppu.dataBus != 0) ppu.decayDataBus();
     }
 }
 
@@ -2052,10 +2052,12 @@ void CPU::write(uint16_t addr, uint8_t value) {
                 ppu.resetBusDecayTimers();
                 break;
 
-            case 4: // OAMDATA
-                ppu.dataBus = ppu.OAM[ppu.OAMAddr++] = value;
+            case 4: { // OAMDATA
+                uint8_t index = (ppu.OAMAddr++) & 0xff;
+                ppu.dataBus = ppu.OAM[index] = value;
                 ppu.resetBusDecayTimers();
                 break;
+            }
 
             case 5: // PPUSCROLL
                 if (!ppu.WriteLatch) {
