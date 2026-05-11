@@ -1323,16 +1323,6 @@ void CPU::execute(uint8_t opcode) {
             cycles += 2;
             //DEBUG_LOG2("CLC");
             break;
-        case 0x40: { // RTI
-            P = pop() | Flags::U;
-            P &= ~Flags::B;
-            uint8_t lo = pop();
-            uint8_t hi = pop();
-            PC = (hi << 8) | lo;
-            cycles += 6;
-            //DEBUG_LOG("RTI -> PC=0x%04X, SP=0x%02X\n", PC, SP);
-            break;
-        }
         
         case 0xEA: // NOP
             cycles += 2;
@@ -1902,14 +1892,29 @@ void CPU::execute(uint8_t opcode) {
             }
             push((PC >> 8) & 0xFF);
             push(PC & 0xFF);
-            push((doNMI ? (P & ~Flags::B) : (P)) | Flags::U | (doIRQ ? (P & 0xEF) : 0x30));
+
+            uint8_t pushedP = (doNMI || doIRQ) ? ((P & ~Flags::B) | Flags::U) : (P | Flags::B | Flags::U);
+            push(pushedP);
+
             P |= Flags::I;
-            uint8_t AddrLow = read(doNMI ? 0xFFFA : 0xFFFE);
-            uint8_t AddrHigh = read(doNMI ? 0xFFFB : 0xFFFF);
-            PC = ((AddrHigh*256)+AddrLow);
+
+            uint16_t vector = doNMI ? read16(0xFFFA) : read16(0xFFFE);
+            PC = vector;
+
             doNMI = false;
             doIRQ = false;
             cycles += 7;
+            break;
+        }
+
+        case 0x40: { // RTI
+            P = pop() | Flags::U;
+            P &= ~Flags::B;
+            uint8_t lo = pop();
+            uint8_t hi = pop();
+            PC = (hi << 8) | lo;
+            cycles += 6;
+            //DEBUG_LOG("RTI -> PC=0x%04X, SP=0x%02X\n", PC, SP);
             break;
         }
 
