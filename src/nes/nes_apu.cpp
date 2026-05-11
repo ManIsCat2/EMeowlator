@@ -21,11 +21,20 @@ const uint8_t TriTable[32] = {
     15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
 };
-const uint16_t NoiseTimerTable[16] = {
+const uint16_t NoiseTimerTableNTSC[16] = {
     4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068
 };
-const uint16_t DMCRateTable[16] = {
+const uint16_t NoiseTimerTablePAL[16] = {
+    4, 8, 14, 30, 60, 88, 118, 148, 188, 236, 354, 472, 708, 944, 1890, 3778
+};
+const uint16_t DMCRateTableNTSC[16] = {
     428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106, 84, 72, 54
+};
+const uint16_t DMCRateTablePAL[16] = {
+    398, 354, 316, 298,
+    276, 236, 210, 198,
+    176, 148, 132, 118,
+    98, 78, 66, 50
 };
 
 APU::APU() {}
@@ -78,17 +87,24 @@ void APU::write(uint16_t addr, uint8_t data) {
         case 0x400B: triangle.timerReload = (triangle.timerReload & 0x00FF) | ((data & 0x07) << 8); triangle.timer = triangle.timerReload; if (triangle.enable) triangle.lengthCounter = LengthTable[(data & 0xF8) >> 3]; triangle.linearReloadFlag = true; break;
 
         case 0x400C: noise.lengthHalt = (data & 0x20); noise.constantVolume = (data & 0x10); noise.volume = (data & 0x0F); break;
-        case 0x400E: noise.mode = (data & 0x80); noise.timerReload = NoiseTimerTable[data & 0x0F]; break;
+        case 0x400E: {
+            noise.mode = (data & 0x80);
+            uint16_t *noiseTimers = (uint16_t*)(globalROM.Region == ConsoleRegion::NTSC ? NoiseTimerTableNTSC : NoiseTimerTablePAL);
+            noise.timerReload = noiseTimers[data & 0x0F];
+            break;
+        }
         case 0x400F: if (noise.enable) noise.lengthCounter = LengthTable[(data & 0xF8) >> 3]; noise.envStart = true; break;
 
-        case 0x4010:
+        case 0x4010: {
             DMCIrqEnable = (data & 0x80) != 0;
             dmc.loop = (data & 0x40) != 0;
-            dmc.timerReload = DMCRateTable[data & 0x0F];
+            uint16_t *dmcRates = (uint16_t*)(globalROM.Region == ConsoleRegion::NTSC ? DMCRateTableNTSC : DMCRateTablePAL);
+            dmc.timerReload = dmcRates[data & 0x0F];
 
             if (!DMCIrqEnable)
                 DMCIrqPending = false;
             break;
+        }
 
         case 0x4011:
             dmc.outputLevel = data & 0x7F;
@@ -348,19 +364,94 @@ void APU::step() {
     clockDMC();
 
     frameCounter++;
-    if (frameMode == 0) { 
-        if (frameCounter == 7457)  { clockEnvelopes(); }
-        if (frameCounter == 14913) { clockEnvelopes(); clockPulse(); }
-        if (frameCounter == 22371) { clockEnvelopes(); }
-        if (frameCounter == 29828) { if (!IRQInhibit) IRQPending = true; }
-        if (frameCounter == 29829) { if (!IRQInhibit) IRQPending = true; clockEnvelopes(); clockPulse(); }
-        if (frameCounter == 29830) { if (!IRQInhibit) IRQPending = true; frameCounter = 0; }
-    } else { 
-        if (frameCounter == 7457)  { clockEnvelopes(); }
-        if (frameCounter == 14913) { clockEnvelopes(); clockPulse();}
-        if (frameCounter == 22371) { clockEnvelopes(); }
-        if (frameCounter == 37281) { clockEnvelopes(); clockPulse();}
-        if (frameCounter == 37282) { frameCounter = 0; }
+    if (globalROM.Region == ConsoleRegion::NTSC) {
+        if (frameMode == 0) { 
+            if (frameCounter == 7457)  { clockEnvelopes(); }
+            if (frameCounter == 14913) { clockEnvelopes(); clockPulse(); }
+            if (frameCounter == 22371) { clockEnvelopes(); }
+
+            if (frameCounter == 29828) {
+                if (!IRQInhibit) IRQPending = true;
+            }
+
+            if (frameCounter == 29829) {
+                if (!IRQInhibit) IRQPending = true;
+                clockEnvelopes();
+                clockPulse();
+            }
+
+            if (frameCounter == 29830) {
+                if (!IRQInhibit) IRQPending = true;
+                frameCounter = 0;
+            }
+        } else { 
+            if (frameCounter == 7457)  {
+                clockEnvelopes();
+            }
+
+            if (frameCounter == 14913) {
+                clockEnvelopes();
+                clockPulse();
+            }
+
+            if (frameCounter == 22371) {
+                clockEnvelopes();
+            }
+
+            if (frameCounter == 37281) {
+                clockEnvelopes();
+                clockPulse();
+            }
+
+            if (frameCounter == 37282) { 
+                frameCounter = 0;
+            }
+        }
+    } else {
+        if (frameMode == 0) {
+            if (frameCounter == 8313)  { clockEnvelopes(); }
+            if (frameCounter == 16627) { clockEnvelopes(); clockPulse(); }
+            if (frameCounter == 24939) { clockEnvelopes(); }
+
+            if (frameCounter == 33252) {
+                if (!IRQInhibit) IRQPending = true;
+            }
+
+            if (frameCounter == 33253) {
+                if (!IRQInhibit) IRQPending = true;
+
+                clockEnvelopes();
+                clockPulse();
+            }
+
+            if (frameCounter == 33254) {
+                if (!IRQInhibit) IRQPending = true;
+
+                frameCounter = 0;
+            }
+        } else {
+            if (frameCounter == 8313)  {
+                clockEnvelopes();
+            }
+
+            if (frameCounter == 16627) {
+                clockEnvelopes();
+                clockPulse();
+            }
+
+            if (frameCounter == 24939) {
+                clockEnvelopes();
+            }
+
+            if (frameCounter == 41565) {
+                clockEnvelopes();
+                clockPulse();
+            }
+
+            if (frameCounter == 41566) {
+                frameCounter = 0;
+            }
+        }
     }
 
     clockCounter++;

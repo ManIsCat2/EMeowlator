@@ -212,7 +212,6 @@ void PPU::RenderScreen() {
 }
 
 void PPU::Step() {
-    // this breaks everything??? idk why
     const bool isPal = /*globalROM.Region == ConsoleRegion::PAL*/ false;
     const int preRenderLine = isPal ? 311 : 261;
     const int totalScanlines = isPal ? 312 : 262;
