@@ -30,6 +30,7 @@ jobs:
           install: >
             make
             mingw-w64-${{ matrix.arch.env }}-gcc
+            mingw-w64-${{ matrix.arch.env }}-clang
             mingw-w64-${{ matrix.arch.env }}-cmake
             mingw-w64-${{ matrix.arch.env }}-qt6
             mingw-w64-${{ matrix.arch.env }}-pkg-config
