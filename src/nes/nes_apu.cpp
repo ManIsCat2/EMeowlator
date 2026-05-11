@@ -69,7 +69,7 @@ void APU::write(uint16_t addr, uint8_t data) {
             pulse1.sweepReload = true;
             break;
         case 0x4002: pulse1.timerReload = (pulse1.timerReload & 0xFF00) | data; break;
-        case 0x4003: pulse1.timerReload = (pulse1.timerReload & 0x00FF) | ((data & 0x07) << 8); pulse1.timer = pulse1.timerReload; if (pulse1.enable) pulse1.lengthCounter = LengthTable[(data & 0xF8) >> 3]; pulse1.dutySeq = 0; pulse1.envStart = true; break;
+        case 0x4003: pulse1.timerReload = (pulse1.timerReload & 0x00FF) | ((data & 0x07) << 8); pulse1.timer = pulse1.timerReload + 1; if (pulse1.enable) pulse1.lengthCounter = LengthTable[(data & 0xF8) >> 3]; pulse1.dutySeq = 0; pulse1.envStart = true; break;
 
         case 0x4004: pulse2.duty = (data & 0xC0) >> 6; pulse2.lengthHalt = (data & 0x20); pulse2.constantVolume = (data & 0x10); pulse2.volume = (data & 0x0F); break;
         case 0x4005:
@@ -80,11 +80,11 @@ void APU::write(uint16_t addr, uint8_t data) {
             pulse2.sweepReload = true;
             break;
         case 0x4006: pulse2.timerReload = (pulse2.timerReload & 0xFF00) | data; break;
-        case 0x4007: pulse2.timerReload = (pulse2.timerReload & 0x00FF) | ((data & 0x07) << 8); pulse2.timer = pulse2.timerReload; if (pulse2.enable) pulse2.lengthCounter = LengthTable[(data & 0xF8) >> 3]; pulse2.dutySeq = 0; pulse2.envStart = true; break;
+        case 0x4007: pulse2.timerReload = (pulse2.timerReload & 0x00FF) | ((data & 0x07) << 8); pulse2.timer = pulse2.timerReload + 1; if (pulse2.enable) pulse2.lengthCounter = LengthTable[(data & 0xF8) >> 3]; pulse2.dutySeq = 0; pulse2.envStart = true; break;
 
         case 0x4008: triangle.lengthHalt = (data & 0x80); triangle.linearReload = data & 0x7F; break;
         case 0x400A: triangle.timerReload = (triangle.timerReload & 0xFF00) | data; break;
-        case 0x400B: triangle.timerReload = (triangle.timerReload & 0x00FF) | ((data & 0x07) << 8); triangle.timer = triangle.timerReload; if (triangle.enable) triangle.lengthCounter = LengthTable[(data & 0xF8) >> 3]; triangle.linearReloadFlag = true; break;
+        case 0x400B: triangle.timerReload = (triangle.timerReload & 0x00FF) | ((data & 0x07) << 8); triangle.timer = triangle.timerReload + 1; if (triangle.enable) triangle.lengthCounter = LengthTable[(data & 0xF8) >> 3]; triangle.linearReloadFlag = true; break;
 
         case 0x400C: noise.lengthHalt = (data & 0x20); noise.constantVolume = (data & 0x10); noise.volume = (data & 0x0F); break;
         case 0x400E: {
@@ -119,16 +119,16 @@ void APU::write(uint16_t addr, uint8_t data) {
             break;
 
         case 0x4015:
-            pulse1.enable = data & 0x01;
+            pulse1.enable = (data & 0x01) != 0;
             if (!pulse1.enable) pulse1.lengthCounter = 0;
 
-            pulse2.enable = data & 0x02;
+            pulse2.enable = (data & 0x02) != 0;
             if (!pulse2.enable) pulse2.lengthCounter = 0;
 
-            triangle.enable = data & 0x04;
+            triangle.enable = (data & 0x04) != 0;
             if (!triangle.enable) triangle.lengthCounter = 0;
 
-            noise.enable = data & 0x08;
+            noise.enable = (data & 0x08) != 0;
             if (!noise.enable) noise.lengthCounter = 0;
 
             if ((data & 0x10) == 0) {
@@ -181,6 +181,9 @@ uint8_t APU::read(uint16_t addr) {
 bool APU::pulseSweepMuted(PulseChannel &p, bool isPulse1) {
     if (p.timerReload < 8)
         return true;
+
+    if (!p.sweepEnable || p.sweepShift == 0)
+        return false;
 
     uint16_t change = p.timerReload >> p.sweepShift;
     uint16_t target = p.timerReload;
@@ -340,17 +343,17 @@ void APU::step() {
     }
 
     if (clockCounter % 2 == 0) {
-        if (pulse1.timer == 0) {
+        if (pulse1.timer > 0) {
+            pulse1.timer--;
+        } else {
             pulse1.timer = pulse1.timerReload;
             pulse1.dutySeq = (pulse1.dutySeq + 1) & 7;
-        } else {
-            pulse1.timer--;
         }
-        if (pulse2.timer == 0) {
+        if (pulse2.timer > 0) {
+            pulse2.timer--;
+        } else {
             pulse2.timer = pulse2.timerReload;
             pulse2.dutySeq = (pulse2.dutySeq + 1) & 7;
-        } else {
-            pulse2.timer--;
         }
         if (noise.timer > 0) noise.timer--; else {
             noise.timer = noise.timerReload;

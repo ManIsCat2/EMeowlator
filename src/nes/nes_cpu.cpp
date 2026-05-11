@@ -34,9 +34,9 @@ void CPU::run(uint32_t maxCycles) {
             opcode = 0x00;
             doNMI = true;
         } else if ((IRQPending || apu.DMCIrqPending || apu.IRQPending) && !(P & Flags::I)) {
-            IRQPending = false;
-            apu.DMCIrqPending = false;
-            apu.IRQPending = false;
+           // IRQPending = false;
+           // apu.DMCIrqPending = false;
+           // apu.IRQPending = false;
             opcode = 0x00;
             doIRQ = true;
         } else {
@@ -2004,12 +2004,18 @@ uint8_t CPU::read(uint16_t addr) {
         case 0x4015: return apu.read(addr);
         case 0x4016:
         case 0x4017: {
-            int controllerId = (addr == 0x4016 ? 0 : 1);
-            uint8_t ret = controllers[controllerId].shift & 1;
-            if (!controllers[controllerId].strobe) {
-                controllers[controllerId].shift >>= 1;
+            int id = (addr == 0x4016 ? 0 : 1);
+            uint8_t ret;
+
+            if (controllers[id].strobe) {
+                ret = controllers[id].state & 1;
+            } else {
+                ret = controllers[id].shift & 1;
+                controllers[id].shift >>= 1;
+                controllers[id].shift |= 0x80; 
             }
-            return ret | (dataBus & 0xE0);
+
+            return (ret & 0x01) | (dataBus & 0xE0);
         }
     }
 
@@ -2126,10 +2132,13 @@ void CPU::write(uint16_t addr, uint8_t value) {
                 break;
             }
             case 0x4016: {
-                controllers[0].strobe = value & 1;
-                if (controllers[0].strobe) {
-                    controllers[0].shift = controllers[0].state;
-                    controllers[1].shift = controllers[1].state;
+                bool strobeActive = (value & 1);
+                
+                for (int i = 0; i < 2; i++) {
+                    controllers[i].strobe = strobeActive;
+                    if (controllers[i].strobe) {
+                        controllers[i].shift = controllers[i].state;
+                    }
                 }
                 break;
             }
