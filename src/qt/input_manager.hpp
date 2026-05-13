@@ -8,7 +8,6 @@
 #include "nes.hpp"
 #include "../nes/nes_controller.hpp"
 
-extern Keybind nesKeyBinds[];
 
 class InputManager : public QObject {
 public:
