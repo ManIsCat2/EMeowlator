@@ -39,7 +39,7 @@ jobs:
 
       - name: Build
         run: |
-          make -j12 && make copydll
+          make -j12
           
       - name: Upload
         uses: actions/upload-artifact@v4

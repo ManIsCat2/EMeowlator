@@ -28,16 +28,15 @@ RESET := $(shell printf "\033[0m")
 SOURCES := $(wildcard $(addsuffix /*.cpp,$(DIRS)))
 OBJECTS := $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(SOURCES))
 
-all: $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)$(EXEEXT)
+ifeq ($(OS),Windows_NT)
+all: $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)$(EXEEXT) deploydll
+else
+all: $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)
+endif
 
 $(BUILD_DIR)/$(TARGET)$(EXEEXT): $(OBJECTS)
 	@echo "$(BLUE)Linking object files...$(RESET)"
 	@$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
-
-	@if [ "$(OS)" = "Windows_NT" ]; then \
-		echo "$(BLUE)Running windeployqt to $(BUILD_DIR)/...$(RESET)"; \
-		$(WINDEPLOYQT) --release --compiler-runtime --dir $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)$(EXEEXT); \
-	fi
 	@echo "$(GREEN)Build complete!$(RESET)"
 
 $(BUILD_DIR)/%.o: %.cpp
@@ -52,7 +51,11 @@ clean:
 	@echo "$(BLUE)Cleaning build directory...$(RESET)"
 	@rm -rf $(BUILD_DIR)
 
-copydll: # only for windows!
+deploydll: # only for windows!
+	@if [ "$(OS)" = "Windows_NT" ]; then \
+		echo "$(BLUE)Running windeployqt to $(BUILD_DIR)/...$(RESET)"; \
+		$(WINDEPLOYQT) --release --compiler-runtime --dir $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)$(EXEEXT); \
+	fi
 	@echo "$(BLUE)Copying MinGW runtime dependencies...$(RESET)"
 	@ntldd -R "$(BUILD_DIR)/$(TARGET)$(EXEEXT)" | \
 	grep -i "mingw64" | \
@@ -66,4 +69,4 @@ copydll: # only for windows!
 		cp -u "$$dll" "$(BUILD_DIR)/"; \
 	done
 
-.PHONY: copydll all clean
+.PHONY: all clean
