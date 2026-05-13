@@ -19,32 +19,6 @@
 #define makeDirectory(dir) mkdir(dir, 0777)
 #endif
 
-Keybind nesKeyBinds[] = {
-    {"A", Qt::Key_J},
-    {"B", Qt::Key_K},
-
-    {"Up", Qt::Key_W},
-    {"Down", Qt::Key_S},
-    {"Left", Qt::Key_A},
-    {"Right", Qt::Key_D},
-
-    {"Start", Qt::Key_Return},
-    {"Select", Qt::Key_Shift}
-};
-
-Keybind nesKeyBindsDefault[] = {
-    {"A", Qt::Key_J},
-    {"B", Qt::Key_K},
-
-    {"Up", Qt::Key_W},
-    {"Down", Qt::Key_S},
-    {"Left", Qt::Key_A},
-    {"Right", Qt::Key_D},
-
-    {"Start", Qt::Key_Return},
-    {"Select", Qt::Key_Shift}
-};
-
 NesROM globalROM;
 
 bool romIsLoaded = false;

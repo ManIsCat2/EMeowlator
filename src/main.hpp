@@ -43,11 +43,6 @@ extern NesROM globalROM;
 extern void *globalQTWin;
 extern int hoveredPaletteIndex;
 
-struct Keybind {
-    const char* name;
-    Qt::Key key;
-};
-extern Keybind nesKeyBinds[];
 extern QImage *rawOutputImage;
 extern QImage *filteredOutputImage;
 //extern QTimer cpuTimer;

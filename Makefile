@@ -5,7 +5,7 @@ CXX := clang++
 CXXFLAGS := -Wall -Wextra -Wno-parentheses -O3 -march=native -fno-plt -fstrict-aliasing -funroll-loops -Iinclude $(shell pkg-config --cflags Qt6Widgets) #-fsanitize=address -fsanitize=undefined
 LDFLAGS := -lSDL2 $(shell pkg-config --libs Qt6Widgets) #-fsanitize=address -fsanitize=undefined
 ifeq ($(OS),Windows_NT)
-	LDFLAGS += -lmingw32 -lSDL2main -lSDL2
+	LDFLAGS += -lSDL2main -lSDL2 -static
 endif
 
 BLUE := $(shell printf "\033[34m")
