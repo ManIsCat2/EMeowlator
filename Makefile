@@ -36,6 +36,22 @@ $(BUILD_DIR)/$(TARGET)$(EXEEXT): $(OBJECTS)
 		cp /mingw64/bin/SDL2.dll $(BUILD_DIR)/; \
 		echo "$(BLUE)Running windeployqt to $(BUILD_DIR)/...$(RESET)"; \
 		windeployqt --release --compiler-runtime --dir $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)$(EXEEXT); \
+		echo "$(BLUE)Copying MINGW DLLs...$(RESET)"; \
+		cp /mingw64/bin/libstdc++-6.dll $(DEPLOY_DIR)/; \
+		cp /mingw64/bin/libgcc_s_seh-1.dll $(DEPLOY_DIR)/; \
+		cp /mingw64/bin/libwinpthread-1.dll $(DEPLOY_DIR)/; \
+		cp /mingw64/bin/libb2-1.dll $(DEPLOY_DIR)/; \
+		cp /mingw64/bin/libdouble-conversion.dll $(DEPLOY_DIR)/; \
+		cp /mingw64/bin/libicuin78.dll $(DEPLOY_DIR)/; \
+		cp /mingw64/bin/libicuuc78.dll $(DEPLOY_DIR)/; \
+		cp /mingw64/bin/libicudt78.dll $(DEPLOY_DIR)/; \
+		cp /mingw64/bin/libpcre2-16-0.dll $(DEPLOY_DIR)/; \
+		cp /mingw64/bin/zlib1.dll $(DEPLOY_DIR)/; \
+		cp /mingw64/bin/libzstd.dll $(DEPLOY_DIR)/; \
+		cp /mingw64/bin/libfreetype-6.dll $(DEPLOY_DIR)/; \
+		cp /mingw64/bin/libharfbuzz-0.dll $(DEPLOY_DIR)/; \
+		cp /mingw64/bin/libmd4c.dll $(DEPLOY_DIR)/; \
+		cp /mingw64/bin/libpng16-16.dll $(DEPLOY_DIR)/; \
 		echo "$(GREEN)Windows deployment to $(BUILD_DIR)/ complete!$(RESET)"; \
 	fi
 
