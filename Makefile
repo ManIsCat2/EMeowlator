@@ -4,7 +4,7 @@ BUILD_DIR := build
 
 ifeq ($(OS),Windows_NT)
     CXX := g++
-    CXXFLAGS := -Wall -Wextra -Wno-parentheses -O3 -march=native -fstrict-aliasing -funroll-loops -Iinclude -static-libstdc++ -static-libgcc -static-libwinpthread
+    CXXFLAGS := -Wall -Wextra -Wno-parentheses -O3 -march=native -fstrict-aliasing -funroll-loops -Iinclude -static-libstdc++ -static-libgcc
     LDFLAGS := -lSDL2main -lSDL2
     EXEEXT := .exe
 else
