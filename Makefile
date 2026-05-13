@@ -35,7 +35,7 @@ $(BUILD_DIR)/$(TARGET)$(EXEEXT): $(OBJECTS)
 		echo "$(BLUE)Copying SDL2.dll to $(BUILD_DIR)/...$(RESET)"; \
 		cp /mingw64/bin/SDL2.dll $(BUILD_DIR)/; \
 		echo "$(BLUE)Running windeployqt to $(BUILD_DIR)/...$(RESET)"; \
-		windeployqt --release --dir $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)$(EXEEXT); \
+		windeployqt --release --compiler-runtime --dir $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)$(EXEEXT); \
 		echo "$(GREEN)Windows deployment to $(BUILD_DIR)/ complete!$(RESET)"; \
 	fi
 
