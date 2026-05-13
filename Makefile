@@ -6,6 +6,7 @@ ifeq ($(OS),Windows_NT)
     CXX := g++
     CXXFLAGS := -Wall -Wextra -Wno-parentheses -O3 -march=native -fstrict-aliasing -funroll-loops -Iinclude -static-libstdc++ -static-libgcc
     EXEEXT := .exe
+	WINDEPLOYQT := $(shell command -v windeployqt6 2>/dev/null || command -v windeployqt 2>/dev/null)
 else
     CXX := clang++
     CXXFLAGS := -Wall -Wextra -Wno-parentheses -O3 -march=native -fno-plt -fstrict-aliasing -funroll-loops -Iinclude
@@ -34,8 +35,12 @@ $(BUILD_DIR)/$(TARGET)$(EXEEXT): $(OBJECTS)
 	@$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
 
 	@if [ "$(OS)" = "Windows_NT" ]; then \
-		echo "$(BLUE)Running windeployqt to $(BUILD_DIR)/...$(RESET)"; \
-		windeployqt --release --compiler-runtime --dir $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)$(EXEEXT); \
+		if [ -n "$(WINDEPLOYQT)" ]; then \
+			echo "$(BLUE)Running Qt deploy tool: $(WINDEPLOYQT)$(RESET)"; \
+			"$(WINDEPLOYQT)" --release --compiler-runtime --dir $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)$(EXEEXT); \
+		else \
+			echo "$(BLUE)No windeployqt found, skipping Qt deployment$(RESET)"; \
+		fi
 	fi
 	@echo "$(GREEN)Build complete!$(RESET)"
 
