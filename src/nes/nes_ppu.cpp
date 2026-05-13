@@ -114,7 +114,7 @@ void PPU::RenderScreen() {
     if ((uint32_t)(Dot - NES_WIDTH) <= 63) return;
 
     bool renderBG = mask.renderBackground;
-    bool renderSPR = mask.renderSprites && !DisableSprites;
+    bool renderSPR = mask.renderSprites;
 
     if (Dot < NES_WIDTH) {
         uint8_t bgColor = 0;
@@ -146,7 +146,7 @@ void PPU::RenderScreen() {
                     uint16_t spriteAddress = (control.use8x16Sprites ? spriteTile % 0x02 << 0x0C | spriteTile << 4 & -32 | sy * 0x02 & 0x10 : (control.spritePatternTable) << 0x09 | spriteTile << 0x04) | sy & 0x07;
                     uint16_t spriteColor = globalROM.mapper->readCHR(spriteAddress + 8) >> sx << 0x01 & 0x02 | globalROM.mapper->readCHR(spriteAddress) >> sx & 0x01;
                     if (spriteColor) {
-                        if (!(sprite[2] & 0x20 && bgColor)) {
+                        if (!(sprite[2] & 0x20 && bgColor) && !DisableSprites) {
                             finalColor = spriteColor;
                             finalPalette = 0x10 | sprite[2] * 0x04 & 0x0C;
                         }
