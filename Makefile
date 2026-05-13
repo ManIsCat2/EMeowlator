@@ -35,12 +35,8 @@ $(BUILD_DIR)/$(TARGET)$(EXEEXT): $(OBJECTS)
 	@$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
 
 	@if [ "$(OS)" = "Windows_NT" ]; then \
-		if [ -n "$(WINDEPLOYQT)" ]; then \
-			echo "$(BLUE)Running Qt deploy tool: $(WINDEPLOYQT)$(RESET)"; \
-			"$(WINDEPLOYQT)" --release --compiler-runtime --dir $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)$(EXEEXT); \
-		else \
-			echo "$(BLUE)No windeployqt found, skipping Qt deployment$(RESET)"; \
-		fi
+		echo "$(BLUE)Running windeployqt to $(BUILD_DIR)/...$(RESET)"; \
+		$(WINDEPLOYQT) --release --compiler-runtime --dir $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)$(EXEEXT); \
 	fi
 	@echo "$(GREEN)Build complete!$(RESET)"
 
