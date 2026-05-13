@@ -5,17 +5,17 @@ BUILD_DIR := build
 ifeq ($(OS),Windows_NT)
     CXX := g++
     CXXFLAGS := -Wall -Wextra -Wno-parentheses -O3 -march=native -fstrict-aliasing -funroll-loops -Iinclude -static-libstdc++ -static-libgcc
-    LDFLAGS := -lSDL2 -lSDL2main
+    LDFLAGS :=
     EXEEXT := .exe
 else
     CXX := clang++
     CXXFLAGS := -Wall -Wextra -Wno-parentheses -O3 -march=native -fno-plt -fstrict-aliasing -funroll-loops -Iinclude
-    LDFLAGS := -lSDL2
+    LDFLAGS :=
     EXEEXT :=
 endif
 
-CXXFLAGS += $(shell pkg-config --cflags Qt6Widgets 2>/dev/null || echo "")
-LDFLAGS += $(shell pkg-config --libs Qt6Widgets 2>/dev/null || echo "")
+CXXFLAGS += $(shell pkg-config --cflags Qt6Widgets sdl2)
+LDFLAGS += $(shell pkg-config --libs Qt6Widgets sdl2)
 
 BLUE := $(shell printf "\033[34m")
 GREEN := $(shell printf "\033[32m")
