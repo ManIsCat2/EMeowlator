@@ -51,7 +51,7 @@ clean:
 	@echo "$(BLUE)Cleaning build directory...$(RESET)"
 	@rm -rf $(BUILD_DIR)
 
-deploydll: # only for windows!
+deploydll: $(BUILD_DIR)/$(TARGET)$(EXEEXT) # only for windows!
 	@if [ "$(OS)" = "Windows_NT" ]; then \
 		echo "$(BLUE)Running windeployqt to $(BUILD_DIR)/...$(RESET)"; \
 		$(WINDEPLOYQT) --release --compiler-runtime --dir $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)$(EXEEXT); \
