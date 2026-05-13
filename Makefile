@@ -52,7 +52,7 @@ clean:
 	@rm -rf $(BUILD_DIR)
 
 copydll: # only for windows!
-	@echo "$(BLUE)Copying ALL MinGW runtime dependencies...$(RESET)"
+	@echo "$(BLUE)Copying MinGW runtime dependencies...$(RESET)"
 	@ntldd -R "$(BUILD_DIR)/$(TARGET)$(EXEEXT)" | \
 	grep -i "mingw64" | \
 	sed -E 's/.*=> //g' | \
