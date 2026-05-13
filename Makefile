@@ -32,8 +32,6 @@ $(BUILD_DIR)/$(TARGET)$(EXEEXT): $(OBJECTS)
 	@$(CXX) $(OBJECTS) -o $@ $(LDFLAGS)
 	@echo "$(BLUE)Built $(TARGET)!$(RESET)"
 	@if [ "$(OS)" = "Windows_NT" ]; then \
-		echo "$(BLUE)Copying SDL2.dll to $(BUILD_DIR)/...$(RESET)"; \
-		cp /mingw64/bin/SDL2.dll $(BUILD_DIR)/; \
 		echo "$(BLUE)Running windeployqt to $(BUILD_DIR)/...$(RESET)"; \
 		windeployqt --release --compiler-runtime --dir $(BUILD_DIR) $(BUILD_DIR)/$(TARGET)$(EXEEXT); \
 		echo "$(BLUE)Copying MINGW DLLs...$(RESET)"; \
