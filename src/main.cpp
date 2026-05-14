@@ -507,7 +507,7 @@ int main(int argc, char *argv[]) {
 
         if (!file.isEmpty()) {
             SaveStateFile savestate;
-            savestate.WriteSaveStateToFile(file.toStdString().c_str());
+            savestate.Write(file.toStdString().c_str());
         }
     });
     QObject::connect(loadSaveStateAction, &QAction::triggered, [&]() {
@@ -520,7 +520,7 @@ int main(int argc, char *argv[]) {
 
         if (!file.isEmpty()) {
             SaveStateFile savestate;
-            savestate.LoadSaveStateFromFile(file.toStdString().c_str());
+            savestate.Load(file.toStdString().c_str());
         }
     });
     QObject::connect(romInfoAction, &QAction::triggered, [&]() {

@@ -5,12 +5,14 @@
 #include <string>
 #include <stdint.h>
 
+#define NYA_SIGNATURE 0x7E61796E
+
 class SaveStateFile {
 public:
-    FILE *File;
-    int32_t FileSize = 0;
-    uint8_t *Data;
-    int32_t Offset = 0;
+    FILE *File = nullptr;
+    uint32_t FileSize = 0;
+    uint8_t *Data = nullptr;
+    uint32_t Offset = 0;
     bool ReadOnly = true;
 
     void OpenFileR(const char *Name);
@@ -20,7 +22,7 @@ public:
     T ReadBytes() {
         T Buf{};
         constexpr size_t RealSize = sizeof(T);
-        if ((int32_t)(Offset + RealSize) > FileSize) return Buf;
+        if ((uint32_t)(Offset + RealSize) > FileSize) return Buf;
         memcpy(&Buf, Data + Offset, RealSize);
         Offset += RealSize;
         return Buf;
@@ -29,7 +31,7 @@ public:
     template <typename T>
     T *ReadBytesPtr(T *Buf, uint32_t Len) {
         size_t RealSize = sizeof(T) * Len;
-        if ((int32_t)(Offset + RealSize) > FileSize) return Buf;
+        if ((uint32_t)(Offset + RealSize) > FileSize) return Buf;
         memcpy(Buf, Data + Offset, RealSize);
         Offset += RealSize;
         return Buf;
@@ -48,6 +50,6 @@ public:
     }
 
     void CloseFile(void);
-    void WriteSaveStateToFile(const char *FileName);
-    void LoadSaveStateFromFile(const char *FileName);
+    void Write(const char *FileName);
+    void Load(const char *FileName);
 };

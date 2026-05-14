@@ -88,8 +88,6 @@ public:
     float noiseVolume = 50.0f;
     float dmcVolume = 50.0f;
     float masterVolume = 50.0f;
-    double getOutputSample();
-private:
     PulseChannel pulse1;
     PulseChannel pulse2;
     TriangleChannel triangle;
@@ -103,7 +101,8 @@ private:
     
     int frameCounterResetDelay = 0;
     uint8_t delayedFrameMode = 0;
-    
+    double getOutputSample();
+private:
     bool pulseSweepMuted(PulseChannel &p, bool isPulse1);
     void clockSweep(PulseChannel &p, bool isPulse1);
     void clockEnvelopes();
