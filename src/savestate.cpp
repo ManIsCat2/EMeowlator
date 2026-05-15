@@ -85,7 +85,6 @@ void SaveStateFile::Write(const char *FileName) {
     WriteBytes<bool>(ppu.control.enableNMI);
     WriteBytes<uint8_t>(ppu.control.combined);
 
-    WriteBytes<bool>(ppu.DisableSprites);
     WriteBytes<uint8_t>(ppu.scrollFineX);
     WriteBytes<uint8_t>(ppu.patternTableLow);
     WriteBytes<uint8_t>(ppu.patternTableHigh);
@@ -181,8 +180,7 @@ void SaveStateFile::Write(const char *FileName) {
 void SaveStateFile::Load(const char *FileName) {
     OpenFileR(FileName);
 
-    uint32_t detectedSig = 0;
-    detectedSig = ReadBytes<uint32_t>();
+    uint32_t detectedSig = ReadBytes<uint32_t>();
     if (detectedSig != NYA_SIGNATURE) {
         DebugPrintLog("SAVESTATE", "File has invalid MeowNES Savestate header");
         QMessageBox::critical((QMainWindow*)globalQTWin, "Error", "File has invalid MeowNES Savestate header");
@@ -248,7 +246,7 @@ void SaveStateFile::Load(const char *FileName) {
     ppu.shiftAttrLow       = ReadBytes<uint16_t>();
     ppu.attributeByte      = ReadBytes<uint16_t>();
 
-    /*apu.IRQPending       = ReadBytes<bool>();
+    apu.IRQPending       = ReadBytes<bool>();
     apu.DMCIrqPending    = ReadBytes<bool>();
     apu.DMCIrqEnable     = ReadBytes<bool>();
     apu.IRQInhibit       = ReadBytes<bool>();
@@ -325,7 +323,7 @@ void SaveStateFile::Load(const char *FileName) {
     apu.dmc.sampleBuffer         = ReadBytes<uint8_t>();
     apu.dmc.sampleBufferEmpty    = ReadBytes<bool>();
     apu.dmc.outputLevel          = ReadBytes<uint8_t>();
-    apu.dmc.silence              = ReadBytes<bool>();*/
+    apu.dmc.silence              = ReadBytes<bool>();
 
     DebugPrintLog("SAVESTATE", "Loaded Savestate '%s'", FileName);
     CloseFile();

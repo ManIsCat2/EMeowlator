@@ -1,5 +1,7 @@
 #pragma once
+
 #include "../nes_ppu.hpp"
+#include "../../savestate.hpp"
 #include <stdint.h>
 #include <string>
 
@@ -48,6 +50,8 @@ public:
 
     virtual void clockCPU(void) {}
     virtual void clockPPU(void) {}
+    virtual void saveState(void) {}
+    virtual void loadState(void) {}
 
     void setCHRPages(uint16_t page, uint16_t val, enum BankSize size=BANK_1K);
     void setPRGPages(uint16_t page, uint16_t val, enum BankSize size=BANK_1K);

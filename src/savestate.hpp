@@ -1,10 +1,11 @@
 #pragma once
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <string>
-#include <stdint.h>
 
+// savestate header, "nya~"
 #define NYA_SIGNATURE 0x7E61796E
 
 class SaveStateFile {
