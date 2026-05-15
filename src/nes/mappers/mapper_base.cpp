@@ -52,6 +52,14 @@ void MapperBase::setPRGPages(uint16_t page, uint16_t val, enum BankSize size) {
             setPRGPages(page * 2, val, BANK_4K);
             setPRGPages(page * 2 + 1, val + 4, BANK_4K);
             break;
+        case BANK_16K:
+            setPRGPages(page * 2, val, BANK_8K);
+            setPRGPages(page * 2 + 1, val + 8, BANK_8K);
+            break;
+        case BANK_32K:
+            setPRGPages(page * 2, val, BANK_16K);
+            setPRGPages(page * 2 + 1, val + 16, BANK_16K);
+            break;
     }
 }
 

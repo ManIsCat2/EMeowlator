@@ -18,3 +18,40 @@ Supported mappers:
 - SunSoft FME-7 (Mapper 69)
 - SL12 (?) (Mapper 116)
 - J.Y. Company ASIC (Mapper 90, 209 and 211) (WIP)
+
+# Building
+
+## Step 1: Install Dependencies
+
+### Ubuntu / Debian
+```bash
+sudo apt install qt6-base-dev libsdl2-dev build-essential clang
+```
+
+### Arch Linux
+```bash
+sudo pacman -S qt6-base sdl2 base-devel clang
+```
+
+### Fedora
+```bash
+sudo dnf install qt6-qtbase-devel SDL2-devel make clang
+```
+
+### Windows (MinGW)
+```bash
+pacman -S mingw-w64-x86_64-SDL2 mingw-w64-x86_64-qt6 mingw-w64-x86_64-toolchain
+```
+
+## Step 2: Clone the Repository
+```bash
+git clone https://github.com/ManIsCat2/MeowNES
+```
+
+## Step 3: Compile
+```bash
+cd path/to/MeowNES
+make -j$(nproc)
+```
+
+The built executable will be located in the `build/` folder inside MeowNES.

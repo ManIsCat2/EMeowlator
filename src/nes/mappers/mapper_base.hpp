@@ -9,7 +9,9 @@ public:
         BANK_1K,
         BANK_2K,
         BANK_4K,
-        BANK_8K
+        BANK_8K,
+        BANK_16K,
+        BANK_32K,
     };
     struct MemPage {
         uint8_t *ptr = nullptr;
