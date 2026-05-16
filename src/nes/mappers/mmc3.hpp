@@ -9,6 +9,34 @@ public:
     void cpuWrite(uint16_t addr, uint8_t value) override;
     const char *getName(void) override;
     void reset() override;
+    
+    void saveState(SaveStateFile &s) override {
+        s.WriteBytes<uint8_t>(BankSelect);
+        s.WriteBytesPtr<uint8_t>(BankRegisters, 8);
+
+        s.WriteBytes<uint8_t>(PrgMode);
+        s.WriteBytes<uint8_t>(ChrMode);
+
+        s.WriteBytes<uint8_t>(IRQReload);
+        s.WriteBytes<uint8_t>(IRQCounter);
+        s.WriteBytes<bool>(IRQEnabled);
+        s.WriteBytes<bool>(LastA12);
+    }
+    void loadState(SaveStateFile &s) override {
+        BankSelect = s.ReadBytes<uint8_t>();
+        s.ReadBytesPtr<uint8_t>(BankRegisters, 8);
+
+        PrgMode = s.ReadBytes<uint8_t>();
+        ChrMode = s.ReadBytes<uint8_t>();
+
+        IRQReload = s.ReadBytes<uint8_t>();
+        IRQCounter = s.ReadBytes<uint8_t>();
+        IRQEnabled = s.ReadBytes<bool>();
+        LastA12 = s.ReadBytes<bool>();
+
+        updatePRG();
+        updateCHR();
+    }
 
     uint16_t getCHRPageSize() override {
         return 0x400;

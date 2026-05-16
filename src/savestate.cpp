@@ -35,6 +35,7 @@ void SaveStateFile::Write(const char *FileName) {
     OpenFileW(FileName);
     
     WriteBytes<uint32_t>(NYA_SIGNATURE);
+    WriteBytes<uint16_t>(globalROM.MapperID);
     WriteBytesPtr<uint8_t>(cpu.RAM, RAM_SIZE);
 
     uint8_t A,X,Y,SP,P = 0;
@@ -47,7 +48,7 @@ void SaveStateFile::Write(const char *FileName) {
     WriteBytes<uint8_t>(SP);
     WriteBytes<uint8_t>(P);
 
-    WriteBytes<bool>(cpu.CPUPaused);
+    WriteBytes<bool>(false); //cpu.CPUPaused
     WriteBytes<bool>(cpu.NMIDetector);
     WriteBytes<bool>(cpu.doNMI);
     WriteBytes<bool>(cpu.doIRQ);
@@ -94,6 +95,10 @@ void SaveStateFile::Write(const char *FileName) {
     WriteBytes<uint16_t>(ppu.shiftAttrHigh);
     WriteBytes<uint16_t>(ppu.shiftAttrLow);
     WriteBytes<uint16_t>(ppu.attributeByte);
+
+    if (globalROM.CHRRomSize == 0) {
+        WriteBytesPtr<uint8_t>(ppu.ChrData.data(), 0x2000);
+    }
 
     WriteBytes<bool>(apu.IRQPending);
     WriteBytes<bool>(apu.DMCIrqPending);
@@ -174,6 +179,15 @@ void SaveStateFile::Write(const char *FileName) {
     WriteBytes<uint8_t>(apu.dmc.outputLevel);
     WriteBytes<bool>(apu.dmc.silence);
 
+    uint32_t SRAMSize = globalROM.mapper->getSRAMSize();
+    if (globalROM.hasBattery && SRAMSize != 0) {
+        WriteBytesPtr<uint8_t>(globalROM.mapper->SRAM, SRAMSize);
+    } else {
+        WriteBytesPtr<uint8_t>(globalROM.mapper->PRGRam, 0x2000);
+    }
+
+    globalROM.mapper->saveState(*this);
+
     CloseFile();
 }
 
@@ -186,6 +200,27 @@ void SaveStateFile::Load(const char *FileName) {
         QMessageBox::critical((QMainWindow*)globalQTWin, "Error", "File has invalid MeowNES Savestate header");
         CloseFile();
         return;
+    }
+
+    uint16_t mapperID = ReadBytes<uint16_t>();
+    if (mapperID != globalROM.MapperID) {
+        DebugPrintLog("SAVESTATE", "State used in incorrect ROM");
+
+        QMessageBox::StandardButton reply;
+
+        reply = QMessageBox::question(
+            (QMainWindow*)globalQTWin,
+            "Mapper mismatch",
+            "This savestate wasn't meant to be used with this ROM\n\nDo you want to continue?",
+            QMessageBox::Yes | QMessageBox::No
+        );
+
+        if (reply == QMessageBox::Yes) {
+            // continue
+        } else {
+            CloseFile();
+            return;
+        }
     }
     ReadBytesPtr<uint8_t>(cpu.RAM, RAM_SIZE);
 
@@ -245,6 +280,10 @@ void SaveStateFile::Load(const char *FileName) {
     ppu.shiftAttrHigh      = ReadBytes<uint16_t>();
     ppu.shiftAttrLow       = ReadBytes<uint16_t>();
     ppu.attributeByte      = ReadBytes<uint16_t>();
+
+    if (globalROM.CHRRomSize == 0) {
+        ReadBytesPtr<uint8_t>(ppu.ChrData.data(), 0x2000);
+    }
 
     apu.IRQPending       = ReadBytes<bool>();
     apu.DMCIrqPending    = ReadBytes<bool>();
@@ -324,6 +363,15 @@ void SaveStateFile::Load(const char *FileName) {
     apu.dmc.sampleBufferEmpty    = ReadBytes<bool>();
     apu.dmc.outputLevel          = ReadBytes<uint8_t>();
     apu.dmc.silence              = ReadBytes<bool>();
+
+    uint32_t SRAMSize = globalROM.mapper->getSRAMSize();
+    if (globalROM.hasBattery && SRAMSize != 0) {
+        ReadBytesPtr<uint8_t>(globalROM.mapper->SRAM, SRAMSize);
+    } else {
+        ReadBytesPtr<uint8_t>(globalROM.mapper->PRGRam, 0x2000);
+    }
+
+    globalROM.mapper->loadState(*this);
 
     DebugPrintLog("SAVESTATE", "Loaded Savestate '%s'", FileName);
     CloseFile();

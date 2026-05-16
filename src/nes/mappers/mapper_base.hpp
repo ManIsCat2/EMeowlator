@@ -24,7 +24,7 @@ public:
 
     uint16_t subMapper = 0;
 
-    uint8_t PRGRam[0x2000];
+    uint8_t PRGRam[0x2000]; //or WRAM
     uint8_t *SRAM = nullptr;
 
     virtual ~MapperBase();
@@ -50,8 +50,8 @@ public:
 
     virtual void clockCPU(void) {}
     virtual void clockPPU(void) {}
-    virtual void saveState(void) {}
-    virtual void loadState(void) {}
+    virtual void saveState(SaveStateFile &s) { (void)s; }
+    virtual void loadState(SaveStateFile &s) { (void)s; }
 
     void setCHRPages(uint16_t page, uint16_t val, enum BankSize size=BANK_1K);
     void setPRGPages(uint16_t page, uint16_t val, enum BankSize size=BANK_1K);

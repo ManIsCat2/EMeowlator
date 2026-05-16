@@ -10,10 +10,20 @@ public:
     const char *getName(void) override;
     void reset() override;
 
+    void saveState(SaveStateFile &s) override {
+        s.WriteBytes<uint8_t>(CHRBank);
+    }
+    void loadState(SaveStateFile &s) override {
+        CHRBank = s.ReadBytes<uint8_t>();
+        setCHRPages(0, CHRBank);
+    }
+
     uint16_t getCHRPageSize() override {
         return 0x2000;
     }
     uint16_t getPRGPageSize() override {
         return 0x8000;
     }
+private:
+    uint8_t CHRBank = 0;
 };

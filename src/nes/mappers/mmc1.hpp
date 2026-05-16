@@ -10,6 +10,41 @@ public:
     const char *getName(void) override;
     void reset() override;
 
+    void saveState(SaveStateFile &s) override {
+        s.WriteBytes<uint8_t>(WriteBuffer);
+        s.WriteBytes<uint8_t>(shiftCount);
+
+        s.WriteBytes<bool>(ChrMode);
+        s.WriteBytes<bool>(PrgMode);
+        s.WriteBytes<bool>(slotSelect);
+
+        s.WriteBytes<uint8_t>(control);
+
+        s.WriteBytes<uint8_t>(chrReg0);
+        s.WriteBytes<uint8_t>(chrReg1);
+        s.WriteBytes<uint8_t>(prgReg);
+        
+        s.WriteBytes<int>((int)ppu.Mirroring);
+    }
+    void loadState(SaveStateFile &s) override {
+        WriteBuffer = s.ReadBytes<uint8_t>();
+        shiftCount = s.ReadBytes<uint8_t>();
+
+        ChrMode = s.ReadBytes<bool>();
+        PrgMode = s.ReadBytes<bool>();
+        slotSelect = s.ReadBytes<bool>();
+
+        control = s.ReadBytes<uint8_t>();
+
+        chrReg0 = s.ReadBytes<uint8_t>();
+        chrReg1 = s.ReadBytes<uint8_t>();
+        prgReg = s.ReadBytes<uint8_t>();
+
+        ppu.Mirroring = (MirrorMode)s.ReadBytes<int>();
+
+        updateBanks();
+    }
+
     uint16_t getCHRPageSize() override {
         return 0x1000;
     }
