@@ -18,6 +18,8 @@ void CPU::reset() {
     globalROM.ResetVec = PC;
     ppu.reset();
     apu.reset();
+
+    //if (globalROM.mapper) globalROM.mapper->reset();
 }
 
 void CPU::run(uint32_t maxCycles) {

@@ -40,10 +40,6 @@ void MMC5::reset() {
 
     memset(EXRAM, 0, sizeof(EXRAM));
 
-    uint8_t *mem = globalROM.hasBattery ? SRAM : PRGRam;
-
-    //force wram and dont use any sram (for now)
-    mapCPUMemory(0x6000, 0x7FFF, PRGRam, 0, true);
     updateState();
 }
 
@@ -69,7 +65,7 @@ uint8_t MMC5::cpuRead(uint16_t addr) {
             uint8_t val = 0;
 
             if (irqPending) val |= 0x80;
-            if (ppu.ScanLine < 240) val |= 0x40;
+            if (ppu.ScanLine >= 0 && ppu.ScanLine < 240) val |= 0x40;
 
             irqPending = false;
             cpu.IRQPending = false;
@@ -135,8 +131,6 @@ void MMC5::cpuWrite(uint16_t addr, uint8_t value) {
             break;
 
         case 0x5113:
-            break;
-
         case 0x5114:
         case 0x5115:
         case 0x5116:
@@ -196,28 +190,61 @@ void MMC5::cpuWrite(uint16_t addr, uint8_t value) {
 }
 
 void MMC5::updatePRG() {
+    auto mapPRGBank8K = [&](int slot, uint8_t reg, bool forceROM=false) {
+        bool isROM = forceROM || (reg & 0x80);
+        uint8_t bank = reg & 0x7F;
+        uint16_t cpuAddr = 0x8000 + (slot * 0x2000);
+
+        if (isROM) {
+            mapCPUMemory(cpuAddr, cpuAddr + 0x1FFF, globalROM.ROM, (bank * 0x2000) % globalROM.PRGRomSize, false);
+        } else {
+            mapCPUMemory(cpuAddr, cpuAddr + 0x1FFF, globalROM.hasBattery ? SRAM : PRGRam, ((bank & 0x0F) * 0x2000) % getSRAMSize(), true);
+        }
+    };
+
+    mapCPUMemory(0x6000, 0x7FFF, globalROM.hasBattery ? SRAM : PRGRam, (prgRegs[0] & 0x07) * 0x2000, true);
+
     switch (prgMode) {
-        case 0:
-            setPRGPages(0, (prgRegs[4] & 0x7C), BANK_32K);
+        case 0: {
+            uint8_t bank = (prgRegs[4] & 0x7C);
+            mapCPUMemory(0x8000, 0xFFFF, globalROM.ROM, ((bank >> 2) * 0x8000) % globalROM.PRGRomSize, false);
             break;
+        }
 
-        case 1:
-            setPRGPages(0, (prgRegs[2] & 0x7E), BANK_16K);
-            setPRGPages(2, (prgRegs[4] & 0x7E), BANK_16K);
-            break;
+        case 1: {
+            bool isROM = prgRegs[2] & 0x80;
+            uint8_t bank = prgRegs[2] & 0x7E;
 
-        case 2:
-            setPRGPages(0, prgRegs[1], BANK_8K);
-            setPRGPages(1, prgRegs[2], BANK_8K);
-            setPRGPages(2, prgRegs[3], BANK_8K);
-            setPRGPages(3, prgRegs[4], BANK_8K);
+            if (isROM) {
+                mapCPUMemory(0x8000, 0xBFFF, globalROM.ROM, ((bank >> 1) * 0x4000) % globalROM.PRGRomSize, false);
+            } else {
+                mapCPUMemory(0x8000, 0xBFFF, globalROM.hasBattery ? SRAM : PRGRam, (((bank >> 1) & 0x07) * 0x4000) % getSRAMSize(), true);
+            }
+
+            mapCPUMemory(0xC000, 0xFFFF, globalROM.ROM, (((prgRegs[4] & 0x7E) >> 1) * 0x4000) % globalROM.PRGRomSize, false);
             break;
+        }
+
+        case 2: {
+            bool isROM = prgRegs[1] & 0x80;
+            uint8_t bank = prgRegs[1] & 0x7E;
+
+            if (isROM) {
+                mapCPUMemory(0x8000, 0xBFFF, globalROM.ROM, ((bank >> 1) * 0x4000) % globalROM.PRGRomSize, false);
+            } else {
+                mapCPUMemory(0x8000, 0xBFFF, globalROM.hasBattery ? SRAM : PRGRam, (((bank >> 1) & 0x07) * 0x4000) % getSRAMSize(), true);
+            }
+
+            mapPRGBank8K(2, prgRegs[3]);
+            mapPRGBank8K(3, prgRegs[4], true);
+            break;
+        }
 
         case 3:
-            setPRGPages(0, prgRegs[1]);
-            setPRGPages(1, prgRegs[2]);
-            setPRGPages(2, prgRegs[3]);
-            setPRGPages(3, prgRegs[4]);
+            mapPRGBank8K(0, prgRegs[1]);
+            mapPRGBank8K(1, prgRegs[2]);
+            mapPRGBank8K(2, prgRegs[3]);
+            mapPRGBank8K(3, prgRegs[4], true);
             break;
     }
 }
@@ -382,18 +409,18 @@ void MMC5::clockCPU(void) {
 }
 
 void MMC5::clockPPU(void) {
-    if (ppu.Dot == 257) {
-        currentScanline++;
-
-        if (currentScanline == irqScanline) {
-            irqPending = true;
-
-            if (irqEnabled) {
-                cpu.IRQPending = true;
+    if (ppu.Dot == 0) {
+        if (ppu.ScanLine >= 0 && ppu.ScanLine < 240) {
+            if (ppu.mask.renderBackground || ppu.mask.renderSprites) {
+                currentScanline++;
+                if (irqScanline != 0 && currentScanline == irqScanline) {
+                    irqPending = true;
+                    if (irqEnabled) {
+                        cpu.IRQPending = true;
+                    }
+                }
             }
-        }
-
-        if (currentScanline >= 262) {
+        } else if (ppu.ScanLine == 261) {
             currentScanline = 0;
             irqPending = false;
         }
