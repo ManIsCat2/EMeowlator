@@ -80,7 +80,7 @@ uint8_t MapperBase::readCHR(uint16_t addr, bool sprite) {
     addr &= 0x1FFF;
     if (!CHRPages[addr >> 8].ptr) {
         //DebugPrintLog("MAPPER", "tried reading from unmapped PPU memory at address 0x%x", addr);
-        return 0xff;
+        return ppu.dataBus;
     }
 
     return CHRPages[addr >> 8].ptr[addr & 0xFF];

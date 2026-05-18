@@ -33,7 +33,7 @@ void Audio::init() {
     want.freq = sampleRate;
     want.format = AUDIO_S16SYS;
     want.channels = 1;
-    want.samples = 512;
+    want.samples = 1024;
     want.callback = audioCallback;
     want.userdata = this;
     

@@ -338,15 +338,11 @@ uint8_t MMC5::readVRAM(uint16_t addr) {
     uint16_t offs = addr & 0x03FF;
 
     switch (nametableMap[nt]) {
-        case 0:
-            return ppu.VRAM[offs];
-
-        case 1:
-            return ppu.VRAM[0x400 + offs];
-
+        case 0: return ppu.VRAM[offs];
+        case 1: return ppu.VRAM[0x400 + offs];
         case 2:
+            if (EXRAMMode == 3) return cpu.dataBus;
             return EXRAM[offs];
-
         case 3:
             return fillModeRead(offs);
     }
@@ -370,14 +366,17 @@ void MMC5::writeVRAM(uint16_t addr, uint8_t value) {
             break;
 
         case 2:
-            if (EXRAMMode != 3) {
+            if (EXRAMMode <= 1) {
+                EXRAM[offs] = 0;
+            } else if (EXRAMMode == 2) {
                 EXRAM[offs] = value;
             }
+            break;
 
+        case 3:
             break;
     }
 }
-
 void MMC5::clockCPU(void) {
 
 }
