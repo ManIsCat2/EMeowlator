@@ -6,7 +6,7 @@ class MMC2 : public MapperBase {
 public:
     MMC2();
 
-    uint8_t readCHR(uint16_t addr) override;
+    uint8_t readCHR(uint16_t addr, bool sprite=false) override;
     void cpuWrite(uint16_t addr, uint8_t value) override;
     const char *getName(void) override;
     void reset() override;

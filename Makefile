@@ -9,11 +9,11 @@ ifeq ($(OS),Windows_NT)
 	WINDEPLOYQT := $(shell command -v windeployqt6 2>/dev/null || command -v windeployqt 2>/dev/null)
 else
     CXX := clang++
-    CXXFLAGS := -Wall -Wextra -Wno-parentheses -O3 -march=native -fno-plt -fstrict-aliasing -funroll-loops -Iinclude
+    CXXFLAGS := -Wall -Wextra -Wno-parentheses -O3 -march=native -fno-plt -fstrict-aliasing -funroll-loops -Iinclude #-fsanitize=address -fsanitize=undefined
     EXEEXT :=
 endif
 
-LDFLAGS := $(shell pkg-config --libs Qt6Widgets sdl2)
+LDFLAGS := $(shell pkg-config --libs Qt6Widgets sdl2) #-fsanitize=address -fsanitize=undefined
 CXXFLAGS += $(shell pkg-config --cflags Qt6Widgets sdl2)
 
 ifeq ($(OS),Windows_NT)

@@ -44,7 +44,7 @@ public:
     uint16_t getPRGPageSize() override {
         return 0x2000;
     }
-    uint16_t getSRAMSize() override {
+    uint32_t getSRAMSize() override {
         return subMapper == 1 ? 0x400 : 0x2000;
     }
 

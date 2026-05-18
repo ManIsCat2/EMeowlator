@@ -4,6 +4,7 @@
 #include "uxrom.hpp"
 #include "cnrom.hpp"
 #include "mmc3.hpp"
+#include "mmc5.hpp"
 #include "mmc2.hpp"
 #include "namco163.hpp"
 #include "mapper34.hpp"

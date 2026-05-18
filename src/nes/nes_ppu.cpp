@@ -110,6 +110,20 @@ void PPU::decayDataBus(void) {
     }
 }
 
+uint16_t PPU::getAttributeByte() {
+    if (globalROM.mapper->usingExtendedAttributes()) {
+        MMC5* mmc5 = (MMC5*)globalROM.mapper;
+        uint8_t ex = mmc5->getEXRAMByte(VRAMAddr);
+        return (ex >> 6) & 0x03;
+        
+    }
+    uint16_t attrAddr = (VRAMAddr & 0x0C00) | 0x03C0 | ((VRAMAddr >> 4) & 0x38) | ((VRAMAddr >> 2) & 0x07);
+    uint8_t attr = globalROM.mapper->readVRAM(attrAddr);
+    uint8_t shift = ((VRAMAddr >> 4) & 4) | (VRAMAddr & 2);
+    
+    return (attr >> shift) & 0x03;
+}
+
 void PPU::RenderScreen() {
     if ((uint32_t)(Dot - NES_WIDTH) <= 63) return;
 
@@ -144,7 +158,7 @@ void PPU::RenderScreen() {
                 if (spriteX < 8 && spriteY < spriteH) {
                     uint16_t spriteTile = sprite[1];
                     uint16_t spriteAddress = (control.use8x16Sprites ? spriteTile % 0x02 << 0x0C | spriteTile << 4 & -32 | sy * 0x02 & 0x10 : (control.spritePatternTable) << 0x09 | spriteTile << 0x04) | sy & 0x07;
-                    uint16_t spriteColor = globalROM.mapper->readCHR(spriteAddress + 8) >> sx << 0x01 & 0x02 | globalROM.mapper->readCHR(spriteAddress) >> sx & 0x01;
+                    uint16_t spriteColor = globalROM.mapper->readCHR(spriteAddress + 8, true) >> sx << 0x01 & 0x02 | globalROM.mapper->readCHR(spriteAddress, true) >> sx & 0x01;
                     if (spriteColor) {
                         if (!(sprite[2] & 0x20 && bgColor) && !DisableSprites) {
                             finalColor = spriteColor;
@@ -194,10 +208,7 @@ void PPU::RenderScreen() {
             break;
 
         case 3: {
-            uint16_t attrAddr = (VRAMAddr & 0x0C00) | 0x03C0 | ((VRAMAddr >> 4) & 0x38) | ((VRAMAddr >> 2) & 0x07);
-            uint8_t attr = globalROM.mapper->readVRAM(attrAddr);
-            uint8_t shift = ((VRAMAddr >> 4) & 4) | (VRAMAddr & 2);
-            attributeByte = (attr >> shift) & 0x03;
+            attributeByte = getAttributeByte();
             break;
         }
 

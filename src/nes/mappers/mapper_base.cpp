@@ -76,7 +76,7 @@ void MapperBase::cpuWrite(uint16_t addr, uint8_t value) {
     }
 }
 
-uint8_t MapperBase::readCHR(uint16_t addr) {
+uint8_t MapperBase::readCHR(uint16_t addr, bool sprite) {
     addr &= 0x1FFF;
     if (!CHRPages[addr >> 8].ptr) {
         //DebugPrintLog("MAPPER", "tried reading from unmapped PPU memory at address 0x%x", addr);

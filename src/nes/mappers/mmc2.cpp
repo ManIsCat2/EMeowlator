@@ -46,7 +46,7 @@ const char* MMC2::getName(void) {
     return "MMC2";
 }
 
-uint8_t MMC2::readCHR(uint16_t addr) {
+uint8_t MMC2::readCHR(uint16_t addr, bool sprite) {
     addr &= 0x1FFF;
 
     if (ChrUpdate) {
@@ -69,5 +69,5 @@ uint8_t MMC2::readCHR(uint16_t addr) {
         ChrUpdate = true;
     }
 
-    return MapperBase::readCHR(addr);
+    return MapperBase::readCHR(addr, sprite);
 }

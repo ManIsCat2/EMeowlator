@@ -30,7 +30,7 @@ public:
     virtual ~MapperBase();
     virtual uint8_t cpuRead(uint16_t addr);
     virtual void cpuWrite(uint16_t addr, uint8_t value);
-    virtual uint8_t readCHR(uint16_t addr);
+    virtual uint8_t readCHR(uint16_t addr, bool sprite=false);
     virtual void writeCHR(uint16_t addr, uint8_t value);
     virtual uint8_t readVRAM(uint16_t addr);
     virtual void writeVRAM(uint16_t addr, uint8_t value);
@@ -44,9 +44,11 @@ public:
 	virtual uint16_t getPRGPageSize() {
         return 0x4000;
     }
-    virtual uint16_t getSRAMSize() { 
+    virtual uint32_t getSRAMSize() { 
         return 0x2000;
     }
+
+    virtual bool usingExtendedAttributes() { return false; };
 
     virtual void clockCPU(void) {}
     virtual void clockPPU(void) {}

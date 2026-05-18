@@ -86,6 +86,7 @@ public:
     void reset(void);
     void resetBusDecayTimers(void);
     void decayDataBus(void);
+    uint16_t getAttributeByte();
     void RenderScreen(void);
     void Step();
 
