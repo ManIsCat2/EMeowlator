@@ -66,6 +66,6 @@ private:
     uint8_t fillModeRead(uint16_t addr);
 
     void updatePRG();
-    void updateCHR(bool sprite);
+    void updateCHR();
     void updateState();
 };
