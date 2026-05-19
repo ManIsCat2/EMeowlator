@@ -452,7 +452,6 @@ bool MMC5::usingExtendedAttributes() {
 }
 
 uint8_t MMC5::getEXRAMByte(uint16_t vramAddr) {
-
     uint16_t tileIndex = ((vramAddr >> 5) & 0x1F) * 32 + (vramAddr & 0x1F);
 
     return EXRAM[tileIndex];

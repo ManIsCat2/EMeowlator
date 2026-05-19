@@ -421,7 +421,7 @@ int main(int argc, char *argv[]) {
         });
         QObject::connect(randomButton, &QPushButton::clicked, [&]() {
             for (int i = 0; i < 64; i++) {
-                nesPalette[i] = rand() % 0xFFFFFFFF;
+                nesPalette[i] = 0xFF000000 | (rand() << 16) | (rand() << 8) | rand();
             }
             updateAllButtonsColor();
         });

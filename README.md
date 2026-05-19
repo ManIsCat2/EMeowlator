@@ -10,6 +10,7 @@ Supported mappers:
 - UxROM (Mapper 2)
 - CNROM (Mapper 3)
 - MMC3 (Mapper 4)
+- MMC5 (Mapper 5) (WIP)
 - MMC2 (Mapper 9)
 - Namco163 / Namco129 (Mapper 19)
 - Nina001 (Mapper 34, SubMapper 1)
