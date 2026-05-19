@@ -39,10 +39,8 @@ void MMC5::reset() {
     EXRAMMode = 0;
 
     memset(EXRAM, 0, sizeof(EXRAM));
-    memset(chrSpriteMap, 0, sizeof(chrSpriteMap));
-    memset(chrBgMap, 0, sizeof(chrBgMap));
 
-    updateState();
+    updatePRG();
 }
 
 const char* MMC5::getName() {
@@ -138,6 +136,7 @@ void MMC5::cpuWrite(uint16_t addr, uint8_t value) {
         case 0x5116:
         case 0x5117:
             prgRegs[addr - 0x5113] = value;
+            updatePRG();
             break;
 
         case 0x5120:
@@ -148,11 +147,15 @@ void MMC5::cpuWrite(uint16_t addr, uint8_t value) {
         case 0x5125:
         case 0x5126:
         case 0x5127:
+            chrRegs[addr - 0x5120] = (chrUpperBits << 8) | value;
+            updateCHR(true);
+            break;
         case 0x5128:
         case 0x5129:
         case 0x512A:
         case 0x512B:
             chrRegs[addr - 0x5120] = (chrUpperBits << 8) | value;
+            updateCHR(false);
             break;
 
         case 0x5130:
@@ -182,8 +185,6 @@ void MMC5::cpuWrite(uint16_t addr, uint8_t value) {
             MapperBase::cpuWrite(addr, value);
             break;
     }
-
-    updateState();
 }
 
 void MMC5::updatePRG() {
@@ -246,94 +247,89 @@ void MMC5::updatePRG() {
     }
 }
 
-void MMC5::updateCHR() {
-    switch (chrMode) {
-        case 0: {
-            uint16_t bank = chrRegs[7] << 3;
+void MMC5::updateCHR(bool sprite) {
+    if (sprite) {
+        switch (chrMode) {
+            case 0: {
+                uint16_t bank = chrRegs[7] << 3;
 
-            for (int i = 0; i < 8; i++) {
-                setCHRBank(chrSpriteMap, i, bank + i);
+                for (int i = 0; i < 8; i++) {
+                    setCHRPages(i, bank + i);
+                }
+                break;
             }
-            break;
+
+            case 1: {
+                uint16_t bank0 = chrRegs[3] << 2;
+                uint16_t bank1 = chrRegs[7] << 2;
+
+                for (int i = 0; i < 4; i++) {
+                    setCHRPages(i + 0, bank0 + i);
+                    setCHRPages(i + 4, bank1 + i);
+                }
+                break;
+            }
+
+            case 2: {
+                for (int i = 0; i < 4; i++) {
+                    uint16_t bank = chrRegs[(i * 2) + 1] << 1;
+
+                    setCHRPages(i * 2 + 0, bank + 0);
+                    setCHRPages(i * 2 + 1, bank + 1);
+                }
+                break;
+            }
+
+            case 3: {
+                for (int i = 0; i < 8; i++) {
+                    setCHRPages(i, chrRegs[i]);
+                }
+                break;
+            }
         }
+    } else {
+        switch (chrMode) {
+            case 0: {
+                uint16_t bank = chrRegs[11] << 3;
 
-        case 1: {
-            uint16_t bank0 = chrRegs[3] << 2;
-            uint16_t bank1 = chrRegs[7] << 2;
-
-            for (int i = 0; i < 4; i++) {
-                setCHRBank(chrSpriteMap, i + 0, bank0 + i);
-                setCHRBank(chrSpriteMap, i + 4, bank1 + i);
+                for (int i = 0; i < 8; i++) {
+                    setCHRPages(i, bank + i);
+                }
+                break;
             }
-            break;
-        }
 
-        case 2: {
-            for (int i = 0; i < 4; i++) {
-                uint16_t bank =
-                    chrRegs[(i * 2) + 1] << 1;
+            case 1: {
+                uint16_t bank0 = chrRegs[9] << 2;
+                uint16_t bank1 = chrRegs[11] << 2;
 
-                setCHRBank(chrSpriteMap, i * 2 + 0, bank + 0);
-                setCHRBank(chrSpriteMap, i * 2 + 1, bank + 1);
+                for (int i = 0; i < 4; i++) {
+                    setCHRPages(i + 0, bank0 + i);
+                    setCHRPages(i + 4, bank1 + i);
+                }
+                break;
             }
-            break;
-        }
 
-        case 3: {
-            for (int i = 0; i < 8; i++) {
-                setCHRBank(chrSpriteMap, i, chrRegs[i]);
+            case 2: {
+                for (int i = 0; i < 4; i++) {
+                    uint16_t bank = chrRegs[8 + (i * 2) + 1] << 1;
+
+                    setCHRPages(i * 2 + 0, bank + 0);
+                    setCHRPages(i * 2 + 1, bank + 1);
+                }
+                break;
             }
-            break;
+
+            case 3: {
+                for (int i = 0; i < 4; i++) {
+                    uint16_t bank = chrRegs[8 + i];
+
+                    setCHRPages(i + 0, bank);
+                    setCHRPages(i + 4, bank);
+                }
+                break;
+            }
         }
     }
-
-    switch (chrMode) {
-        case 0: {
-            uint16_t bank = chrRegs[11] << 3;
-
-            for (int i = 0; i < 8; i++) {
-                setCHRBank(chrBgMap, i, bank + i);
-            }
-            break;
-        }
-
-        case 1: {
-            uint16_t bank0 = chrRegs[9] << 2;
-            uint16_t bank1 = chrRegs[11] << 2;
-
-            for (int i = 0; i < 4; i++) {
-                setCHRBank(chrBgMap, i + 0, bank0 + i);
-                setCHRBank(chrBgMap, i + 4, bank1 + i);
-            }
-            break;
-        }
-
-        case 2: {
-            for (int i = 0; i < 4; i++) {
-                uint16_t bank =
-                    chrRegs[8 + (i * 2) + 1] << 1;
-
-                setCHRBank(chrBgMap, i * 2 + 0, bank + 0);
-                setCHRBank(chrBgMap, i * 2 + 1, bank + 1);
-            }
-            break;
-        }
-
-        case 3: {
-            for (int i = 0; i < 4; i++) {
-                uint16_t bank = chrRegs[8 + i];
-
-                setCHRBank(chrBgMap, i + 0, bank);
-                setCHRBank(chrBgMap, i + 4, bank);
-            }
-            break;
-        }
-    }
-}
-
-void MMC5::updateState() {
-    updatePRG();
-    updateCHR();
 }
 
 uint8_t MMC5::fillModeRead(uint16_t addr) {
@@ -424,16 +420,7 @@ uint8_t MMC5::readCHR(uint16_t addr, bool sprite) {
         return ppu.ChrData[finalAddr % globalROM.CHRRomSize];
     }
 
-    uint32_t *map = sprite ? chrSpriteMap : chrBgMap;
-    uint32_t bank = addr >> 10;
-    uint32_t offset = addr & 0x3FF;
-    uint32_t finalAddr = map[bank] + offset;
-
-    return ppu.ChrData[finalAddr % globalROM.CHRRomSize];
-}
-
-void MMC5::setCHRBank(uint32_t *map, int slot, uint32_t bank) {
-    map[slot] = (bank * 0x400) % globalROM.CHRRomSize;
+    return MapperBase::readCHR(addr, sprite);
 }
 
 bool MMC5::usingExtendedAttributes() {

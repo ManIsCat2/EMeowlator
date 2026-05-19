@@ -58,14 +58,8 @@ private:
 
     uint8_t EXRAM[0x400];
 
-    uint32_t chrSpriteMap[8];
-    uint32_t chrBgMap[8];
-
-    void setCHRBank(uint32_t *map, int slot, uint32_t bank);
-
     uint8_t fillModeRead(uint16_t addr);
 
     void updatePRG();
-    void updateCHR();
-    void updateState();
+    void updateCHR(bool sprite);
 };
