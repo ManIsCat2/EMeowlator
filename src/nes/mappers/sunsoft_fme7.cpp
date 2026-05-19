@@ -25,17 +25,17 @@ void SunSoftFME7::cpuWrite(uint16_t addr, uint8_t value) {
             break;
         case 0xA000:
             switch(command) {
-                case 0: case 1: case 2: case 3:
-                case 4: case 5: case 6: case 7:
+                case 0x00: case 0x01: case 0x02: case 0x03:
+                case 0x04: case 0x05: case 0x06: case 0x07:
                     setCHRPages(command, value);
                     break;
 
-                case 8:
+                case 0x08:
                     workRamValue = value;
                     updateWRAM();
                     break;
 
-                case 9: case 0xA: case 0xB:
+                case 0x09: case 0xA: case 0xB:
                     setPRGPages(command - 9, value & 0x3F);
                     break;
 

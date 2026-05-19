@@ -213,11 +213,11 @@ void PPU::RenderScreen() {
         }
 
         case 5:
-            patternTableLow = globalROM.mapper->readCHR(fetchAddress);
+            patternTableLow = globalROM.mapper->readCHR(fetchAddress, false);
             break;
 
         case 7:
-            patternTableHigh = globalROM.mapper->readCHR(fetchAddress + 8);
+            patternTableHigh = globalROM.mapper->readCHR(fetchAddress + 8, false);
             break;
     }
 }
@@ -269,9 +269,7 @@ void PPU::Step() {
             }
         }
 
-        if (Dot >= 280 &&
-            Dot <= 304 &&
-            ScanLine == preRenderLine) {
+        if (Dot >= 280 && Dot <= 304 && ScanLine == preRenderLine) {
             VRAMAddr = ((VRAMAddr & 0x41f) | (TransferAddr & 0x7be0));
         }
         globalROM.mapper->clockPPU();
