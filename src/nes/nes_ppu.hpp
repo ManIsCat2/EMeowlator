@@ -51,6 +51,7 @@ public:
     int ScanLine = 0;
     bool Vblank = false;
     bool sprite0Hit = false;
+    bool spriteOverflow = false;
 
     struct {
         bool grayscaleMode = false;
@@ -84,7 +85,7 @@ public:
     uint16_t attributeByte = 0;
 
     void reset(void);
-    void resetBusDecayTimers(void);
+    void resetBusDecay(void);
     void decayDataBus(void);
     uint16_t getAttributeByte();
     void RenderScreen(void);

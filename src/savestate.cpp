@@ -68,6 +68,7 @@ void SaveStateFile::Write(const char *FileName) {
     WriteBytes<int>(ppu.ScanLine);
     WriteBytes<bool>(ppu.Vblank);
     WriteBytes<bool>(ppu.sprite0Hit);
+    WriteBytes<bool>(ppu.spriteOverflow);
     WriteBytes<bool>(ppu.DisableSprites);
     WriteBytes<bool>(ppu.VRAMCorruption);
 
@@ -253,6 +254,7 @@ void SaveStateFile::Load(const char *FileName) {
     ppu.ScanLine        = ReadBytes<int>();
     ppu.Vblank          = ReadBytes<bool>();
     ppu.sprite0Hit      = ReadBytes<bool>();
+    ppu.spriteOverflow  = ReadBytes<bool>();
     ppu.DisableSprites  = ReadBytes<bool>();
     ppu.VRAMCorruption  = ReadBytes<bool>();
 

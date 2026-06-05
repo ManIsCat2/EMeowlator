@@ -77,23 +77,24 @@ void PPU::reset(void) {
     ScanLine = 0;
     Vblank = false;
     sprite0Hit = false;
-    
+    spriteOverflow = false;
+
     mask.background8pxMask = false;
     mask.sprite8pxMask = false;
     mask.renderBackground = false;
     mask.renderSprites = false;
-    
+
     control.nametableSelect = 0; 
     control.VRAMInc32 = false;
     control.spritePatternTable = 0;
     control.BGPatternTable = 0;
     control.use8x16Sprites = false;
     control.enableNMI = false;
-    
+
     scrollFineX = 0;
 }
 
-void PPU::resetBusDecayTimers(void) {
+void PPU::resetBusDecay(void) {
     for (int i = 0; i < 8; i++) { 
         busDecayTimers[i] = PPU_BUS_DECAY_TIME;
     }
@@ -239,6 +240,7 @@ void PPU::Step() {
     if (Dot == 1 && ScanLine == preRenderLine) {
         Vblank = false;
         sprite0Hit = false;
+        spriteOverflow = false;
     }
 
     if (mask.renderBackground || mask.renderSprites) {
@@ -246,6 +248,37 @@ void PPU::Step() {
             RenderScreen();
 
             if (Dot == 256) {
+                uint16_t spriteH = control.use8x16Sprites ? 16 : 8;
+                int spriteCount = 0;
+                int oamIndex = 0;
+
+                for (; oamIndex < 256; oamIndex += 4) {
+                    uint16_t spriteY = ScanLine - OAM[oamIndex];
+                    if (spriteY < spriteH) {
+                        spriteCount++;
+                        if (spriteCount == 8) {
+                            oamIndex += 4;
+                            break;
+                        }
+                    }
+                }
+
+                if (spriteCount == 8) {
+                    int subOffset = 0;
+                    while (oamIndex < 256) {
+                        uint8_t glitchedY = OAM[oamIndex + subOffset];
+                        uint16_t spriteY = ScanLine - glitchedY;
+
+                        if (spriteY < spriteH) {
+                            spriteOverflow = true;
+                            break;
+                        } else {
+                            oamIndex += 4;
+                            subOffset = (subOffset + 1) & 3; 
+                        }
+                    }
+                }
+
                 if ((VRAMAddr & VRAM_FIY) != VRAM_FIY) {
                     VRAMAddr += 0x1000;
                 } else {
