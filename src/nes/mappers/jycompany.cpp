@@ -126,18 +126,18 @@ const char* JyCompany::getName() {
 void JyCompany::updatePrg() {
     switch(prgMode & 0x03) {
         case 0:
-            setPRGPages(0, (prgMode & 0x04) ? prgRegs[3] : 0x3C, BANK_4K);
+            setPRGBank(0, (prgMode & 0x04) ? prgRegs[3] : 0x3C, BANK_4K);
             break;
         case 1:
-            setPRGPages(0, prgRegs[1] << 1, BANK_2K);
-			setPRGPages(1, (prgMode & 0x04) ? prgRegs[3] : 0x3E, BANK_2K);
+            setPRGBank(0, prgRegs[1] << 1, BANK_2K);
+			setPRGBank(1, (prgMode & 0x04) ? prgRegs[3] : 0x3E, BANK_2K);
             break;
         case 2:
         case 3:
-            setPRGPages(0, prgRegs[0]);
-		    setPRGPages(1, prgRegs[1]);
-			setPRGPages(2, prgRegs[2]);
-			setPRGPages(3, (prgMode & 0x04) ? prgRegs[3] : 0x3F);
+            setPRGBank(0, prgRegs[0]);
+		    setPRGBank(1, prgRegs[1]);
+			setPRGBank(2, prgRegs[2]);
+			setPRGBank(3, (prgMode & 0x04) ? prgRegs[3] : 0x3F);
             break;
     }
 }
@@ -171,24 +171,24 @@ void JyCompany::updateCHR() {
 
     switch(chrMode) {
         case 0:
-            setCHRPages(0, chrRegs[0] << 3, BANK_8K);
+            setCHRBank(0, chrRegs[0] << 3, BANK_8K);
             break;
 
         case 1:
-            setCHRPages(0, chrRegs[chrLatch[0]] << 2, BANK_4K);
-            setCHRPages(1, chrRegs[chrLatch[1]] << 2, BANK_4K);
+            setCHRBank(0, chrRegs[chrLatch[0]] << 2, BANK_4K);
+            setCHRBank(1, chrRegs[chrLatch[1]] << 2, BANK_4K);
             break;
 
         case 2:
-            setCHRPages(0, chrRegs[0] << 1, BANK_2K);
-            setCHRPages(1, chrRegs[2] << 1, BANK_2K);
-            setCHRPages(2, chrRegs[4] << 1, BANK_2K);
-            setCHRPages(3, chrRegs[6] << 1, BANK_2K);
+            setCHRBank(0, chrRegs[0] << 1, BANK_2K);
+            setCHRBank(1, chrRegs[2] << 1, BANK_2K);
+            setCHRBank(2, chrRegs[4] << 1, BANK_2K);
+            setCHRBank(3, chrRegs[6] << 1, BANK_2K);
             break;
 
         case 3:
             for (int i = 0; i < 8; i++) {
-                setCHRPages(i, chrRegs[i]);
+                setCHRBank(i, chrRegs[i]);
             }
             break;
     }

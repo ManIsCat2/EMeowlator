@@ -55,7 +55,6 @@ void CPU::run(uint32_t maxCycles) {
             ppu.Step();
             ppu.Step();
             ppu.Step();
-            if (ppu.dataBus != 0) ppu.decayDataBus();
         }
     }
 }

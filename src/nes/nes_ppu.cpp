@@ -112,7 +112,7 @@ void PPU::decayDataBus(void) {
 
 uint16_t PPU::getAttributeByte() {
     if (globalROM.mapper->usingExtendedAttributes()) {
-        MMC5* mmc5 = (MMC5*)globalROM.mapper;
+        MMC5 *mmc5 = (MMC5*)globalROM.mapper;
         uint8_t ex = mmc5->getEXRAMByte(VRAMAddr);
         return (ex >> 6) & 0x03;
         
@@ -153,8 +153,8 @@ void PPU::RenderScreen() {
                 int flipH = sprite[2] & 0x40;
                 int flipV = sprite[2] & 0x80;
                 
-                uint16_t sx = spriteX ^ !(flipH) * 7;
-                uint16_t sy = spriteY ^ (flipV ? spriteH - 1 : 0);
+                uint16_t sx = flipH ? spriteX : (7 - spriteX);
+                uint16_t sy = flipV ? (spriteH - 1 - spriteY) : spriteY;
                 if (spriteX < 8 && spriteY < spriteH) {
                     uint16_t spriteTile = sprite[1];
                     uint16_t spriteAddress = (control.use8x16Sprites ? spriteTile % 0x02 << 0x0C | spriteTile << 4 & -32 | sy * 0x02 & 0x10 : (control.spritePatternTable) << 0x09 | spriteTile << 0x04) | sy & 0x07;
@@ -281,6 +281,7 @@ void PPU::Step() {
         ScanLine++;
         if (ScanLine >= totalScanlines) ScanLine = 0;
     }
+    if (dataBus != 0) decayDataBus();
 }
 
 void PPU::LoadCHRROM(const uint8_t *data, int chrSize) {

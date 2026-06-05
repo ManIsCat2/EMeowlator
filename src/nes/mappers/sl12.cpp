@@ -78,18 +78,18 @@ void SL12::cpuWrite(uint16_t addr, uint8_t value) {
 void SL12::updatePRG(void) {
     switch (mode & 0x03) {
 		case 0:
-			setPRGPages(0, VRC2Regs[8]);
-			setPRGPages(1, VRC2Regs[9]);
-			setPRGPages(2, -2);
-			setPRGPages(3, -1);
+			setPRGBank(0, VRC2Regs[8]);
+			setPRGBank(1, VRC2Regs[9]);
+			setPRGBank(2, -2);
+			setPRGBank(3, -1);
 			break;
 
 		case 1: {
 			uint32_t prgMode = (MMC3Ctrl >> 5) & 0x02;
-			setPRGPages(0, MMC3Regs[6 + prgMode]);
-			setPRGPages(1, MMC3Regs[7]);
-			setPRGPages(2, MMC3Regs[6 + (prgMode ^ 0x02)]);
-			setPRGPages(3, MMC3Regs[9]);
+			setPRGBank(0, MMC3Regs[6 + prgMode]);
+			setPRGBank(1, MMC3Regs[7]);
+			setPRGBank(2, MMC3Regs[6 + (prgMode ^ 0x02)]);
+			setPRGBank(3, MMC3Regs[9]);
 			break;
 		}
 
@@ -98,14 +98,14 @@ void SL12::updatePRG(void) {
 			uint8_t bank = MMC1Regs[3] & 0x0F;
 			if (MMC1Regs[0] & 0x08) {
 				if (MMC1Regs[0] & 0x04) {
-					setPRGPages(0, bank << 1, BANK_2K);
-					setPRGPages(1, 0x0F << 1, BANK_2K);
+					setPRGBank(0, bank << 1, BANK_2K);
+					setPRGBank(1, 0x0F << 1, BANK_2K);
 				} else {
-					setPRGPages(0, 0, BANK_2K);
-					setPRGPages(1, bank << 1, BANK_2K);
+					setPRGBank(0, 0, BANK_2K);
+					setPRGBank(1, bank << 1, BANK_2K);
 				}
 			} else {
-				setPRGPages(0, (bank & 0xFE) << 1, BANK_4K);
+				setPRGBank(0, (bank & 0xFE) << 1, BANK_4K);
 			}
 			break;
 		}
@@ -117,30 +117,30 @@ void SL12::updateCHR(void) {
 	switch (mode & 0x03) {
 		case 0:
 			for (int i = 0; i < 8; i++) {
-				setCHRPages(i, bank | VRC2Regs[i]);
+				setCHRBank(i, bank | VRC2Regs[i]);
 			}
 			break;
 
 		case 1: {
 			uint32_t slotSwap = (MMC3Ctrl & 0x80) ? 4 : 0;
-			setCHRPages(0 ^ slotSwap, bank | ((MMC3Regs[0]) & 0xFE));
-			setCHRPages(1 ^ slotSwap, bank | (MMC3Regs[0] | 1));
-			setCHRPages(2 ^ slotSwap, bank | ((MMC3Regs[1]) & 0xFE));
-			setCHRPages(3 ^ slotSwap, bank | (MMC3Regs[1] | 1));
-			setCHRPages(4 ^ slotSwap, bank | MMC3Regs[2]);
-			setCHRPages(5 ^ slotSwap, bank | MMC3Regs[3]);
-			setCHRPages(6 ^ slotSwap, bank | MMC3Regs[4]);
-			setCHRPages(7 ^ slotSwap, bank | MMC3Regs[5]);
+			setCHRBank(0 ^ slotSwap, bank | ((MMC3Regs[0]) & 0xFE));
+			setCHRBank(1 ^ slotSwap, bank | (MMC3Regs[0] | 1));
+			setCHRBank(2 ^ slotSwap, bank | ((MMC3Regs[1]) & 0xFE));
+			setCHRBank(3 ^ slotSwap, bank | (MMC3Regs[1] | 1));
+			setCHRBank(4 ^ slotSwap, bank | MMC3Regs[2]);
+			setCHRBank(5 ^ slotSwap, bank | MMC3Regs[3]);
+			setCHRBank(6 ^ slotSwap, bank | MMC3Regs[4]);
+			setCHRBank(7 ^ slotSwap, bank | MMC3Regs[5]);
 			break;
 		}
 
 		case 2:
 		case 3: {
 			if (MMC1Regs[0] & 0x10) {
-				setCHRPages(0, MMC1Regs[1] << 2, BANK_4K);
-				setCHRPages(1, MMC1Regs[2] << 2, BANK_4K);
+				setCHRBank(0, MMC1Regs[1] << 2, BANK_4K);
+				setCHRBank(1, MMC1Regs[2] << 2, BANK_4K);
 			} else {
-				setCHRPages(0, (MMC1Regs[1] & 0xFE) << 2, BANK_8K);
+				setCHRBank(0, (MMC1Regs[1] & 0xFE) << 2, BANK_8K);
 			}
 			break;
 		}

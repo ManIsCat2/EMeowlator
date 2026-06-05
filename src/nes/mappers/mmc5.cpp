@@ -254,7 +254,7 @@ void MMC5::updateCHR(bool sprite) {
                 uint16_t bank = chrRegs[7] << 3;
 
                 for (int i = 0; i < 8; i++) {
-                    setCHRPages(i, bank + i);
+                    setCHRBank(i, bank + i);
                 }
                 break;
             }
@@ -264,8 +264,8 @@ void MMC5::updateCHR(bool sprite) {
                 uint16_t bank1 = chrRegs[7] << 2;
 
                 for (int i = 0; i < 4; i++) {
-                    setCHRPages(i + 0, bank0 + i);
-                    setCHRPages(i + 4, bank1 + i);
+                    setCHRBank(i + 0, bank0 + i);
+                    setCHRBank(i + 4, bank1 + i);
                 }
                 break;
             }
@@ -274,15 +274,15 @@ void MMC5::updateCHR(bool sprite) {
                 for (int i = 0; i < 4; i++) {
                     uint16_t bank = chrRegs[(i * 2) + 1] << 1;
 
-                    setCHRPages(i * 2 + 0, bank + 0);
-                    setCHRPages(i * 2 + 1, bank + 1);
+                    setCHRBank(i * 2 + 0, bank + 0);
+                    setCHRBank(i * 2 + 1, bank + 1);
                 }
                 break;
             }
 
             case 3: {
                 for (int i = 0; i < 8; i++) {
-                    setCHRPages(i, chrRegs[i]);
+                    setCHRBank(i, chrRegs[i]);
                 }
                 break;
             }
@@ -293,7 +293,7 @@ void MMC5::updateCHR(bool sprite) {
                 uint16_t bank = chrRegs[11] << 3;
 
                 for (int i = 0; i < 8; i++) {
-                    setCHRPages(i, bank + i);
+                    setCHRBank(i, bank + i);
                 }
                 break;
             }
@@ -303,8 +303,8 @@ void MMC5::updateCHR(bool sprite) {
                 uint16_t bank1 = chrRegs[11] << 2;
 
                 for (int i = 0; i < 4; i++) {
-                    setCHRPages(i + 0, bank0 + i);
-                    setCHRPages(i + 4, bank1 + i);
+                    setCHRBank(i + 0, bank0 + i);
+                    setCHRBank(i + 4, bank1 + i);
                 }
                 break;
             }
@@ -313,8 +313,8 @@ void MMC5::updateCHR(bool sprite) {
                 for (int i = 0; i < 4; i++) {
                     uint16_t bank = chrRegs[8 + (i * 2) + 1] << 1;
 
-                    setCHRPages(i * 2 + 0, bank + 0);
-                    setCHRPages(i * 2 + 1, bank + 1);
+                    setCHRBank(i * 2 + 0, bank + 0);
+                    setCHRBank(i * 2 + 1, bank + 1);
                 }
                 break;
             }
@@ -323,8 +323,8 @@ void MMC5::updateCHR(bool sprite) {
                 for (int i = 0; i < 4; i++) {
                     uint16_t bank = chrRegs[8 + i];
 
-                    setCHRPages(i + 0, bank);
-                    setCHRPages(i + 4, bank);
+                    setCHRBank(i + 0, bank);
+                    setCHRBank(i + 4, bank);
                 }
                 break;
             }

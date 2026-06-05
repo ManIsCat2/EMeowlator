@@ -22,16 +22,16 @@ public:
         if (nina01) {
             CHRBank0 = s.ReadBytes<uint8_t>();
             CHRBank1 = s.ReadBytes<uint8_t>();
-            setCHRPages(0, CHRBank0);
-            setCHRPages(1, CHRBank1);
+            setCHRBank(0, CHRBank0);
+            setCHRBank(1, CHRBank1);
         }
-        setPRGPages(0, PRGBank0);
+        setPRGBank(0, PRGBank0);
     }
 
-    uint16_t getCHRPageSize() override {
+    uint16_t getCHRBankSize() override {
         return nina01 ? 0x1000 : 0x2000;
     }
-    uint16_t getPRGPageSize() override {
+    uint16_t getPRGBankSize() override {
         return 0x8000;
     }
 private:

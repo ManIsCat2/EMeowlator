@@ -15,13 +15,13 @@ public:
     }
     void loadState(SaveStateFile &s) override {
         CHRBank = s.ReadBytes<uint8_t>();
-        setCHRPages(0, CHRBank);
+        setCHRBank(0, CHRBank);
     }
 
-    uint16_t getCHRPageSize() override {
+    uint16_t getCHRBankSize() override {
         return 0x2000;
     }
-    uint16_t getPRGPageSize() override {
+    uint16_t getPRGBankSize() override {
         return 0x8000;
     }
 private:

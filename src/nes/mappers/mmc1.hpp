@@ -45,10 +45,10 @@ public:
         updateBanks();
     }
 
-    uint16_t getCHRPageSize() override {
+    uint16_t getCHRBankSize() override {
         return 0x1000;
     }
-    uint16_t getPRGPageSize() override {
+    uint16_t getPRGBankSize() override {
         return 0x4000;
     }
 private:

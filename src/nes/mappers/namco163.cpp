@@ -12,7 +12,7 @@ void Namco163::reset() {
     lowChrNtMode = false;
     highChrNtMode = false;
     irqCounter = 0;
-    setPRGPages(3, -1);
+    setPRGBank(3, -1);
     updateWorkRam();
 }
 
@@ -66,9 +66,9 @@ void Namco163::cpuWrite(uint16_t addr, uint8_t value) {
         case 0x9800: {
             uint8_t bank = (addr - 0x8000) >> 11;
             if (value >= 0xE0) {
-                setCHRPages(bank, value & 1);
+                setCHRBank(bank, value & 1);
             } else {
-                setCHRPages(bank, value);
+                setCHRBank(bank, value);
             }
             break;
         }
@@ -79,9 +79,9 @@ void Namco163::cpuWrite(uint16_t addr, uint8_t value) {
         case 0xB800: {
             uint8_t bank = ((addr - 0xA000) >> 11) + 4;
             if (value >= 0xE0) {
-                setCHRPages(bank, value & 1);
+                setCHRBank(bank, value & 1);
             } else {
-                setCHRPages(bank, value);
+                setCHRBank(bank, value);
             }
             break;
         }
@@ -96,14 +96,14 @@ void Namco163::cpuWrite(uint16_t addr, uint8_t value) {
                 uint8_t bank = ((addr - 0xC000) >> 11) + 8;
 
                 if (value >= 0xE0)
-                    setCHRPages(bank, value & 1);
+                    setCHRBank(bank, value & 1);
                 else
-                    setCHRPages(bank, value);
+                    setCHRBank(bank, value);
             }
             break;
         }
         case 0xE000:
-            setPRGPages(0, value & 0x3F);
+            setPRGBank(0, value & 0x3F);
             if (variant == NAMCO_340) {
                 switch((value >> 6) & 3) {
                     case 0: ppu.Mirroring = MirrorMode::SCREEN_A; break;
@@ -115,14 +115,14 @@ void Namco163::cpuWrite(uint16_t addr, uint8_t value) {
             break;
 
         case 0xE800:
-            setPRGPages(1, value & 0x3F);
+            setPRGBank(1, value & 0x3F);
 
             lowChrNtMode  = value & 0x40;
             highChrNtMode = value & 0x80;
             break;
 
         case 0xF000:
-            setPRGPages(2, value & 0x3F);
+            setPRGBank(2, value & 0x3F);
             break;
 
         case 0xF800:

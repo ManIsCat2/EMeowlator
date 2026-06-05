@@ -6,10 +6,10 @@ MapperBase::~MapperBase() {
     if (SRAM) delete[] SRAM;
 }
 
-void MapperBase::setCHRPages(uint16_t page, uint16_t val, enum BankSize size) {
+void MapperBase::setCHRBank(uint16_t page, uint16_t val, enum BankSize size) {
     switch (size) {
         case BANK_1K: {
-            uint32_t chrSlotSize = getCHRPageSize();
+            uint32_t chrSlotSize = getCHRBankSize();
             uint32_t bankOffset = (val * chrSlotSize) & (globalROM.CHRRomSize - 1);
             uint16_t ppuStart = page * chrSlotSize;
             uint16_t ppuEnd = ppuStart + chrSlotSize - 1;
@@ -17,23 +17,31 @@ void MapperBase::setCHRPages(uint16_t page, uint16_t val, enum BankSize size) {
             break;
         }
         case BANK_2K:
-            setCHRPages(page * 2, val, BANK_1K);
-            setCHRPages(page * 2 + 1, val + 1, BANK_1K);
+            setCHRBank(page * 2, val, BANK_1K);
+            setCHRBank(page * 2 + 1, val + 1, BANK_1K);
             break;
         case BANK_4K:
-            setCHRPages(page * 2, val, BANK_2K);
-            setCHRPages(page * 2 + 1, val + 2, BANK_2K);
+            setCHRBank(page * 2, val, BANK_2K);
+            setCHRBank(page * 2 + 1, val + 2, BANK_2K);
             break;
         case BANK_8K:
-            setCHRPages(page * 2, val, BANK_4K);
-            setCHRPages(page * 2 + 1, val + 4, BANK_4K);
+            setCHRBank(page * 2, val, BANK_4K);
+            setCHRBank(page * 2 + 1, val + 4, BANK_4K);
+            break;
+        case BANK_16K:
+            setCHRBank(page * 2, val, BANK_8K);
+            setCHRBank(page * 2 + 1, val + 8, BANK_8K);
+            break;
+        case BANK_32K:
+            setCHRBank(page * 2, val, BANK_16K);
+            setCHRBank(page * 2 + 1, val + 16, BANK_16K);
             break;
     }
 }
-void MapperBase::setPRGPages(uint16_t page, uint16_t val, enum BankSize size) {
+void MapperBase::setPRGBank(uint16_t page, uint16_t val, enum BankSize size) {
     switch (size) {
         case BANK_1K: {
-            uint32_t prgSlotSize = getPRGPageSize();
+            uint32_t prgSlotSize = getPRGBankSize();
             uint32_t bankOffset = (val * prgSlotSize) & (globalROM.PRGRomSize - 1);
             uint16_t cpuStart = 0x8000 + (page * prgSlotSize);
             uint16_t cpuEnd = cpuStart + prgSlotSize - 1;
@@ -41,24 +49,24 @@ void MapperBase::setPRGPages(uint16_t page, uint16_t val, enum BankSize size) {
             break;
         }
         case BANK_2K:
-            setPRGPages(page * 2, val, BANK_1K);
-            setPRGPages(page * 2 + 1, val + 1, BANK_1K);
+            setPRGBank(page * 2, val, BANK_1K);
+            setPRGBank(page * 2 + 1, val + 1, BANK_1K);
             break;
         case BANK_4K:
-            setPRGPages(page * 2, val, BANK_2K);
-            setPRGPages(page * 2 + 1, val + 2, BANK_2K);
+            setPRGBank(page * 2, val, BANK_2K);
+            setPRGBank(page * 2 + 1, val + 2, BANK_2K);
             break;
         case BANK_8K:
-            setPRGPages(page * 2, val, BANK_4K);
-            setPRGPages(page * 2 + 1, val + 4, BANK_4K);
+            setPRGBank(page * 2, val, BANK_4K);
+            setPRGBank(page * 2 + 1, val + 4, BANK_4K);
             break;
         case BANK_16K:
-            setPRGPages(page * 2, val, BANK_8K);
-            setPRGPages(page * 2 + 1, val + 8, BANK_8K);
+            setPRGBank(page * 2, val, BANK_8K);
+            setPRGBank(page * 2 + 1, val + 8, BANK_8K);
             break;
         case BANK_32K:
-            setPRGPages(page * 2, val, BANK_16K);
-            setPRGPages(page * 2 + 1, val + 16, BANK_16K);
+            setPRGBank(page * 2, val, BANK_16K);
+            setPRGBank(page * 2 + 1, val + 16, BANK_16K);
             break;
     }
 }

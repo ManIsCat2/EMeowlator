@@ -38,10 +38,10 @@ public:
         updateCHR();
     }
 
-    uint16_t getCHRPageSize() override {
+    uint16_t getCHRBankSize() override {
         return 0x400;
     }
-    uint16_t getPRGPageSize() override {
+    uint16_t getPRGBankSize() override {
         return 0x2000;
     }
     uint32_t getSRAMSize() override {

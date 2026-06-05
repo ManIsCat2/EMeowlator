@@ -7,9 +7,9 @@ NROM::NROM() {
 }
 
 void NROM::reset() {
-    setPRGPages(0, 0);
-	setPRGPages(1, 1);
-    setCHRPages(0, 0);
+    setPRGBank(0, 0);
+	setPRGBank(1, 1);
+    setCHRBank(0, 0);
 }
 
 const char *NROM::getName(void) {

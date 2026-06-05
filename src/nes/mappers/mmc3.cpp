@@ -66,37 +66,37 @@ const char* MMC3::getName(void) {
 
 void MMC3::updatePRG() {
     if (PrgMode == 0) {
-        setPRGPages(0, BankRegisters[6]);
-		setPRGPages(1, BankRegisters[7]);
-        setPRGPages(2, -2);
-		setPRGPages(3, -1);
+        setPRGBank(0, BankRegisters[6]);
+		setPRGBank(1, BankRegisters[7]);
+        setPRGBank(2, -2);
+		setPRGBank(3, -1);
     } else {
-        setPRGPages(0, -2);
-        setPRGPages(1, BankRegisters[7]);
-		setPRGPages(2, BankRegisters[6]);
-        setPRGPages(3, -1);
+        setPRGBank(0, -2);
+        setPRGBank(1, BankRegisters[7]);
+		setPRGBank(2, BankRegisters[6]);
+        setPRGBank(3, -1);
     }
 }
 
 void MMC3::updateCHR() {
     if (ChrMode == 0) {
-        setCHRPages(0, BankRegisters[0] & 0xFE);
-		setCHRPages(1, BankRegisters[0] | 0x01);
-		setCHRPages(2, BankRegisters[1] & 0xFE);
-		setCHRPages(3, BankRegisters[1] | 0x01);
-		setCHRPages(4, BankRegisters[2]);
-		setCHRPages(5, BankRegisters[3]);
-		setCHRPages(6, BankRegisters[4]);
-		setCHRPages(7, BankRegisters[5]);
+        setCHRBank(0, BankRegisters[0] & 0xFE);
+		setCHRBank(1, BankRegisters[0] | 0x01);
+		setCHRBank(2, BankRegisters[1] & 0xFE);
+		setCHRBank(3, BankRegisters[1] | 0x01);
+		setCHRBank(4, BankRegisters[2]);
+		setCHRBank(5, BankRegisters[3]);
+		setCHRBank(6, BankRegisters[4]);
+		setCHRBank(7, BankRegisters[5]);
     } else if (ChrMode == 1) {
-        setCHRPages(0, BankRegisters[2]);
-		setCHRPages(1, BankRegisters[3]);
-		setCHRPages(2, BankRegisters[4]);
-		setCHRPages(3, BankRegisters[5]);
-		setCHRPages(4, BankRegisters[0] & 0xFE);
-		setCHRPages(5, BankRegisters[0] | 0x01);
-		setCHRPages(6, BankRegisters[1] & 0xFE);
-		setCHRPages(7, BankRegisters[1] | 0x01);
+        setCHRBank(0, BankRegisters[2]);
+		setCHRBank(1, BankRegisters[3]);
+		setCHRBank(2, BankRegisters[4]);
+		setCHRBank(3, BankRegisters[5]);
+		setCHRBank(4, BankRegisters[0] & 0xFE);
+		setCHRBank(5, BankRegisters[0] | 0x01);
+		setCHRBank(6, BankRegisters[1] & 0xFE);
+		setCHRBank(7, BankRegisters[1] | 0x01);
     }
 }
 

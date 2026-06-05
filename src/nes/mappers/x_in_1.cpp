@@ -7,9 +7,9 @@ XIn1::XIn1() {
 }
 
 void XIn1::reset() {
-    setPRGPages(0, 0);
-	setPRGPages(1, 1);
-	setCHRPages(0, 0);
+    setPRGBank(0, 0);
+	setPRGBank(1, 1);
+	setCHRBank(0, 0);
 }
 
 void XIn1::cpuWrite(uint16_t addr, uint8_t value) {
@@ -17,14 +17,14 @@ void XIn1::cpuWrite(uint16_t addr, uint8_t value) {
 		uint8_t chr = ((addr & 0x1F) << 2) | (value & 0x03);
         uint8_t prg = ((addr & 0x3F00) >> 8) | (addr & 0x40);
 		if (!(addr & 0x20)) {
-			setPRGPages(0, prg & 0xFE);
-			setPRGPages(1, (prg & 0xFE) + 1);
+			setPRGBank(0, prg & 0xFE);
+			setPRGBank(1, (prg & 0xFE) + 1);
 		} else {
-			setPRGPages(0, prg);
-			setPRGPages(1, prg);
+			setPRGBank(0, prg);
+			setPRGBank(1, prg);
 		}
 
-		setCHRPages(0, chr);
+		setCHRBank(0, chr);
 
 		ppu.Mirroring = addr & 0x80 ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL;
         return;

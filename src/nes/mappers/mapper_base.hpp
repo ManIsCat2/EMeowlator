@@ -38,10 +38,10 @@ public:
     virtual void reset() {}
     void initialize();
 
-    virtual uint16_t getCHRPageSize() {
+    virtual uint16_t getCHRBankSize() {
         return 0x2000;
     }
-	virtual uint16_t getPRGPageSize() {
+	virtual uint16_t getPRGBankSize() {
         return 0x4000;
     }
     virtual uint32_t getSRAMSize() { 
@@ -55,8 +55,8 @@ public:
     virtual void saveState(SaveStateFile &s) { (void)s; }
     virtual void loadState(SaveStateFile &s) { (void)s; }
 
-    void setCHRPages(uint16_t page, uint16_t val, enum BankSize size=BANK_1K);
-    void setPRGPages(uint16_t page, uint16_t val, enum BankSize size=BANK_1K);
+    void setCHRBank(uint16_t page, uint16_t val, enum BankSize size=BANK_1K);
+    void setPRGBank(uint16_t page, uint16_t val, enum BankSize size=BANK_1K);
 
     void mapCPUMemory(uint16_t start, uint16_t end, uint8_t *memory, uint32_t offset, bool writable);
     void unmapCPUMemory(uint16_t start, uint16_t end);
