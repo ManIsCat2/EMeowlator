@@ -2,6 +2,16 @@
 #include "nes_cpu.hpp"
 #include <cstring>
 
+#define VRAM_FIY 0x7000 //0b111000000000000, fine Y
+#define VRAM_X_NT 0x0400 //0b000010000000000, X nametable
+#define VRAM_Y_NT 0x0800 //0b000100000000000, Y nametable
+#define VRAM_COY 0x03E0 //0b000001111100000, coarse Y
+#define VRAM_COX 0x001F //0b000000000011111, coarse X
+
+#define PPU_BUS_DECAY_TIME 1696132
+#define PPU_PIXEL_COUNT_NTSC (NES_NTSC_OUT_WIDTH(NES_WIDTH) * NES_HEIGHT)
+#define PPU_PIXEL_COUNT (NES_WIDTH * NES_HEIGHT)
+
 PPU ppu;
 
 uint32_t nesPalette[64] = {
@@ -112,14 +122,14 @@ void PPU::decayDataBus(void) {
 }
 
 uint16_t PPU::getAttributeByte() {
-    if (globalROM.mapper->usingExtendedAttributes()) {
-        MMC5 *mmc5 = (MMC5*)globalROM.mapper;
+    if (romMapper->usingExtendedAttributes()) {
+        MMC5 *mmc5 = (MMC5*)romMapper;
         uint8_t ex = mmc5->getEXRAMByte(VRAMAddr);
         return (ex >> 6) & 0x03;
         
     }
     uint16_t attrAddr = (VRAMAddr & 0x0C00) | 0x03C0 | ((VRAMAddr >> 4) & 0x38) | ((VRAMAddr >> 2) & 0x07);
-    uint8_t attr = globalROM.mapper->readVRAM(attrAddr);
+    uint8_t attr = romMapper->readVRAM(attrAddr);
     uint8_t shift = ((VRAMAddr >> 4) & 4) | (VRAMAddr & 2);
     
     return (attr >> shift) & 0x03;
@@ -159,7 +169,7 @@ void PPU::RenderScreen() {
                 if (spriteX < 8 && spriteY < spriteH) {
                     uint16_t spriteTile = sprite[1];
                     uint16_t spriteAddress = (control.use8x16Sprites ? spriteTile % 0x02 << 0x0C | spriteTile << 4 & -32 | sy * 0x02 & 0x10 : (control.spritePatternTable) << 0x09 | spriteTile << 0x04) | sy & 0x07;
-                    uint16_t spriteColor = globalROM.mapper->readCHR(spriteAddress + 8, true) >> sx << 0x01 & 0x02 | globalROM.mapper->readCHR(spriteAddress, true) >> sx & 0x01;
+                    uint16_t spriteColor = romMapper->readCHR(spriteAddress + 8, true) >> sx << 0x01 & 0x02 | romMapper->readCHR(spriteAddress, true) >> sx & 0x01;
                     if (spriteColor) {
                         if (!(sprite[2] & 0x20 && bgColor) && !DisableSprites) {
                             finalColor = spriteColor;
@@ -205,7 +215,7 @@ void PPU::RenderScreen() {
         }
 
         case 1:
-            nametableByte = globalROM.mapper->readVRAM(VRAMAddr);
+            nametableByte = romMapper->readVRAM(VRAMAddr);
             break;
 
         case 3: {
@@ -214,17 +224,17 @@ void PPU::RenderScreen() {
         }
 
         case 5:
-            patternTableLow = globalROM.mapper->readCHR(fetchAddress, false);
+            patternTableLow = romMapper->readCHR(fetchAddress, false);
             break;
 
         case 7:
-            patternTableHigh = globalROM.mapper->readCHR(fetchAddress + 8, false);
+            patternTableHigh = romMapper->readCHR(fetchAddress + 8, false);
             break;
     }
 }
 
 void PPU::Step() {
-    const bool isPal = /*globalROM.Region == ConsoleRegion::PAL*/ false;
+    const bool isPal = /*getNESRom()->Region == ConsoleRegion::PAL*/ false;
     const int preRenderLine = isPal ? 311 : 261;
     const int totalScanlines = isPal ? 312 : 262;
 
@@ -305,7 +315,7 @@ void PPU::Step() {
         if (Dot >= 280 && Dot <= 304 && ScanLine == preRenderLine) {
             VRAMAddr = ((VRAMAddr & 0x41f) | (TransferAddr & 0x7be0));
         }
-        globalROM.mapper->clockPPU();
+        romMapper->clockPPU();
     }
 
     Dot++;

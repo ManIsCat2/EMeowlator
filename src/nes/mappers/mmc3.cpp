@@ -18,7 +18,7 @@ void MMC3::reset() {
     IRQEnabled = false;
     LastA12 = false;
 
-    mapCPUMemory(0x6000, 0x7FFF, globalROM.hasBattery ? SRAM : PRGRam, 0, true);
+    mapCPUMemory(0x6000, 0x7FFF, getNESRom()->hasBattery ? SRAM : PRGRam, 0, true);
     updatePRG();
     updateCHR();
 }

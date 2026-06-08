@@ -35,7 +35,7 @@ void SaveStateFile::Write(const char *FileName) {
     OpenFileW(FileName);
     
     WriteBytes<uint32_t>(NYA_SIGNATURE);
-    WriteBytes<uint16_t>(globalROM.MapperID);
+    WriteBytes<uint16_t>(getNESRom()->MapperID);
     WriteBytesPtr<uint8_t>(cpu.RAM, RAM_SIZE);
 
     uint8_t A,X,Y,SP,P = 0;
@@ -97,7 +97,7 @@ void SaveStateFile::Write(const char *FileName) {
     WriteBytes<uint16_t>(ppu.shiftAttrLow);
     WriteBytes<uint16_t>(ppu.attributeByte);
 
-    if (globalROM.CHRRomSize == 0) {
+    if (getNESRom()->CHRRomSize == 0) {
         WriteBytesPtr<uint8_t>(ppu.ChrData.data(), 0x2000);
     }
 
@@ -180,14 +180,14 @@ void SaveStateFile::Write(const char *FileName) {
     WriteBytes<uint8_t>(apu.dmc.outputLevel);
     WriteBytes<bool>(apu.dmc.silence);
 
-    uint32_t SRAMSize = globalROM.mapper->getSRAMSize();
-    if (globalROM.hasBattery && SRAMSize != 0) {
-        WriteBytesPtr<uint8_t>(globalROM.mapper->SRAM, SRAMSize);
+    uint32_t SRAMSize = getNESRom()->mapper->getSRAMSize();
+    if (getNESRom()->hasBattery && SRAMSize != 0) {
+        WriteBytesPtr<uint8_t>(getNESRom()->mapper->SRAM, SRAMSize);
     } else {
-        WriteBytesPtr<uint8_t>(globalROM.mapper->PRGRam, 0x2000);
+        WriteBytesPtr<uint8_t>(getNESRom()->mapper->PRGRam, 0x2000);
     }
 
-    globalROM.mapper->saveState(*this);
+    getNESRom()->mapper->saveState(*this);
 
     CloseFile();
 }
@@ -204,7 +204,7 @@ void SaveStateFile::Load(const char *FileName) {
     }
 
     uint16_t mapperID = ReadBytes<uint16_t>();
-    if (mapperID != globalROM.MapperID) {
+    if (mapperID != getNESRom()->MapperID) {
         DebugPrintLog("SAVESTATE", "State used in incorrect ROM");
 
         QMessageBox::StandardButton reply;
@@ -283,7 +283,7 @@ void SaveStateFile::Load(const char *FileName) {
     ppu.shiftAttrLow       = ReadBytes<uint16_t>();
     ppu.attributeByte      = ReadBytes<uint16_t>();
 
-    if (globalROM.CHRRomSize == 0) {
+    if (getNESRom()->CHRRomSize == 0) {
         ReadBytesPtr<uint8_t>(ppu.ChrData.data(), 0x2000);
     }
 
@@ -366,14 +366,14 @@ void SaveStateFile::Load(const char *FileName) {
     apu.dmc.outputLevel          = ReadBytes<uint8_t>();
     apu.dmc.silence              = ReadBytes<bool>();
 
-    uint32_t SRAMSize = globalROM.mapper->getSRAMSize();
-    if (globalROM.hasBattery && SRAMSize != 0) {
-        ReadBytesPtr<uint8_t>(globalROM.mapper->SRAM, SRAMSize);
+    uint32_t SRAMSize = getNESRom()->mapper->getSRAMSize();
+    if (getNESRom()->hasBattery && SRAMSize != 0) {
+        ReadBytesPtr<uint8_t>(getNESRom()->mapper->SRAM, SRAMSize);
     } else {
-        ReadBytesPtr<uint8_t>(globalROM.mapper->PRGRam, 0x2000);
+        ReadBytesPtr<uint8_t>(getNESRom()->mapper->PRGRam, 0x2000);
     }
 
-    globalROM.mapper->loadState(*this);
+    getNESRom()->mapper->loadState(*this);
 
     DebugPrintLog("SAVESTATE", "Loaded Savestate '%s'", FileName);
     CloseFile();

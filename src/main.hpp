@@ -39,7 +39,6 @@
 #include <QComboBox>
 
 extern bool romIsLoaded;
-extern NesROM globalROM;
 extern void *globalQTWin;
 extern int hoveredPaletteIndex;
 

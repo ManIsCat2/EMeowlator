@@ -1,5 +1,6 @@
 #include "nes_rom.hpp"
 #include "../main.hpp"
+#include "nes_ppu.hpp"
 
 NesROM::NesROM() {
 }
@@ -71,7 +72,7 @@ ConsoleRegion NesROM::GetRegion(void) {
     return romRegion;
 }
 
-bool NesROM::LoadNES(const std::string &filename) {
+bool NesROM::load(const std::string &filename) {
     std::ifstream rom(filename, std::ios::binary | std::ios::ate);
     if (!rom) {
         DebugPrintLog("ROM", "Failed to open ROM '%s'", filename.c_str());
@@ -89,6 +90,7 @@ bool NesROM::LoadNES(const std::string &filename) {
         DebugPrintLog("ROM", "Failed to read ROM '%s'", filename.c_str());
         return false;
     }
+    this->data = data.data();
 
     // header
     if (data.size() < 16 || data[0] != 'N' || data[1] != 'E' || data[2] != 'S' || data[3] != 0x1A) {
@@ -151,7 +153,7 @@ bool NesROM::LoadNES(const std::string &filename) {
         DebugPrintLog("ROM", "Unimplemented mapper: %u, failed to open ROM", romMapperID)
         return false;
     } else {
-        if (mapper) { delete mapper; mapper = nullptr; }
+        if (mapper) { delete mapper; cpu.romMapper = ppu.romMapper = mapper = nullptr; }
         Name = romName;
         std::memcpy(Header, romHeader, 16);
         hasBattery = romHasBattery;
@@ -167,6 +169,8 @@ bool NesROM::LoadNES(const std::string &filename) {
         mapper = romMapperNew;
     }
     mapper->subMapper = romSubMapperID;
+    ppu.romMapper = romMapperNew;
+    cpu.romMapper = romMapperNew;
 
     if (ROM) { delete[] ROM; ROM = nullptr; }
     ROM = new uint8_t[PRGRomSize];

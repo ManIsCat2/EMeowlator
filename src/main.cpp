@@ -1,7 +1,8 @@
 #include "nes/nes_cpu.hpp"
 #include "nes/nes_apu.hpp"
 #include "nes/nes_rom.hpp"
-#include "nes/audio.hpp"
+#include "nes/nes_console.hpp"
+#include "audio.hpp"
 
 #include "main.hpp"
 #include "qt/screen_widget.hpp"
@@ -18,8 +19,6 @@
 #include <sys/types.h>
 #define makeDirectory(dir) mkdir(dir, 0777)
 #endif
-
-NesROM globalROM;
 
 bool romIsLoaded = false;
 static bool fullscreen = false;
@@ -70,8 +69,30 @@ QImage *rawOutputImage = nullptr;
 QImage *filteredOutputImage = nullptr;
 QTimer cpuTimer;
 
+std::string allowedExts[] = {
+    ".nes",
+};
+bool loadConsoleWithGame(const std::string &file) {
+    bool allow = true;
+    for (auto &ext : allowedExts) {
+        if (file.find(ext) == std::string::npos) {
+            allow = false;
+        }
+    }
+    if (!allow) {
+        DebugPrintLog("LOADER", "Console not supported");
+        QMessageBox::critical((QMainWindow*)globalQTWin, "Error", "Console not supported");
+        return false;
+    }
+    if (emuConsole) { delete emuConsole; emuConsole = nullptr; }
+    if (file.find(".nes") != std::string::npos) {
+        emuConsole = new NESConsole;
+    };
+    return emuConsole->loadGame(file);
+}
+
 void startCPUTimer(void) {
-    if (globalROM.Region == ConsoleRegion::NTSC) {
+    if (getRom()->Region == ConsoleRegion::NTSC) {
         cpuTimer.start(16);
     } else {
         cpuTimer.start(20);
@@ -152,22 +173,24 @@ int main(int argc, char *argv[]) {
         );
 
         if (!file.isEmpty()) {
-            if (globalROM.LoadNES(file.toStdString().c_str())) {
-                cpu.reset();
+            if (loadConsoleWithGame(file.toStdString())) {
                 romIsLoaded = true;
                 startCPUTimer();
+                emuConsole->reset();
             }
         }
     });
     QObject::connect(closeAction, &QAction::triggered, [&]() {
         if (romIsLoaded) {
-            globalROM.mapper->saveSRAM();
+            if (emuConsole) {
+                emuConsole->writeSave();
+                emuConsole->reset();
+            }
             romIsLoaded = false;
-            cpu.reset();
         }
     });
     QObject::connect(gameResetAction, &QAction::triggered, [&]() {
-        cpu.reset();
+        if (emuConsole) emuConsole->reset();
         DebugPrintLog("GAME", "Reset Game");
     });
     QObject::connect(gamePauseAction, &QAction::triggered, [&]() {
@@ -288,10 +311,10 @@ int main(int argc, char *argv[]) {
             tvtypeComboBox->addItem(QString::fromStdString(regionStrs[i]), i);
         }
 
-        tvtypeComboBox->setCurrentIndex((int)(globalROM.Region));
+        tvtypeComboBox->setCurrentIndex((int)(getNESRom()->Region));
 
         QComboBox::connect(tvtypeComboBox, &QComboBox::currentIndexChanged, [&](int index) {
-            globalROM.Region = (ConsoleRegion)index;
+            getNESRom()->Region = (ConsoleRegion)index;
             startCPUTimer();
             DebugPrintLog("SETTINGS", "Set Region to %d", index);
         });
@@ -524,30 +547,30 @@ int main(int argc, char *argv[]) {
         }
     });
     QObject::connect(romInfoAction, &QAction::triggered, [&]() {
-        std::string fileStr = "File: " + globalROM.Name;
+        std::string fileStr = "File: " + getNESRom()->Name;
         std::string HeaderHexStr;
         for (int i = 0; i < 8; i++) {
             char Buf[4];
-            snprintf(Buf, sizeof(Buf), "%02X", globalROM.Header[i]);
+            snprintf(Buf, sizeof(Buf), "%02X", getNESRom()->Header[i]);
             HeaderHexStr += Buf;
             if (i < 7) HeaderHexStr += " ";
         }
         HeaderHexStr = "Header: " + HeaderHexStr;
-        std::string headVerStr = "Header Version: " + std::string(globalROM.Version == HeaderVersion::NES2_0 ? "NES2.0" : "INES");
+        std::string headVerStr = "Header Version: " + std::string(getNESRom()->Version == HeaderVersion::NES2_0 ? "NES2.0" : "INES");
         char PRGSizeStr[128];
-        sprintf(PRGSizeStr, "PRG Size: %uKiB (%u x 16KiB)", globalROM.PRGNumPages * 16, globalROM.PRGNumPages);
+        sprintf(PRGSizeStr, "PRG Size: %uKiB (%u x 16KiB)", getNESRom()->PRGNumPages * 16, getNESRom()->PRGNumPages);
         char CHRSizeStr[128];
-        sprintf(CHRSizeStr, "CHR Size: %uKiB (%u x 8KiB)", globalROM.CHRNumPages * 8, globalROM.CHRNumPages);
-        std::string mapperStr = "Mapper: " + std::string(globalROM.mapper ? globalROM.mapper->getName() : (globalROM.MapperID ? "Unknown" : "NROM")) + " (Mapper " + std::to_string(globalROM.MapperID)+")";
-        std::string subMapperStr = "Sub Mapper: " + std::to_string(globalROM.SubMapperID);
-        std::string mirrorStr = "Mirroring: " + std::string(globalROM.Mirroring == MirrorMode::HORIZONTAL ? "Horizontal" : "Vertical");
-        std::string batteryStr = "Battery: " + std::string(globalROM.hasBattery ? "Yes" : "No");
-        std::string CHRRamStr = "CHR-RAM: " + std::string(globalROM.CHRRomSize == 0 ? "Yes" : "No");
+        sprintf(CHRSizeStr, "CHR Size: %uKiB (%u x 8KiB)", getNESRom()->CHRNumPages * 8, getNESRom()->CHRNumPages);
+        std::string mapperStr = "Mapper: " + std::string(getNESRom()->mapper ? getNESRom()->mapper->getName() : (getNESRom()->MapperID ? "Unknown" : "NROM")) + " (Mapper " + std::to_string(getNESRom()->MapperID)+")";
+        std::string subMapperStr = "Sub Mapper: " + std::to_string(getNESRom()->SubMapperID);
+        std::string mirrorStr = "Mirroring: " + std::string(getNESRom()->Mirroring == MirrorMode::HORIZONTAL ? "Horizontal" : "Vertical");
+        std::string batteryStr = "Battery: " + std::string(getNESRom()->hasBattery ? "Yes" : "No");
+        std::string CHRRamStr = "CHR-RAM: " + std::string(getNESRom()->CHRRomSize == 0 ? "Yes" : "No");
         char batterySizeStr[128];
-        size_t SRAMSize = globalROM.hasBattery ? globalROM.mapper->getSRAMSize() : 0x0000; 
+        size_t SRAMSize = getNESRom()->hasBattery ? getNESRom()->mapper->getSRAMSize() : 0x0000; 
         sprintf(batterySizeStr, "SRAM/Battery Size: 0x%zx (%zu)", SRAMSize, SRAMSize);
         char RESETVecStr[128];
-        sprintf(RESETVecStr, "RESET Vector: 0x%x", globalROM.ResetVec);
+        sprintf(RESETVecStr, "RESET Vector: 0x%x", getNESRom()->ResetVec);
         
         QDialog* dialog = new QDialog(&window);
         dialog->setWindowTitle("ROM Info");
@@ -576,11 +599,7 @@ int main(int argc, char *argv[]) {
     cpuTimer.setTimerType(Qt::PreciseTimer);
     QObject::connect(&cpuTimer, &QTimer::timeout, [&]() {
         if (romIsLoaded) {
-            uint32_t speed = CYCLES_PER_FRAME_NTSC;
-            if (globalROM.Region == ConsoleRegion::PAL) {
-                speed = CYCLES_PER_FRAME_PAL;
-            }
-            cpu.run(speed);
+            emuConsole->runFrame();
             if (ppu.filtering == VideoFilter::NTSC) {
                 screen->image = *filteredOutputImage;
             } else {
@@ -604,14 +623,14 @@ int main(int argc, char *argv[]) {
     window.show();
 
     QObject::connect(&app, &QApplication::aboutToQuit, [&]() {
-        globalROM.mapper->saveSRAM();
+        if (emuConsole) emuConsole->writeSave();
         audioSystem.close();
         Config::Write("meowconf.txt");
     });
 
     if (argc > 1) {
-        if (globalROM.LoadNES(argv[1])) {
-            cpu.reset();
+        if (loadConsoleWithGame(argv[1])) {
+            emuConsole->reset();
             romIsLoaded = true;
             startCPUTimer();
         }

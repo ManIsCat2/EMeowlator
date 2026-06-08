@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../nes_ppu.hpp"
 #include "../../savestate.hpp"
 #include <stdint.h>
 #include <string>

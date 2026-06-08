@@ -1,6 +1,7 @@
 #pragma once
 #include "mapper_base.hpp"
 #include <stdint.h>
+#include "../nes_ppu.hpp"
 
 class SL12 : public MapperBase {
 public:

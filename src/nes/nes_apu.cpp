@@ -3,7 +3,7 @@
 
 #include "nes_apu.hpp"
 #include "nes_cpu.hpp"
-#include "audio.hpp"
+#include "../audio.hpp"
 
 APU apu;
 
@@ -86,7 +86,7 @@ void APU::write(uint16_t addr, uint8_t data) {
         case 0x400C: noise.lengthHalt = (data & 0x20); noise.constantVolume = (data & 0x10); noise.volume = (data & 0x0F); break;
         case 0x400E: {
             noise.mode = (data & 0x80);
-            uint16_t *noiseTimers = (uint16_t*)(globalROM.Region == ConsoleRegion::NTSC ? NoiseTimerTableNTSC : NoiseTimerTablePAL);
+            uint16_t *noiseTimers = (uint16_t*)(getRom()->Region == ConsoleRegion::NTSC ? NoiseTimerTableNTSC : NoiseTimerTablePAL);
             noise.timerReload = noiseTimers[data & 0x0F];
             break;
         }
@@ -95,7 +95,7 @@ void APU::write(uint16_t addr, uint8_t data) {
         case 0x4010: {
             DMCIrqEnable = (data & 0x80) != 0;
             dmc.loop = (data & 0x40) != 0;
-            uint16_t *dmcRates = (uint16_t*)(globalROM.Region == ConsoleRegion::NTSC ? DMCRateTableNTSC : DMCRateTablePAL);
+            uint16_t *dmcRates = (uint16_t*)(getRom()->Region == ConsoleRegion::NTSC ? DMCRateTableNTSC : DMCRateTablePAL);
             dmc.timerReload = dmcRates[data & 0x0F];
 
             if (!DMCIrqEnable)
@@ -364,7 +364,7 @@ void APU::step() {
     clockDMC();
 
     frameCounter++;
-    if (globalROM.Region == ConsoleRegion::NTSC) {
+    if (getRom()->Region == ConsoleRegion::NTSC) {
         if (frameMode == 0) { 
             if (frameCounter == 7457)  { clockEnvelopes(); }
             if (frameCounter == 14913) { clockEnvelopes(); clockPulse(); }

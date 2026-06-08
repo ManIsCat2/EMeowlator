@@ -10,10 +10,10 @@ void MapperBase::setCHRBank(uint16_t page, uint16_t val, enum BankSize size) {
     switch (size) {
         case BANK_1K: {
             uint32_t chrSlotSize = getCHRBankSize();
-            uint32_t bankOffset = (val * chrSlotSize) & (globalROM.CHRRomSize - 1);
+            uint32_t bankOffset = (val * chrSlotSize) & (getNESRom()->CHRRomSize - 1);
             uint16_t ppuStart = page * chrSlotSize;
             uint16_t ppuEnd = ppuStart + chrSlotSize - 1;
-            mapPPUMemory(ppuStart, ppuEnd, ppu.ChrData.data(), bankOffset, globalROM.CHRRomSize == 0);
+            mapPPUMemory(ppuStart, ppuEnd, ppu.ChrData.data(), bankOffset, getNESRom()->CHRRomSize == 0);
             break;
         }
         case BANK_2K:
@@ -42,10 +42,10 @@ void MapperBase::setPRGBank(uint16_t page, uint16_t val, enum BankSize size) {
     switch (size) {
         case BANK_1K: {
             uint32_t prgSlotSize = getPRGBankSize();
-            uint32_t bankOffset = (val * prgSlotSize) & (globalROM.PRGRomSize - 1);
+            uint32_t bankOffset = (val * prgSlotSize) & (getNESRom()->PRGRomSize - 1);
             uint16_t cpuStart = 0x8000 + (page * prgSlotSize);
             uint16_t cpuEnd = cpuStart + prgSlotSize - 1;
-            mapCPUMemory(cpuStart, cpuEnd, globalROM.ROM, bankOffset, false);
+            mapCPUMemory(cpuStart, cpuEnd, getNESRom()->ROM, bankOffset, false);
             break;
         }
         case BANK_2K:
@@ -111,7 +111,7 @@ void MapperBase::mapCPUMemory(uint16_t start, uint16_t end, uint8_t *memory, uin
     uint8_t page = start >> 8;
     
     for (uint32_t addr = start; addr <= end; addr += 0x100) {
-        PRGPages[page].ptr = memory + ((offset + (addr - start)) & (globalROM.PRGRomSize-1));
+        PRGPages[page].ptr = memory + ((offset + (addr - start)) & (getNESRom()->PRGRomSize-1));
         PRGPages[page].write = writable;
         page++;
     }
@@ -130,15 +130,15 @@ void MapperBase::mapPPUMemory(uint16_t start, uint16_t end, uint8_t *memory, uin
     uint8_t page = start >> 8;
 
     for (uint32_t addr = start; addr <= end; addr += 0x100) {
-        CHRPages[page & 0x1F].ptr = memory + ((offset + (addr - start)) & (globalROM.CHRRomSize - 1));
+        CHRPages[page & 0x1F].ptr = memory + ((offset + (addr - start)) & (getNESRom()->CHRRomSize - 1));
         CHRPages[page & 0x1F].write = writable;
         page++;
     }
 }
 
 void MapperBase::saveSRAM() {
-    if (!globalROM.hasBattery) return;
-    std::string fname = ("saves/"+globalROM.Name+".sav");
+    if (!getNESRom()->hasBattery) return;
+    std::string fname = ("saves/"+getNESRom()->Name+".sav");
     FILE* f = fopen(fname.c_str(), "wb");
     if (!f) return;
     fwrite(SRAM, 1, getSRAMSize(), f);
@@ -146,8 +146,8 @@ void MapperBase::saveSRAM() {
     DebugPrintLog("MAPPER", "Saved SRAM to %s", fname.c_str())
 }
 void MapperBase::loadSRAM() {
-    if (!globalROM.hasBattery) return;
-    std::string fname = ("saves/"+globalROM.Name+".sav");
+    if (!getNESRom()->hasBattery) return;
+    std::string fname = ("saves/"+getNESRom()->Name+".sav");
     FILE* f = fopen(fname.c_str(), "rb");
     if (!f) return;
     fread(SRAM, 1, getSRAMSize(), f);
@@ -156,7 +156,7 @@ void MapperBase::loadSRAM() {
 }
 
 void MapperBase::initialize() {
-    if (globalROM.hasBattery) {
+    if (getNESRom()->hasBattery) {
         //DebugPrintLog("MAPPER", "Loaded Save");
         SRAM = new uint8_t[getSRAMSize()];
         loadSRAM();

@@ -7,6 +7,7 @@
 #include "nes.hpp"
 #include "nes_ntsc.h"
 #include "filters/filters.hpp"
+#include "mappers/mapper_base.hpp"
 
 enum class MirrorMode {
     HORIZONTAL,
@@ -83,6 +84,8 @@ public:
     uint16_t shiftAttrHigh = 0;
     uint16_t shiftAttrLow = 0;
     uint16_t attributeByte = 0;
+
+    MapperBase* romMapper = nullptr;
 
     void reset(void);
     void resetBusDecay(void);

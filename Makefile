@@ -4,12 +4,12 @@ BUILD_DIR := build
 
 ifeq ($(OS),Windows_NT)
     CXX := g++
-    CXXFLAGS := -Wall -Wextra -Wno-parentheses -O3 -march=native -fstrict-aliasing -funroll-loops -Iinclude -static-libstdc++ -static-libgcc
+    CXXFLAGS := -Wall -Wextra -Wno-parentheses -O3 -Iinclude -static-libstdc++ -static-libgcc
     EXEEXT := .exe
 	WINDEPLOYQT := $(shell command -v windeployqt6 2>/dev/null || command -v windeployqt 2>/dev/null)
 else
     CXX := clang++
-    CXXFLAGS := -Wall -Wextra -Wno-parentheses -O3 -march=native -fno-plt -fstrict-aliasing -funroll-loops -Iinclude #-fsanitize=address -fsanitize=undefined
+    CXXFLAGS := -Wall -Wextra -Wno-parentheses -O3 -Iinclude #-fsanitize=address -fsanitize=undefined
     EXEEXT :=
 endif
 

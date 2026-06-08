@@ -1,4 +1,5 @@
 #include "nes_cpu.hpp"
+#include "nes_ppu.hpp"
 #include "nes_apu.hpp"
 #include "nes_controller.hpp"
 
@@ -15,18 +16,16 @@ void CPU::reset() {
     for (int i = 0; i < RAM_SIZE; i++) {
         RAM[i] = (!(i & 1)) ? 0x24 : 0x01; // L is real 2401
     }
-    globalROM.ResetVec = PC;
+    getNESRom()->ResetVec = PC;
     ppu.reset();
     apu.reset();
-
-    //if (globalROM.mapper) globalROM.mapper->reset();
 }
 
 void CPU::run(uint32_t maxCycles) {
     uint32_t cyclesRun = 0;
 
     while (cyclesRun < maxCycles) {
-        if (!romIsLoaded || CPUPaused || !globalROM.mapper) return;
+        if (!romIsLoaded || CPUPaused || !romMapper) return;
         bool prevNMIDetect = NMIDetector;
         NMIDetector = ppu.Vblank && ppu.control.enableNMI;
         uint8_t opcode = 0x00;
@@ -36,9 +35,6 @@ void CPU::run(uint32_t maxCycles) {
             opcode = 0x00;
             doNMI = true;
         } else if ((IRQPending || apu.DMCIrqPending || apu.IRQPending) && !(P & Flags::I)) {
-           // IRQPending = false;
-           // apu.DMCIrqPending = false;
-           // apu.IRQPending = false;
             opcode = 0x00;
             doIRQ = true;
         } else {
@@ -50,7 +46,7 @@ void CPU::run(uint32_t maxCycles) {
 
         while (cycles) {
             cycles--;
-            globalROM.mapper->clockCPU();
+            romMapper->clockCPU();
             apu.step();
             ppu.Step();
             ppu.Step();
@@ -1970,10 +1966,10 @@ uint8_t CPU::read(uint16_t addr) {
                 if (vaddr < 0x3F00) {
                     ret = ppu.ReadBuffer;
                     if (vaddr < 0x2000) {
-                        ppu.ReadBuffer = globalROM.mapper->readCHR(vaddr);
+                        ppu.ReadBuffer = romMapper->readCHR(vaddr);
                     } else {
                         uint16_t nt = vaddr & 0x0FFF;
-                        ppu.ReadBuffer = globalROM.mapper->readVRAM(nt);
+                        ppu.ReadBuffer = romMapper->readVRAM(nt);
                     }
                 } else {
                     uint16_t pal = vaddr & 0x1F;
@@ -1984,9 +1980,9 @@ uint8_t CPU::read(uint16_t addr) {
 
                     uint16_t underlying = (vaddr & 0x2FFF);
                     if (underlying < 0x2000) {
-                        ppu.ReadBuffer = globalROM.mapper->readCHR(underlying);
+                        ppu.ReadBuffer = romMapper->readCHR(underlying);
                     } else {
-                        ppu.ReadBuffer = globalROM.mapper->readVRAM(underlying & 0x0FFF);
+                        ppu.ReadBuffer = romMapper->readVRAM(underlying & 0x0FFF);
                     }
                 }
 
@@ -2021,7 +2017,7 @@ uint8_t CPU::read(uint16_t addr) {
         }
     }
 
-    return globalROM.mapper->cpuRead(addr);
+    return romMapper->cpuRead(addr);
 }
 
 void CPU::write(uint16_t addr, uint8_t value) {
@@ -2100,10 +2096,10 @@ void CPU::write(uint16_t addr, uint8_t value) {
                 uint16_t vaddr = ppu.VRAMAddr & 0x3FFF;
 
                 if (vaddr < 0x2000) {
-                    globalROM.mapper->writeCHR(vaddr, value);
+                    romMapper->writeCHR(vaddr, value);
                 } else if (vaddr < 0x3F00) {
                     uint16_t nt = vaddr & 0x0FFF;
-                    globalROM.mapper->writeVRAM(nt, value);
+                    romMapper->writeVRAM(nt, value);
                 } else {
                     uint16_t pal = vaddr & 0x1F;
                     if ((pal & 0x13) == 0x10) pal &= ~0x10;
@@ -2148,7 +2144,7 @@ void CPU::write(uint16_t addr, uint8_t value) {
         }
         return;
     }
-    globalROM.mapper->cpuWrite(addr, value);
+    romMapper->cpuWrite(addr, value);
 }
 
 uint16_t CPU::read16(uint16_t addr) {

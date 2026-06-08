@@ -23,7 +23,7 @@ const char* Namco163::getName(void) {
 }
 
 void Namco163::updateWorkRam() {
-    uint8_t *memory = globalROM.hasBattery ? SRAM : PRGRam;
+    uint8_t *memory = getNESRom()->hasBattery ? SRAM : PRGRam;
     if (variant == Variant::NAMCO_163) {
 		bool WriteEnable = (writeProtect & 0x40) == 0x40;
 		mapCPUMemory(0x6000, 0x67FF, memory, 0, WriteEnable && (writeProtect & 0x01) == 0x00);

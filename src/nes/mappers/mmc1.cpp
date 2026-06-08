@@ -16,7 +16,7 @@ void MMC1::reset() {
     prgReg = 0;
 
     modifyRegister(0x8000, control);
-    mapCPUMemory(0x6000, 0x7FFF, globalROM.hasBattery ? SRAM : PRGRam, 0, true);
+    mapCPUMemory(0x6000, 0x7FFF, getNESRom()->hasBattery ? SRAM : PRGRam, 0, true);
     updateBanks();
 }
 
@@ -87,7 +87,7 @@ void MMC1::modifyRegister(uint16_t addr, uint8_t val) {
 void MMC1::updateBanks() {
     uint8_t prgBankSelect = 0;
 
-    if (globalROM.PRGRomSize == 0x80000) {
+    if (getNESRom()->PRGRomSize == 0x80000) {
         prgBankSelect = (chrReg0 & 0x10);
     }
 

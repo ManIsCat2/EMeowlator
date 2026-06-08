@@ -3,7 +3,8 @@
 #include <cstdint>
 #include <iostream>
 #include <array>
-#include "nes_ppu.hpp"
+#include "mappers/mapper_base.hpp"
+#include "../rom.hpp"
 #include "../main.hpp"
 
 #include <stdio.h>
@@ -31,6 +32,8 @@ public:
     bool doNMI = false;
     bool doIRQ = false;
     bool IRQPending = false;
+
+    MapperBase* romMapper = nullptr;
 
     void reset();
 

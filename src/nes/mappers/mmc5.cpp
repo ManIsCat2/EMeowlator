@@ -194,18 +194,18 @@ void MMC5::updatePRG() {
         uint16_t cpuAddr = 0x8000 + (slot * 0x2000);
 
         if (isROM) {
-            mapCPUMemory(cpuAddr, cpuAddr + 0x1FFF, globalROM.ROM, (bank * 0x2000) % globalROM.PRGRomSize, false);
+            mapCPUMemory(cpuAddr, cpuAddr + 0x1FFF, getNESRom()->ROM, (bank * 0x2000) % getNESRom()->PRGRomSize, false);
         } else {
-            mapCPUMemory(cpuAddr, cpuAddr + 0x1FFF, globalROM.hasBattery ? SRAM : PRGRam, ((bank & 0x0F) * 0x2000) % getSRAMSize(), true);
+            mapCPUMemory(cpuAddr, cpuAddr + 0x1FFF, getNESRom()->hasBattery ? SRAM : PRGRam, ((bank & 0x0F) * 0x2000) % getSRAMSize(), true);
         }
     };
 
-    mapCPUMemory(0x6000, 0x7FFF, globalROM.hasBattery ? SRAM : PRGRam, (prgRegs[0] & 0x07) * 0x2000, true);
+    mapCPUMemory(0x6000, 0x7FFF, getNESRom()->hasBattery ? SRAM : PRGRam, (prgRegs[0] & 0x07) * 0x2000, true);
 
     switch (prgMode) {
         case 0: {
             uint8_t bank = (prgRegs[4] & 0x7C);
-            mapCPUMemory(0x8000, 0xFFFF, globalROM.ROM, ((bank >> 2) * 0x8000) % globalROM.PRGRomSize, false);
+            mapCPUMemory(0x8000, 0xFFFF, getNESRom()->ROM, ((bank >> 2) * 0x8000) % getNESRom()->PRGRomSize, false);
             break;
         }
 
@@ -214,12 +214,12 @@ void MMC5::updatePRG() {
             uint8_t bank = prgRegs[2] & 0x7E;
 
             if (isROM) {
-                mapCPUMemory(0x8000, 0xBFFF, globalROM.ROM, ((bank >> 1) * 0x4000) % globalROM.PRGRomSize, false);
+                mapCPUMemory(0x8000, 0xBFFF, getNESRom()->ROM, ((bank >> 1) * 0x4000) % getNESRom()->PRGRomSize, false);
             } else {
-                mapCPUMemory(0x8000, 0xBFFF, globalROM.hasBattery ? SRAM : PRGRam, (((bank >> 1) & 0x07) * 0x4000) % getSRAMSize(), true);
+                mapCPUMemory(0x8000, 0xBFFF, getNESRom()->hasBattery ? SRAM : PRGRam, (((bank >> 1) & 0x07) * 0x4000) % getSRAMSize(), true);
             }
 
-            mapCPUMemory(0xC000, 0xFFFF, globalROM.ROM, (((prgRegs[4] & 0x7E) >> 1) * 0x4000) % globalROM.PRGRomSize, false);
+            mapCPUMemory(0xC000, 0xFFFF, getNESRom()->ROM, (((prgRegs[4] & 0x7E) >> 1) * 0x4000) % getNESRom()->PRGRomSize, false);
             break;
         }
 
@@ -228,9 +228,9 @@ void MMC5::updatePRG() {
             uint8_t bank = prgRegs[1] & 0x7E;
 
             if (isROM) {
-                mapCPUMemory(0x8000, 0xBFFF, globalROM.ROM, ((bank >> 1) * 0x4000) % globalROM.PRGRomSize, false);
+                mapCPUMemory(0x8000, 0xBFFF, getNESRom()->ROM, ((bank >> 1) * 0x4000) % getNESRom()->PRGRomSize, false);
             } else {
-                mapCPUMemory(0x8000, 0xBFFF, globalROM.hasBattery ? SRAM : PRGRam, (((bank >> 1) & 0x07) * 0x4000) % getSRAMSize(), true);
+                mapCPUMemory(0x8000, 0xBFFF, getNESRom()->hasBattery ? SRAM : PRGRam, (((bank >> 1) & 0x07) * 0x4000) % getSRAMSize(), true);
             }
 
             mapPRGBank8K(2, prgRegs[3]);
@@ -417,7 +417,7 @@ uint8_t MMC5::readCHR(uint16_t addr, bool sprite) {
         uint8_t ex = getEXRAMByte(ppu.VRAMAddr);
         uint32_t bank = (ex & 0x3F) | (chrUpperBits << 6);
         uint32_t finalAddr = (bank << 12) | (addr & 0x0FFF);
-        return ppu.ChrData[finalAddr % globalROM.CHRRomSize];
+        return ppu.ChrData[finalAddr % getNESRom()->CHRRomSize];
     }
 
     return MapperBase::readCHR(addr, sprite);

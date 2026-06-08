@@ -1,7 +1,10 @@
 #include "audio.hpp"
 #include "nes.hpp"
-#include "nes_apu.hpp"
-#include "../main.hpp"
+#include "nes/nes_apu.hpp"
+#include "main.hpp"
+
+#define CYCLES_PER_SAMPLE_NTSC (1789773.0 / 44100.0)
+#define CYCLES_PER_SAMPLE_PAL (1662607.0 / 44100.0)
 
 Audio audioSystem;
 
@@ -44,7 +47,7 @@ void Audio::init() {
     }
     
     SDL_PauseAudioDevice(device, 0);
-    DebugPrintLog("APU", "Initialized SDL2 Audio System");
+    DebugPrintLog("AUDIO", "Initialized SDL2 Audio System");
 }
 
 
@@ -53,12 +56,12 @@ void Audio::close() {
         SDL_CloseAudioDevice(device);
         device = 0;
     }
-    DebugPrintLog("APU", "Closed SDL2 Audio System");
+    DebugPrintLog("AUDIO", "Closed SDL2 Audio System");
 }
 
 void Audio::advance() {
     double cyclesPerSample = CYCLES_PER_SAMPLE_NTSC;
-    if (globalROM.Region == ConsoleRegion::PAL) {
+    if (getRom()->Region == ConsoleRegion::PAL) {
         cyclesPerSample = CYCLES_PER_SAMPLE_PAL;
     }
     cycleCounter += 1;
@@ -70,7 +73,7 @@ void Audio::advance() {
 
 void Audio::pushSample() {
     double sample = 0.0;
-    sample = apu.getOutputSample();
+    sample = emuConsole->getAudioOutput();
     
     std::lock_guard<std::mutex> lock(mutex);
     buffer.push(sample);
