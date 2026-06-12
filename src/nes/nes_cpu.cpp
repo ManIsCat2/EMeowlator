@@ -3,9 +3,10 @@
 #include "nes_apu.hpp"
 #include "nes_controller.hpp"
 
-CPU cpu;
+NesCPU nesCpu;
 
-void CPU::reset() {
+void NesCPU::reset() {
+    connectBus(nullptr, &nesPpu, &nesApu);
     A = X = Y = 0;
     SP = 0xFD;
     P = 0x24;
@@ -13,28 +14,28 @@ void CPU::reset() {
     cycles = 0;
 
     //default ram values
-    for (int i = 0; i < RAM_SIZE; i++) {
+    for (int i = 0; i < NES_RAM_SIZE; i++) {
         RAM[i] = (!(i & 1)) ? 0x24 : 0x01; // L is real 2401
     }
     getNESRom()->ResetVec = PC;
-    ppu.reset();
-    apu.reset();
+    ppu->reset();
+    apu->reset();
 }
 
-void CPU::run(uint32_t maxCycles) {
-    uint32_t cyclesRun = 0;
+void NesCPU::run(uint32_t maxCycles) {
+    uint64_t cyclesRun = 0;
 
     while (cyclesRun < maxCycles) {
         if (!romIsLoaded || CPUPaused || !romMapper) return;
         bool prevNMIDetect = NMIDetector;
-        NMIDetector = ppu.Vblank && ppu.control.enableNMI;
+        NMIDetector = ppu->Vblank && ppu->control.enableNMI;
         uint8_t opcode = 0x00;
 
         // nmi "overrides" irq
         if (!prevNMIDetect && NMIDetector) {
             opcode = 0x00;
             doNMI = true;
-        } else if ((IRQPending || apu.DMCIrqPending || apu.IRQPending) && !(P & Flags::I)) {
+        } else if ((IRQPending || apu->DMCIrqPending || apu->IRQPending) && !(P & Flags::I)) {
             opcode = 0x00;
             doIRQ = true;
         } else {
@@ -47,15 +48,15 @@ void CPU::run(uint32_t maxCycles) {
         while (cycles) {
             cycles--;
             romMapper->clockCPU();
-            apu.step();
-            ppu.Step();
-            ppu.Step();
-            ppu.Step();
+            apu->step();
+            ppu->Step();
+            ppu->Step();
+            ppu->Step();
         }
     }
 }
 
-void CPU::execute(uint8_t opcode) {
+void NesCPU::execute(uint8_t opcode) {
     auto readIndirect = [this](uint16_t addr) {
         uint8_t lo = read(addr);
         uint8_t hi;
@@ -1927,69 +1928,69 @@ void CPU::execute(uint8_t opcode) {
    // DebugPrintLog("CPU", "Proccessed 0x%x", opcode);
 }
 
-void CPU::SetZN(uint8_t value) {
+void NesCPU::SetZN(uint8_t value) {
     P = (value == 0 ? P | Flags::Z : P & ~Flags::Z);
     P = (value & 0x80 ? P | Flags::N : P & ~Flags::N);
 }
 
-uint8_t CPU::read(uint16_t addr) {
-    if (addr < RAM_MIRRORED_SIZE) {
+uint8_t NesCPU::read(uint16_t addr) {
+    if (addr < NES_RAM_MIRRORED_SIZE) {
         return dataBus = RAM[addr & 0x7ff];
     }
 
     if (addr >= 0x2000 && addr < 0x4000) {
         switch (addr & 7) {
-            case 0: case 1: case 3: case 5: case 6: return dataBus = ppu.dataBus;
+            case 0: case 1: case 3: case 5: case 6: return dataBus = ppu->dataBus;
             case 2: {
                 uint8_t result = 0;
 
-                result |= (ppu.Vblank ? 0x80 : 0x00);
-                result |= (ppu.sprite0Hit ? 0x40 : 0x00);
-                result |= (ppu.spriteOverflow ? 0x20 : 0x00);
-                result |= (ppu.dataBus & 0x1F);
+                result |= (ppu->Vblank ? 0x80 : 0x00);
+                result |= (ppu->sprite0Hit ? 0x40 : 0x00);
+                result |= (ppu->spriteOverflow ? 0x20 : 0x00);
+                result |= (ppu->dataBus & 0x1F);
 
-                ppu.Vblank = false;
-                ppu.WriteLatch = false;
-                ppu.dataBus = result;
+                ppu->Vblank = false;
+                ppu->WriteLatch = false;
+                ppu->dataBus = result;
 
                 return dataBus = result;
             }
 
-            case 4: // OAMDATA
-                ppu.resetBusDecay();
-                return dataBus = ppu.dataBus = ppu.OAM[ppu.OAMAddr];
+            case 4: // OAMDMA
+                ppu->resetBusDecay();
+                return dataBus = ppu->dataBus = ppu->OAM[ppu->OAMAddr];
 
             case 7: { // PPUDATA
-                uint16_t vaddr = ppu.VRAMAddr & 0x3FFF;
+                uint16_t vaddr = ppu->VRAMAddr & 0x3FFF;
                 uint8_t ret;
 
                 if (vaddr < 0x3F00) {
-                    ret = ppu.ReadBuffer;
+                    ret = ppu->ReadBuffer;
                     if (vaddr < 0x2000) {
-                        ppu.ReadBuffer = romMapper->readCHR(vaddr);
+                        ppu->ReadBuffer = romMapper->readCHR(vaddr);
                     } else {
                         uint16_t nt = vaddr & 0x0FFF;
-                        ppu.ReadBuffer = romMapper->readVRAM(nt);
+                        ppu->ReadBuffer = romMapper->readVRAM(nt);
                     }
                 } else {
                     uint16_t pal = vaddr & 0x1F;
                     if ((pal & 0x13) == 0x10) pal &= ~0x10;
 
-                    uint8_t palBitmask = ppu.mask.grayscaleMode ? 0x30 : 0x3F;
-                    ret = (ppu.paletteRAM[pal] & palBitmask) | (ppu.dataBus & 0xC0);
+                    uint8_t palBitmask = ppu->mask.grayscaleMode ? 0x30 : 0x3F;
+                    ret = (ppu->paletteRAM[pal] & palBitmask) | (ppu->dataBus & 0xC0);
 
                     uint16_t underlying = (vaddr & 0x2FFF);
                     if (underlying < 0x2000) {
-                        ppu.ReadBuffer = romMapper->readCHR(underlying);
+                        ppu->ReadBuffer = romMapper->readCHR(underlying);
                     } else {
-                        ppu.ReadBuffer = romMapper->readVRAM(underlying & 0x0FFF);
+                        ppu->ReadBuffer = romMapper->readVRAM(underlying & 0x0FFF);
                     }
                 }
 
-                ppu.resetBusDecay();
+                ppu->resetBusDecay();
 
-                ppu.VRAMAddr += ppu.control.VRAMInc32 ? 32 : 1;
-                ppu.VRAMAddr &= 0x3FFF;
+                ppu->VRAMAddr += ppu->control.VRAMInc32 ? 32 : 1;
+                ppu->VRAMAddr &= 0x3FFF;
                 return dataBus = ret;
             }
 
@@ -1999,7 +2000,7 @@ uint8_t CPU::read(uint16_t addr) {
     }
 
     switch (addr) {
-        case 0x4015: return apu.read(addr);
+        case 0x4015: return apu->read(addr);
         case 0x4016:
         case 0x4017: {
             int id = (addr == 0x4016 ? 0 : 1);
@@ -2020,9 +2021,9 @@ uint8_t CPU::read(uint16_t addr) {
     return romMapper->cpuRead(addr);
 }
 
-void CPU::write(uint16_t addr, uint8_t value) {
+void NesCPU::write(uint16_t addr, uint8_t value) {
     dataBus = value;
-    if (addr < RAM_MIRRORED_SIZE) {
+    if (addr < NES_RAM_MIRRORED_SIZE) {
         RAM[addr & 0x7ff] = value;
         return;
     }
@@ -2030,70 +2031,71 @@ void CPU::write(uint16_t addr, uint8_t value) {
     if (addr >= 0x2000 && addr < 0x4000) {
         switch (addr & 7) {
             case 0: // PPUCTRL
-                ppu.control.nametableSelect      = value & 0x03;
-                ppu.control.VRAMInc32            = (value & 0x04) != 0;
-                ppu.control.spritePatternTable   = value & 0x08;
-                ppu.control.BGPatternTable       = value & 0x10;
-                ppu.control.use8x16Sprites       = (value & 0x20) != 0;
-                ppu.control.enableNMI            = (value & 0x80) != 0;
-                ppu.dataBus = ppu.control.combined = value;
-                ppu.TransferAddr = (ppu.TransferAddr & 0x73FF) | ((value & 0x03) << 10);
-                ppu.resetBusDecay();
+                ppu->control.nametableSelect      = value & 0x03;
+                ppu->control.VRAMInc32            = (value & 0x04) != 0;
+                ppu->control.spritePatternTable   = value & 0x08;
+                ppu->control.BGPatternTable       = value & 0x10;
+                ppu->control.use8x16Sprites       = (value & 0x20) != 0;
+                ppu->control.enableNMI            = (value & 0x80) != 0;
+                ppu->dataBus = ppu->control.combined = value;
+                ppu->TransferAddr = (ppu->TransferAddr & 0x73FF) | ((value & 0x03) << 10);
+                ppu->resetBusDecay();
                 break;
 
             case 1: // PPUMASK
-                ppu.mask.grayscaleMode     = (value & 0x01) != 0;
-                ppu.mask.background8pxMask = (value & 0x02) != 0;
-                ppu.mask.sprite8pxMask     = (value & 0x04) != 0;
-                ppu.mask.renderBackground  = (value & 0x08) != 0;
-                ppu.mask.renderSprites     = (value & 0x10) != 0;
-                ppu.dataBus = ppu.mask.combined = value;
-                ppu.resetBusDecay();
+                ppu->mask.grayscaleMode     = (value & 0x01) != 0;
+                ppu->mask.background8pxMask = (value & 0x02) != 0;
+                ppu->mask.sprite8pxMask     = (value & 0x04) != 0;
+                ppu->mask.renderBackground  = (value & 0x08) != 0;
+                ppu->mask.renderSprites     = (value & 0x10) != 0;
+                ppu->dataBus = ppu->mask.combined = value;
+                ppu->resetBusDecay();
                 break;
 
             case 2: // PPUSTATUS
-                ppu.dataBus = value;
-                ppu.resetBusDecay();
+                ppu->dataBus = value;
+                ppu->resetBusDecay();
                 break;
 
             case 3: // OAMADDR
-                ppu.dataBus = ppu.OAMAddr = value;
-                ppu.resetBusDecay();
+                ppu->dataBus = ppu->OAMAddr = value;
+                ppu->resetBusDecay();
                 break;
 
-            case 4: { // OAMDATA
-                uint8_t index = (ppu.OAMAddr++) & 0xff;
-                ppu.dataBus = ppu.OAM[index] = value;
-                ppu.resetBusDecay();
+            case 4: { // OAMDMA
+                uint8_t index = (ppu->OAMAddr++) & 0xff;
+                ppu->dataBus = ppu->OAM[index] = value;
+                
+                ppu->resetBusDecay();
                 break;
             }
 
             case 5: // PPUSCROLL
-                if (!ppu.WriteLatch) {
-                    ppu.scrollFineX = value & 7;
-                    ppu.TransferAddr = (ppu.TransferAddr & 0x7fe0) | (value >> 3);
+                if (!ppu->WriteLatch) {
+                    ppu->scrollFineX = value & 7;
+                    ppu->TransferAddr = (ppu->TransferAddr & 0x7fe0) | (value >> 3);
                 } else {
-                    ppu.TransferAddr = (ushort)((ppu.TransferAddr & 0xc1f) | (((value & 0xF8) << 2) | ((value & 7) << 12)));
+                    ppu->TransferAddr = (ushort)((ppu->TransferAddr & 0xc1f) | (((value & 0xF8) << 2) | ((value & 7) << 12)));
                 }
-                ppu.WriteLatch = !ppu.WriteLatch;
-                ppu.dataBus = value;
-                ppu.resetBusDecay();
+                ppu->WriteLatch = !ppu->WriteLatch;
+                ppu->dataBus = value;
+                ppu->resetBusDecay();
                 break;
 
             case 6: // PPUADDR
-                if (!ppu.WriteLatch) {
-                    ppu.TransferAddr = (ppu.TransferAddr & 0x00FF) | ((value & 0x3F) << 8);
+                if (!ppu->WriteLatch) {
+                    ppu->TransferAddr = (ppu->TransferAddr & 0x00FF) | ((value & 0x3F) << 8);
                 } else {
-                    ppu.TransferAddr = (ppu.TransferAddr & 0x7F00) | value;
-                    ppu.VRAMAddr = ppu.TransferAddr;
+                    ppu->TransferAddr = (ppu->TransferAddr & 0x7F00) | value;
+                    ppu->VRAMAddr = ppu->TransferAddr;
                 }
-                ppu.WriteLatch = !ppu.WriteLatch;
-                ppu.dataBus = value;
-                ppu.resetBusDecay();
+                ppu->WriteLatch = !ppu->WriteLatch;
+                ppu->dataBus = value;
+                ppu->resetBusDecay();
                 break;
 
             case 7: { // PPUDATA
-                uint16_t vaddr = ppu.VRAMAddr & 0x3FFF;
+                uint16_t vaddr = ppu->VRAMAddr & 0x3FFF;
 
                 if (vaddr < 0x2000) {
                     romMapper->writeCHR(vaddr, value);
@@ -2103,17 +2105,17 @@ void CPU::write(uint16_t addr, uint8_t value) {
                 } else {
                     uint16_t pal = vaddr & 0x1F;
                     if ((pal & 0x13) == 0x10) pal &= ~0x10;
-                    ppu.paletteRAM[pal] = value;
+                    ppu->paletteRAM[pal] = value;
                 }
 
-                ppu.VRAMAddr += ppu.control.VRAMInc32 ? 32 : 1;
-                ppu.VRAMAddr &= 0x3FFF;
-                ppu.dataBus = value;
-                ppu.resetBusDecay();
+                ppu->VRAMAddr += ppu->control.VRAMInc32 ? 32 : 1;
+                ppu->VRAMAddr &= 0x3FFF;
+                ppu->dataBus = value;
+                ppu->resetBusDecay();
 
                 //peak option
-                if (ppu.VRAMCorruption && (rand() & 7) == 0) {
-                    ppu.VRAMAddr ^= 2 << rand() & 7;
+                if (ppu->VRAMCorruption && (rand() & 7) == 0) {
+                    ppu->VRAMAddr ^= 2 << rand() & 7;
                 }
                 break;
             }
@@ -2126,7 +2128,7 @@ void CPU::write(uint16_t addr, uint8_t value) {
             case 0x4014: {
                 uint16_t base = value << 8;
                 for (int i = 0; i < 256; i++)
-                    ppu.OAM[i] = read(base + i);
+                    ppu->OAM[i] = read(base + i);
                 break;
             }
             case 0x4016: {
@@ -2140,25 +2142,25 @@ void CPU::write(uint16_t addr, uint8_t value) {
                 }
                 break;
             }
-            default: apu.write(addr, value);
+            default: apu->write(addr, value);
         }
         return;
     }
     romMapper->cpuWrite(addr, value);
 }
 
-uint16_t CPU::read16(uint16_t addr) {
+uint16_t NesCPU::read16(uint16_t addr) {
     uint8_t lo = read(addr);
     uint8_t hi = read(addr + 1);
     return (hi << 8) | lo;
 }
 
-void CPU::push(uint8_t value) {
+void NesCPU::push(uint8_t value) {
     RAM[0x100 + SP] = value;
     SP--;
 }
 
-uint8_t CPU::pop() {
+uint8_t NesCPU::pop() {
     SP++;
     return RAM[0x100 + SP];
 }

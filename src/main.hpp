@@ -42,6 +42,4 @@ extern bool romIsLoaded;
 extern void *globalQTWin;
 extern int hoveredPaletteIndex;
 
-extern QImage *rawOutputImage;
-extern QImage *filteredOutputImage;
 //extern QTimer cpuTimer;

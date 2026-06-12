@@ -40,7 +40,7 @@ void MMC3::cpuWrite(uint16_t addr, uint8_t value) {
         }
     } else if (addr >= 0xA000 && addr <= 0xBFFF) {
         if ((addr & 1) == 0) {
-            ppu.Mirroring = (value & 1) ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL;
+            ppu->Mirroring = (value & 1) ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL;
         }
     } else if (addr >= 0xC000 && addr <= 0xDFFF) {
         if ((addr & 1) == 0) {
@@ -51,7 +51,7 @@ void MMC3::cpuWrite(uint16_t addr, uint8_t value) {
     } else if (addr >= 0xE000) {
         if ((addr & 1) == 0) {
             IRQEnabled = false;
-            cpu.IRQPending = false;
+            cpu->setExternalIRQ(false);
         } else {
             IRQEnabled = true;
         }
@@ -103,7 +103,7 @@ void MMC3::updateCHR() {
 // instead of checking for a12 rising edge... i do this
 // it is a really shitty hack but it will work for most games
 void MMC3::clockPPU(void) {
-    if ((ppu.ScanLine + 1) % 262 < 241 && ppu.Dot == 261 && IRQEnabled && !IRQReload--) {
-        cpu.IRQPending = true;
+    if ((ppu->ScanLine + 1) % 262 < 241 && ppu->Dot == 261 && IRQEnabled && !IRQReload--) {
+        cpu->setExternalIRQ(true);
     }
 }

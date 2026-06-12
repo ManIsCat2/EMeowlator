@@ -21,8 +21,6 @@
 #endif
 
 bool romIsLoaded = false;
-static bool fullscreen = false;
-static bool unlimitFPS = false;
 int hoveredPaletteIndex = -1;
 
 void *globalQTWin;
@@ -65,8 +63,6 @@ QAction *makeQBool(const QString &text, QObject *parent, bool defaultBool) {
     return newAction;
 }
 
-QImage *rawOutputImage = nullptr;
-QImage *filteredOutputImage = nullptr;
 QTimer cpuTimer;
 
 std::string allowedExts[] = {
@@ -77,6 +73,7 @@ bool loadConsoleWithGame(const std::string &file) {
     for (auto &ext : allowedExts) {
         if (file.find(ext) == std::string::npos) {
             allow = false;
+            break;
         }
     }
     if (!allow) {
@@ -88,6 +85,7 @@ bool loadConsoleWithGame(const std::string &file) {
     if (file.find(".nes") != std::string::npos) {
         emuConsole = new NESConsole;
     };
+    emuConsole->init();
     return emuConsole->loadGame(file);
 }
 
@@ -103,6 +101,7 @@ int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     app.setStyle(QStyleFactory::create("Fusion"));
     QMainWindow window;
+    ScreenWidget *screen = new ScreenWidget(&window);
     globalQTWin = (void*)&window;
 
     makeDirectory("saves");
@@ -118,8 +117,8 @@ int main(int argc, char *argv[]) {
     //file
     QAction *openAction = new QAction("Open ROM", &window);
     QAction *closeAction = new QAction("Close ROM", &window);
-    QAction *saveSaveStateAction = new QAction("Save Savestate", &window);
-    QAction *loadSaveStateAction = new QAction("Load Savestate", &window);
+    //QAction *saveSaveStateAction = new QAction("Save Savestate", &window);
+    //QAction *loadSaveStateAction = new QAction("Load Savestate", &window);
     //game
     QAction *gameResetAction = new QAction("Reset", &window);
     QAction *gamePauseAction = new QAction("Pause", &window);
@@ -135,8 +134,8 @@ int main(int argc, char *argv[]) {
     fileMenu->addAction(openAction);
     fileMenu->addAction(closeAction);
     fileMenu->addSeparator();
-    fileMenu->addAction(saveSaveStateAction);
-    fileMenu->addAction(loadSaveStateAction);
+    //fileMenu->addAction(saveSaveStateAction);
+    //fileMenu->addAction(loadSaveStateAction);
 
     gameMenu->addAction(gameResetAction);
     gameMenu->addAction(gamePauseAction);
@@ -151,7 +150,7 @@ int main(int argc, char *argv[]) {
 
 		videoFilterMenu->addAction(vfilterAction);
 
-		QObject::connect(vfilterAction, &QAction::triggered, [i]{ ppu.InitFilter((VideoFilter)i); DebugPrintLog("SETTINGS", "Set vFilter to %u", i); } );
+		QObject::connect(vfilterAction, &QAction::triggered, [i]{ nesPpu.InitFilter((VideoFilter)i); DebugPrintLog("SETTINGS", "Set vFilter to %u", i); } );
 	}*/
 
     //settingsMenu->addAction(paletteEditorAction);
@@ -177,6 +176,10 @@ int main(int argc, char *argv[]) {
                 romIsLoaded = true;
                 startCPUTimer();
                 emuConsole->reset();
+                window.setFixedSize(emuConsole->getDisplayWidth()*2, emuConsole->getDisplayHeight()*2);
+                screen->setFixedSize(emuConsole->getDisplayWidth()*2, emuConsole->getDisplayHeight()*2);
+            } else {
+                romIsLoaded = false;
             }
         }
     });
@@ -194,8 +197,8 @@ int main(int argc, char *argv[]) {
         DebugPrintLog("GAME", "Reset Game");
     });
     QObject::connect(gamePauseAction, &QAction::triggered, [&]() {
-        cpu.CPUPaused = !cpu.CPUPaused;
-        DebugPrintLog("GAME", cpu.CPUPaused ? "Paused Game" : "Unpaused Game");
+        nesCpu.CPUPaused = !nesCpu.CPUPaused;
+        DebugPrintLog("GAME", nesCpu.CPUPaused ? "Paused Game" : "Unpaused Game");
     });
     QObject::connect(keyEditAction, &QAction::triggered, [&]() {
         QDialog *dialog = new QDialog(&window);
@@ -254,7 +257,7 @@ int main(int argc, char *argv[]) {
         volumeLayout->setContentsMargins(10,10,10,10);
 
         const std::string volumeNames[] = {"Square 1", "Square 2", "Triangle", "Noise", "DMC", "Master"};
-        float *volumePtrs[] = { &apu.pulse1Volume, &apu.pulse2Volume, &apu.triangleVolume, &apu.noiseVolume, &apu.dmcVolume, &apu.masterVolume };
+        float *volumePtrs[] = { &nesApu.pulse1Volume, &nesApu.pulse2Volume, &nesApu.triangleVolume, &nesApu.noiseVolume, &nesApu.dmcVolume, &nesApu.masterVolume };
 
         for (int i = 0; i < 6; ++i) {
             QWidget *pairWidget = new QWidget(volumeBox);
@@ -329,19 +332,19 @@ int main(int argc, char *argv[]) {
 
         ppuSettingsBox->setFixedSize(270, 160);
 
-        VRAMCorruptCheckBox->setChecked(ppu.VRAMCorruption);
+        VRAMCorruptCheckBox->setChecked(nesPpu.VRAMCorruption);
 
         QCheckBox *disableSpritesCheckBox = new QCheckBox("Disable Sprites", ppuSettingsBox);
-        disableSpritesCheckBox->setChecked(ppu.DisableSprites);
+        disableSpritesCheckBox->setChecked(nesPpu.DisableSprites);
 
         ppuSettingsLayout->addWidget(VRAMCorruptCheckBox, 0, 0, Qt::AlignLeft | Qt::AlignTop);
         ppuSettingsLayout->addWidget(disableSpritesCheckBox, 0, 1, Qt::AlignLeft | Qt::AlignTop);
 
         QObject::connect(VRAMCorruptCheckBox, &QCheckBox::toggled, [&](bool checked) {
-            ppu.VRAMCorruption = checked;
+            nesPpu.VRAMCorruption = checked;
         });
         QObject::connect(disableSpritesCheckBox, &QCheckBox::toggled, [&](bool checked) {
-            ppu.DisableSprites = checked;
+            nesPpu.DisableSprites = checked;
         });
 
         //nt
@@ -357,10 +360,10 @@ int main(int argc, char *argv[]) {
             ntmirrorComboBox->addItem(QString::fromStdString(ntmirrorStrs[i]), i);
         }
 
-        ntmirrorComboBox->setCurrentIndex((int)(ppu.Mirroring));
+        ntmirrorComboBox->setCurrentIndex((int)(nesPpu.Mirroring));
 
         QComboBox::connect(ntmirrorComboBox, &QComboBox::currentIndexChanged, [&](int index) {
-            ppu.Mirroring = (MirrorMode)index;
+            nesPpu.Mirroring = (MirrorMode)index;
             DebugPrintLog("SETTINGS", "Set NT Mirroring to %d", index);
         });
 
@@ -382,8 +385,8 @@ int main(int argc, char *argv[]) {
                     nesPalette[i] & 0xFF
                 );
                 buttons[i]->setStyleSheet(QString("background-color: %1").arg(color.name()));
-                if (ppu.filtering == VideoFilter::NTSC) {
-                    ppu.vfilter->initialize();
+                if (nesPpu.filtering == VideoFilter::NTSC) {
+                    nesPpu.vfilter->initialize();
                 }
             }
         };
@@ -417,8 +420,8 @@ int main(int argc, char *argv[]) {
                         (newColor.green() << 8) |
                         newColor.blue();
                     updateButtonColor();
-                    if (ppu.filtering == VideoFilter::NTSC) {
-                        ppu.vfilter->initialize();
+                    if (nesPpu.filtering == VideoFilter::NTSC) {
+                        nesPpu.vfilter->initialize();
                     }
                 }
             });
@@ -491,10 +494,10 @@ int main(int argc, char *argv[]) {
             filterComboBox->addItem(QString::fromStdString(videoFiltersStr[i]), i);
         }
 
-        filterComboBox->setCurrentIndex((int)(ppu.filtering));
+        filterComboBox->setCurrentIndex((int)(nesPpu.filtering));
 
         QComboBox::connect(filterComboBox, &QComboBox::currentIndexChanged, [&](int index) {
-            ppu.InitFilter((VideoFilter)(index));
+            nesPpu.InitFilter((VideoFilter)(index));
             DebugPrintLog("SETTINGS", "Set vFilter to %d", index);
         });
 
@@ -520,7 +523,7 @@ int main(int argc, char *argv[]) {
         //mainLayout->addStretch();
         dialog->exec();
     });
-    QObject::connect(saveSaveStateAction, &QAction::triggered, [&]() {
+    /*QObject::connect(saveSaveStateAction, &QAction::triggered, [&]() {
         QString file = QFileDialog::getSaveFileName(
             &window,
             "Write Savestate",
@@ -545,7 +548,7 @@ int main(int argc, char *argv[]) {
             SaveStateFile savestate;
             savestate.Load(file.toStdString().c_str());
         }
-    });
+    });*/
     QObject::connect(romInfoAction, &QAction::triggered, [&]() {
         std::string fileStr = "File: " + getNESRom()->Name;
         std::string HeaderHexStr;
@@ -588,33 +591,23 @@ int main(int argc, char *argv[]) {
         dialog->exec();
     });
 
-    ScreenWidget *screen = new ScreenWidget(&window);
-    screen->image = *rawOutputImage;
     window.setCentralWidget(screen);
     InputManager inputMgr;
     inputMgr.install(&window);
 
-    ppu.Init();
     audioSystem.init();
     cpuTimer.setTimerType(Qt::PreciseTimer);
     QObject::connect(&cpuTimer, &QTimer::timeout, [&]() {
+        screen->update();
         if (romIsLoaded) {
             emuConsole->runFrame();
-            if (ppu.filtering == VideoFilter::NTSC) {
-                screen->image = *filteredOutputImage;
-            } else {
-                screen->image = *rawOutputImage;
-            }
-            screen->update();
+            screen->image = *emuConsole->getOutputImage();
             rainbowHoverPhase += 0.002f;
-            if (ppu.filtering == VideoFilter::NTSC) {
-                ppu.vfilter->initialize();
-            }
             if (rainbowHoverPhase > 1.0f) rainbowHoverPhase -= 1.0f;
         }
     });
 
-    window.setFixedSize(NES_WIDTH*3, NES_HEIGHT*3);
+    window.setFixedSize(256*2, 240*2);
 
     QPixmap pixmap;
     pixmap.loadFromData(MeowNESIcon, sizeof(MeowNESIcon) / sizeof(MeowNESIcon[0]));
@@ -633,6 +626,10 @@ int main(int argc, char *argv[]) {
             emuConsole->reset();
             romIsLoaded = true;
             startCPUTimer();
+            window.setFixedSize(emuConsole->getDisplayWidth()*2, emuConsole->getDisplayHeight()*2);
+            screen->setFixedSize(emuConsole->getDisplayWidth()*2, emuConsole->getDisplayHeight()*2);
+        } else {
+            romIsLoaded = false;
         }
     }
 

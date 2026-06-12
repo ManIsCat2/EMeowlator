@@ -27,5 +27,3 @@ Keybind nesKeyBindsDefault[8] = {
     {"Start", Qt::Key_Return},
     {"Select", Qt::Key_Shift}
 };
-
-//actual input code in qt/input_manager.hpp

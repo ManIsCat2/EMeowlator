@@ -36,7 +36,7 @@ void MMC2::cpuWrite(uint16_t addr, uint8_t value) {
         ChrBankFE[1] = value & 0x1f;
         setCHRBank(1, ChrBankFE[Latch[1]]);
     } else if (addr >= 0xF000) {
-        ppu.Mirroring = ((value & 0x01) == 0x01) ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL;
+        ppu->Mirroring = ((value & 0x01) == 0x01) ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL;
     } else {
         MapperBase::cpuWrite(addr, value);
     }

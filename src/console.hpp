@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <string>
 
+#include <QImage>
+
 enum class ConsoleRegion {
     NTSC,
     PAL,
@@ -23,10 +25,13 @@ public:
     ROMImage *rom = nullptr;
 
     virtual ~Console() { if (rom) { delete rom; rom = nullptr; } }
-    virtual bool loadGame(const std::string &file) { (void)file; return false; }
+    virtual bool loadGame(const std::string &filename) { (void)filename; return false; }
     virtual void runFrame(void) {}
-    virtual void handleController(int id, int qtKey, bool pressed) { (void)id; (void)qtKey; (void)pressed; }
+    virtual int getDisplayWidth(void) { return 0; }
+    virtual int getDisplayHeight(void) { return 0; }
+    virtual void handleController(int id, int key, bool pressed) { (void)id; (void)key; (void)pressed; }
     virtual double getAudioOutput(void) { return 0.0; }
+    virtual QImage *getOutputImage(void) { return nullptr; };
     virtual void writeSave(void) {}
     virtual void loadSave(void) {}
     virtual void init(void) {}

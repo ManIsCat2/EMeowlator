@@ -6,6 +6,7 @@ NesROM::NesROM() {
 }
 NesROM::~NesROM() {
     delete mapper;
+    nesCpu.romMapper = nesPpu.romMapper = mapper = nullptr;
     delete[] ROM;
 }
 
@@ -90,7 +91,6 @@ bool NesROM::load(const std::string &filename) {
         DebugPrintLog("ROM", "Failed to read ROM '%s'", filename.c_str());
         return false;
     }
-    this->data = data.data();
 
     // header
     if (data.size() < 16 || data[0] != 'N' || data[1] != 'E' || data[2] != 'S' || data[3] != 0x1A) {
@@ -153,11 +153,11 @@ bool NesROM::load(const std::string &filename) {
         DebugPrintLog("ROM", "Unimplemented mapper: %u, failed to open ROM", romMapperID)
         return false;
     } else {
-        if (mapper) { delete mapper; cpu.romMapper = ppu.romMapper = mapper = nullptr; }
+        if (mapper) { delete mapper; nesCpu.romMapper = nesPpu.romMapper = mapper = nullptr; }
         Name = romName;
         std::memcpy(Header, romHeader, 16);
         hasBattery = romHasBattery;
-        Mirroring = ppu.Mirroring = romMirroring;
+        Mirroring = nesPpu.Mirroring = romMirroring;
         Version = romVersion;
         Region = GetRegion();
         SubMapperID = romSubMapperID;
@@ -169,8 +169,7 @@ bool NesROM::load(const std::string &filename) {
         mapper = romMapperNew;
     }
     mapper->subMapper = romSubMapperID;
-    ppu.romMapper = romMapperNew;
-    cpu.romMapper = romMapperNew;
+    nesPpu.romMapper = nesCpu.romMapper = romMapperNew;
 
     if (ROM) { delete[] ROM; ROM = nullptr; }
     ROM = new uint8_t[PRGRomSize];
@@ -182,9 +181,9 @@ bool NesROM::load(const std::string &filename) {
         
     if (chrPages == 0) {
         uint8_t chrRam[0x2000] = {};
-        ppu.LoadCHRROM(chrRam, 0x2000);
+        nesPpu.LoadCHRROM(chrRam, 0x2000);
     } else {
-        ppu.LoadCHRROM(&data[offset], CHRRomSize);
+        nesPpu.LoadCHRROM(&data[offset], CHRRomSize);
     }
     offset += CHRRomSize;
     DebugPrintLog("ROM", "Loaded NES ROM '%s'", Name.c_str());

@@ -1,11 +1,8 @@
-// apu base provided by aldi0123_10445 on discord, heavily rewritten by me
-// audio.cpp is by me
-
 #include "nes_apu.hpp"
 #include "nes_cpu.hpp"
 #include "../audio.hpp"
 
-APU apu;
+NesAPU nesApu;
 
 const uint8_t DutyTable[4][8] = {
     {0, 1, 0, 0, 0, 0, 0, 0}, 
@@ -34,10 +31,11 @@ const uint16_t DMCRateTablePAL[16] = {
     398, 354, 316, 298, 276, 236, 210, 198, 176, 148, 132, 118, 98, 78, 66, 50
 };
 
-APU::APU() {}
-APU::~APU() {}
+NesAPU::NesAPU() {}
+NesAPU::~NesAPU() {}
 
-void APU::reset() {
+void NesAPU::reset() {
+    connectBus(&nesCpu, nullptr, nullptr);
     pulse1 = PulseChannel();
     pulse2 = PulseChannel();
     triangle = TriangleChannel();
@@ -55,7 +53,7 @@ void APU::reset() {
     noise.shiftRegister = 1;
 }
 
-void APU::write(uint16_t addr, uint8_t data) {
+void NesAPU::write(uint16_t addr, uint8_t data) {
     switch (addr) {
         case 0x4000: pulse1.duty = (data & 0xC0) >> 6; pulse1.lengthHalt = (data & 0x20); pulse1.constantVolume = (data & 0x10); pulse1.volume = (data & 0x0F); break;
         case 0x4001:
@@ -156,10 +154,10 @@ void APU::write(uint16_t addr, uint8_t data) {
     }
 }
 
-uint8_t APU::read(uint16_t addr) {
+uint8_t NesAPU::read(uint16_t addr) {
     uint8_t data = 0; 
     if (addr == 0x4015) {
-        data = (cpu.dataBus & 0x20); 
+        data = (cpu->dataBus & 0x20); 
         if (pulse1.lengthCounter > 0) data |= 0x01;
         if (pulse2.lengthCounter > 0) data |= 0x02;
         if (triangle.lengthCounter > 0) data |= 0x04;
@@ -175,7 +173,7 @@ uint8_t APU::read(uint16_t addr) {
     return data;
 }
 
-bool APU::pulseSweepMuted(PulseChannel &p, bool isPulse1) {
+bool NesAPU::pulseSweepMuted(PulseChannel &p, bool isPulse1) {
     if (p.timerReload < 8)
         return true;
 
@@ -195,7 +193,7 @@ bool APU::pulseSweepMuted(PulseChannel &p, bool isPulse1) {
     return target > 0x7FF;
 }
 
-void APU::clockSweep(PulseChannel &p, bool isPulse1) {
+void NesAPU::clockSweep(PulseChannel &p, bool isPulse1) {
     if (p.sweepReload) {
         p.sweepReload = false;
         p.sweepDivider = p.sweepPeriod == 0 ? 8 : p.sweepPeriod;
@@ -229,9 +227,9 @@ void APU::clockSweep(PulseChannel &p, bool isPulse1) {
     p.timerReload = target;
 }
 
-void APU::clockDMC() {
+void NesAPU::clockDMC() {
     if (dmc.sampleBufferEmpty && dmc.currentLength > 0) {
-        dmc.sampleBuffer = cpu.read(dmc.currentAddress);
+        dmc.sampleBuffer = cpu->read(dmc.currentAddress);
         dmc.sampleBufferEmpty = false;
 
         dmc.currentAddress++;
@@ -283,7 +281,7 @@ void APU::clockDMC() {
     }
 }
 
-void APU::clockEnvelopes() {
+void NesAPU::clockEnvelopes() {
     auto clockEnv = [](auto &c) {
         if (c.envStart) { c.envStart = false; c.envVol = 15; c.envDivider = c.volume; } 
         else {
@@ -304,20 +302,20 @@ void APU::clockEnvelopes() {
     if (!triangle.lengthHalt) triangle.linearReloadFlag = false;
 }
 
-void APU::clockLengths() {
+void NesAPU::clockLengths() {
     if (pulse1.lengthCounter > 0 && !pulse1.lengthHalt) pulse1.lengthCounter--;
     if (pulse2.lengthCounter > 0 && !pulse2.lengthHalt) pulse2.lengthCounter--;
     if (triangle.lengthCounter > 0 && !triangle.lengthHalt) triangle.lengthCounter--;
     if (noise.lengthCounter > 0 && !noise.lengthHalt) noise.lengthCounter--;
 }
 
-void APU::clockPulse() {
+void NesAPU::clockPulse() {
     clockLengths();
     clockSweep(pulse1, true);
     clockSweep(pulse2, false);
 }
 
-void APU::step() {
+void NesAPU::step() {
     if (frameCounterResetDelay > 0) {
         frameCounterResetDelay--;
         if (frameCounterResetDelay == 0) {
@@ -458,7 +456,7 @@ void APU::step() {
     audioSystem.advance();
 }
 
-double APU::getOutputSample() {
+double NesAPU::getOutputSample() {
     double p1 = 0.0;
     double p2 = 0.0;
     double t  = 0.0;

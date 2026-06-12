@@ -25,7 +25,7 @@ public:
         s.WriteBytes<uint8_t>(chrReg1);
         s.WriteBytes<uint8_t>(prgReg);
         
-        s.WriteBytes<int>((int)ppu.Mirroring);
+        s.WriteBytes<int>((int)ppu->Mirroring);
     }
     void loadState(SaveStateFile &s) override {
         WriteBuffer = s.ReadBytes<uint8_t>();
@@ -41,7 +41,7 @@ public:
         chrReg1 = s.ReadBytes<uint8_t>();
         prgReg = s.ReadBytes<uint8_t>();
 
-        ppu.Mirroring = (MirrorMode)s.ReadBytes<int>();
+        ppu->Mirroring = (MirrorMode)s.ReadBytes<int>();
 
         updateBanks();
     }

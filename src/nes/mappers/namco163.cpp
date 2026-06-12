@@ -43,7 +43,7 @@ void Namco163::clockCPU(void) {
             irqCounter++;
 
             if ((irqCounter & 0x7FFF) == 0x7FFF) {
-                cpu.IRQPending = true;
+                cpu->setExternalIRQ(true);
             }
         }
     }
@@ -53,12 +53,12 @@ void Namco163::cpuWrite(uint16_t addr, uint8_t value) {
     switch(addr & 0xF800) {
         case 0x5000:
             irqCounter = (irqCounter & 0xFF00) | value;
-            cpu.IRQPending = false;
+            cpu->setExternalIRQ(false);
             break;
 
         case 0x5800:
             irqCounter = (irqCounter & 0x00FF) | (value << 8);
-            cpu.IRQPending = false;
+            cpu->setExternalIRQ(false);
             break;
         case 0x8000:
         case 0x8800:
@@ -106,10 +106,10 @@ void Namco163::cpuWrite(uint16_t addr, uint8_t value) {
             setPRGBank(0, value & 0x3F);
             if (variant == NAMCO_340) {
                 switch((value >> 6) & 3) {
-                    case 0: ppu.Mirroring = MirrorMode::SCREEN_A; break;
-                    case 1: ppu.Mirroring = MirrorMode::VERTICAL; break;
-                    case 2: ppu.Mirroring = MirrorMode::HORIZONTAL; break;
-                    case 3: ppu.Mirroring = MirrorMode::SCREEN_B; break;
+                    case 0: ppu->Mirroring = MirrorMode::SCREEN_A; break;
+                    case 1: ppu->Mirroring = MirrorMode::VERTICAL; break;
+                    case 2: ppu->Mirroring = MirrorMode::HORIZONTAL; break;
+                    case 3: ppu->Mirroring = MirrorMode::SCREEN_B; break;
                 }
             }
             break;

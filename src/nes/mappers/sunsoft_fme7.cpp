@@ -41,17 +41,17 @@ void SunSoftFME7::cpuWrite(uint16_t addr, uint8_t value) {
 
                 case 0xC:
                     switch(value & 3) {
-                        case 0: ppu.Mirroring = MirrorMode::VERTICAL; break;
-                        case 1: ppu.Mirroring = MirrorMode::HORIZONTAL; break;
-                        case 2: ppu.Mirroring = MirrorMode::SCREEN_A; break;
-                        case 3: ppu.Mirroring = MirrorMode::SCREEN_B; break;
+                        case 0: ppu->Mirroring = MirrorMode::VERTICAL; break;
+                        case 1: ppu->Mirroring = MirrorMode::HORIZONTAL; break;
+                        case 2: ppu->Mirroring = MirrorMode::SCREEN_A; break;
+                        case 3: ppu->Mirroring = MirrorMode::SCREEN_B; break;
                     }
                     break;
 
                 case 0xD:
                     irqEnabled = value & 1;
                     irqCounterEnabled = value & 0x80;
-                    cpu.IRQPending = false;
+                    cpu->setExternalIRQ(false);
                     break;
                 case 0xE:
                     irqCounter = (irqCounter & 0xFF00) | value;
@@ -75,7 +75,7 @@ void SunSoftFME7::clockCPU(void) {
     irqCounter--;
 
     if (irqCounter == 0xFFFF) {
-        if (irqEnabled) cpu.IRQPending = true;
+        if (irqEnabled) cpu->setExternalIRQ(true);
     }
 }
 

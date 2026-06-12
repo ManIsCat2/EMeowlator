@@ -33,6 +33,7 @@ protected:
 
 private:
     void updateControllers(int qtKey, bool pressed) {
+        if (!emuConsole) return;
         for (int i=0;i<2;i++) {
             emuConsole->handleController(i, qtKey, pressed);
         }

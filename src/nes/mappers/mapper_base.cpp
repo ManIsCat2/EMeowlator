@@ -13,7 +13,7 @@ void MapperBase::setCHRBank(uint16_t page, uint16_t val, enum BankSize size) {
             uint32_t bankOffset = (val * chrSlotSize) & (getNESRom()->CHRRomSize - 1);
             uint16_t ppuStart = page * chrSlotSize;
             uint16_t ppuEnd = ppuStart + chrSlotSize - 1;
-            mapPPUMemory(ppuStart, ppuEnd, ppu.ChrData.data(), bankOffset, getNESRom()->CHRRomSize == 0);
+            mapPPUMemory(ppuStart, ppuEnd, ppu->ChrData.data(), bankOffset, getNESRom()->CHRRomSize == 0);
             break;
         }
         case BANK_2K:
@@ -74,9 +74,9 @@ void MapperBase::setPRGBank(uint16_t page, uint16_t val, enum BankSize size) {
 uint8_t MapperBase::cpuRead(uint16_t addr) {
     if (!PRGPages[addr >> 8].ptr) {
         //DebugPrintLog("MAPPER", "tried reading from unmapped CPU memory at address 0x%x", addr);
-        return cpu.dataBus;
+        return cpu->dataBus;
     }
-    return cpu.dataBus = (PRGPages[addr >> 8].ptr[addr & 0xFF]);
+    return cpu->dataBus = (PRGPages[addr >> 8].ptr[addr & 0xFF]);
 }
 void MapperBase::cpuWrite(uint16_t addr, uint8_t value) {
     if (PRGPages[addr >> 8].write) {
@@ -88,7 +88,7 @@ uint8_t MapperBase::readCHR(uint16_t addr, bool sprite) {
     addr &= 0x1FFF;
     if (!CHRPages[addr >> 8].ptr) {
         //DebugPrintLog("MAPPER", "tried reading from unmapped PPU memory at address 0x%x", addr);
-        return ppu.dataBus;
+        return ppu->dataBus;
     }
 
     return CHRPages[addr >> 8].ptr[addr & 0xFF];
@@ -101,10 +101,10 @@ void MapperBase::writeCHR(uint16_t addr, uint8_t value) {
 }
 
 uint8_t MapperBase::readVRAM(uint16_t addr) {
-    return ppu.VRAM[ppu.mirrorNametable(addr)];
+    return ppu->VRAM[ppu->mirrorNametable(addr)];
 }
 void MapperBase::writeVRAM(uint16_t addr, uint8_t value) {
-    ppu.VRAM[ppu.mirrorNametable(addr)] = value;
+    ppu->VRAM[ppu->mirrorNametable(addr)] = value;
 }
 
 void MapperBase::mapCPUMemory(uint16_t start, uint16_t end, uint8_t *memory, uint32_t offset, bool writable) {
@@ -156,6 +156,7 @@ void MapperBase::loadSRAM() {
 }
 
 void MapperBase::initialize() {
+    connectBus(&nesCpu, &nesPpu, nullptr);
     if (getNESRom()->hasBattery) {
         //DebugPrintLog("MAPPER", "Loaded Save");
         SRAM = new uint8_t[getSRAMSize()];

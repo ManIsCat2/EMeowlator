@@ -2,6 +2,9 @@
 #include "nes_cpu.hpp"
 #include <cstring>
 
+#define NES_WIDTH  256
+#define NES_HEIGHT 240
+
 #define VRAM_FIY 0x7000 //0b111000000000000, fine Y
 #define VRAM_X_NT 0x0400 //0b000010000000000, X nametable
 #define VRAM_Y_NT 0x0800 //0b000100000000000, Y nametable
@@ -12,7 +15,7 @@
 #define PPU_PIXEL_COUNT_NTSC (NES_NTSC_OUT_WIDTH(NES_WIDTH) * NES_HEIGHT)
 #define PPU_PIXEL_COUNT (NES_WIDTH * NES_HEIGHT)
 
-PPU ppu;
+NesPPU nesPpu;
 
 uint32_t nesPalette[64] = {
     0x656565, 0x002A84, 0x1513A2, 0x3A019E, 0x59007A, 0x6A003E, 0x680800, 0x531D00, 0x323400, 0x0D4600, 0x004F00, 0x004C09, 0x003F4B, 0x000000, 0x000000, 0x000000,
@@ -53,14 +56,14 @@ uint32_t getRainbowColor() {
     return  (r << 16) | (g << 8) | b;
 }
 
-PPU::PPU() {
+NesPPU::NesPPU() {
     frameBuffer = new uint32_t[PPU_PIXEL_COUNT_NTSC];
     palIndexBuf = new uint8_t[PPU_PIXEL_COUNT];
     rawOutputImage = new QImage((uint8_t*)(frameBuffer), NES_WIDTH, NES_HEIGHT, QImage::Format_RGB32);
     filteredOutputImage = new QImage((uint8_t*)(frameBuffer), NES_NTSC_OUT_WIDTH(256), NES_HEIGHT, QImage::Format_RGB32);
 }
 
-PPU::~PPU() {
+NesPPU::~NesPPU() {
     delete[] frameBuffer;
     delete[] palIndexBuf;
     delete rawOutputImage;
@@ -68,10 +71,10 @@ PPU::~PPU() {
     delete vfilter;
 }
 
-void PPU::reset(void) {
-    memset(VRAM.data(), 0, VRAM_SIZE);
+void NesPPU::reset(void) {
+    memset(VRAM.data(), 0, NES_VRAM_SIZE);
     memset(OAM, 0, 0x100);
-    memset(paletteRAM.data(), 0, PALRAM_SIZE);
+    memset(paletteRAM.data(), 0, NES_PALRAM_SIZE);
     memset(frameBuffer, 0, sizeof(uint32_t) * PPU_PIXEL_COUNT_NTSC);
     memset(palIndexBuf, 0, PPU_PIXEL_COUNT);
     dataBus = 0;
@@ -104,13 +107,13 @@ void PPU::reset(void) {
     scrollFineX = 0;
 }
 
-void PPU::resetBusDecay(void) {
+void NesPPU::resetBusDecay(void) {
     for (int i = 0; i < 8; i++) { 
         busDecayTimers[i] = PPU_BUS_DECAY_TIME;
     }
 }
 
-void PPU::decayDataBus(void) {
+void NesPPU::decayDataBus(void) {
     for (int i = 0; i < 8; i++) {
         if (busDecayTimers[i] != 0) {
             busDecayTimers[i]--;
@@ -121,7 +124,7 @@ void PPU::decayDataBus(void) {
     }
 }
 
-uint16_t PPU::getAttributeByte() {
+uint16_t NesPPU::getAttributeByte() {
     if (romMapper->usingExtendedAttributes()) {
         MMC5 *mmc5 = (MMC5*)romMapper;
         uint8_t ex = mmc5->getEXRAMByte(VRAMAddr);
@@ -135,7 +138,7 @@ uint16_t PPU::getAttributeByte() {
     return (attr >> shift) & 0x03;
 }
 
-void PPU::RenderScreen() {
+void NesPPU::RenderScreen() {
     if ((uint32_t)(Dot - NES_WIDTH) <= 63) return;
 
     bool renderBG = mask.renderBackground;
@@ -176,7 +179,7 @@ void PPU::RenderScreen() {
                             finalPalette = 0x10 | sprite[2] * 0x04 & 0x0C;
                         }
                             
-                        if (i == 0 && bgColor && Dot != 255 && renderBG && (Dot >= 8 || mask.sprite8pxMask)) {
+                        if (i == 0 && spriteColor != 0 && bgColor != 0 && Dot != 255 && renderBG && (Dot >= 8 || mask.sprite8pxMask)) {
                             sprite0Hit = true;
                         }
                         break;
@@ -233,7 +236,7 @@ void PPU::RenderScreen() {
     }
 }
 
-void PPU::Step() {
+void NesPPU::Step() {
     const bool isPal = /*getNESRom()->Region == ConsoleRegion::PAL*/ false;
     const int preRenderLine = isPal ? 311 : 261;
     const int totalScanlines = isPal ? 312 : 262;
@@ -327,36 +330,30 @@ void PPU::Step() {
     if (dataBus != 0) decayDataBus();
 }
 
-void PPU::LoadCHRROM(const uint8_t *data, int chrSize) {
+void NesPPU::LoadCHRROM(const uint8_t *data, int chrSize) {
     ChrData.resize(chrSize);
     memcpy(ChrData.data(), data, chrSize);
 }
 
-uint16_t PPU::mirrorNametable(uint16_t addr) {
-    uint16_t mirrored = addr;
+uint16_t NesPPU::mirrorNametable(uint16_t addr) {
+    uint16_t normalized = (addr - 0x2000) & 0x0FFF;
+
     switch (Mirroring) {
         case MirrorMode::HORIZONTAL:
-            mirrored = (addr & 0x3FF) | ((addr & 0x800) >> 1);
-            break;
+            return (normalized & 0x03FF) | ((normalized & 0x0800) >> 1);
         case MirrorMode::VERTICAL:
-            mirrored = addr & 0x7FF;
-            break;
+            return normalized & 0x07FF;
         case MirrorMode::SCREEN_A:
-            mirrored = addr & 0x3FF;
-            break;
+            return normalized & 0x03FF;
         case MirrorMode::SCREEN_B:
-            mirrored = (addr & 0x3FF) | 0x400;
-            break;
-        case MirrorMode::FOURSCREEN: {
-            uint16_t nt = (addr >> 10) & 0x03;
-            mirrored = (nt << 10) | (addr & 0x3FF);
-            break;
-        }
+            return (normalized & 0x03FF) | 0x0400;
+        case MirrorMode::FOURSCREEN:
+            return normalized;
     }
-    return mirrored;
+    return 0;
 }
 
-void PPU::blitPixels() {
+void NesPPU::blitPixels() {
     for (int y = 0; y < NES_HEIGHT; y++) {
         for (int x = 0; x < NES_WIDTH; x++) {
             int i = y * NES_WIDTH + x;
@@ -367,13 +364,13 @@ void PPU::blitPixels() {
     }
 }
 
-void PPU::Init() {
+void NesPPU::Init() {
     InitFilter(VideoFilter::NONE);
     memset(frameBuffer, 0, sizeof(uint32_t) * PPU_PIXEL_COUNT_NTSC);
     memset(palIndexBuf, 0, PPU_PIXEL_COUNT);
 }
 
-VFilterBase *PPU::GetVideoFilter(VideoFilter filter) {
+VFilterBase *NesPPU::GetVideoFilter(VideoFilter filter) {
     switch (filter) {
         case VideoFilter::NONE: return new DefaultFilter();
         case VideoFilter::NTSC: return new NTSCFilter();
@@ -383,7 +380,7 @@ VFilterBase *PPU::GetVideoFilter(VideoFilter filter) {
     return nullptr;
 }
 
-void PPU::InitFilter(VideoFilter filter) {
+void NesPPU::InitFilter(VideoFilter filter) {
     filtering = filter;
     if (vfilter) { delete vfilter; vfilter = nullptr; }
     vfilter = GetVideoFilter(filter);

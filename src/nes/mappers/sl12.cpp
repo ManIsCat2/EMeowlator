@@ -149,15 +149,15 @@ void SL12::updateCHR(void) {
 
 void SL12::updateMirroring(void) {
     switch (mode & 0x03) {
-		case 0: ppu.Mirroring = (VRC2Mirroring & 0x01) ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL; break;
-		case 1: ppu.Mirroring = (MMC3Mirroring & 0x01) ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL; break;
+		case 0: ppu->Mirroring = (VRC2Mirroring & 0x01) ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL; break;
+		case 1: ppu->Mirroring = (MMC3Mirroring & 0x01) ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL; break;
 		case 2:
 		case 3:
 			switch (MMC1Regs[0] & 0x03) {
-				case 0: ppu.Mirroring = MirrorMode::SCREEN_A; break;
-				case 1: ppu.Mirroring = MirrorMode::SCREEN_B; break;
-				case 2: ppu.Mirroring = MirrorMode::VERTICAL; break;
-                case 3: ppu.Mirroring = MirrorMode::HORIZONTAL; break;
+				case 0: ppu->Mirroring = MirrorMode::SCREEN_A; break;
+				case 1: ppu->Mirroring = MirrorMode::SCREEN_B; break;
+				case 2: ppu->Mirroring = MirrorMode::VERTICAL; break;
+                case 3: ppu->Mirroring = MirrorMode::HORIZONTAL; break;
 			}
 			break;
 	}
@@ -218,7 +218,7 @@ void SL12::writeMMC3(uint16_t addr, uint8_t value) {
         case 0xC001: IRQReload = true; break;
         
         case 0xE000:
-            cpu.IRQPending = false;
+            cpu->setExternalIRQ(false);
             IRQEnable = false;
             break;
         
@@ -244,7 +244,7 @@ void SL12::writeMMC1(uint16_t addr, uint8_t value) {
 }
 
 void SL12::clockPPU(void) {
-    if ((ppu.ScanLine + 1) % 262 < 241 && ppu.Dot == 261 && mode & 0x03 == 1) {
+    if ((ppu->ScanLine + 1) % 262 < 241 && ppu->Dot == 261 && mode & 0x03 == 1) {
         if (IRQCounter == 0 || IRQReload) {
             IRQCounter = IRQReloadVal;
         } else {
@@ -252,7 +252,7 @@ void SL12::clockPPU(void) {
         }
         
         if (IRQCounter == 0 && IRQEnable) {
-            cpu.IRQPending = true;
+            cpu->setExternalIRQ(true);
             
         }
         IRQReload = false;

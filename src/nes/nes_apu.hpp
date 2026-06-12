@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "bus.hpp"
 
 struct PulseChannel {
     bool enable = false;
@@ -67,10 +68,10 @@ struct DMCChannel {
     bool silence = true;
 };
 
-class APU {
+class NesAPU : public HasNESBus {
 public:
-    APU();
-    ~APU();
+    NesAPU();
+    ~NesAPU();
 
     void write(uint16_t addr, uint8_t data);
     uint8_t read(uint16_t addr);
@@ -111,4 +112,4 @@ private:
     void clockPulse();
 };
 
-extern APU apu;
+extern NesAPU nesApu;

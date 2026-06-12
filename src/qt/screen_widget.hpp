@@ -9,12 +9,12 @@ public:
     QImage image;
 
     ScreenWidget(QWidget *parent = nullptr) : QWidget(parent) {
-        setFixedSize(NES_WIDTH*3, NES_HEIGHT*3);
+        setFixedSize(256*2, 240*2);
     }
 
 protected:
     void paintEvent(QPaintEvent *) override {
         QPainter p(this);
-        p.drawImage(rect(), image);
+        if (romIsLoaded) p.drawImage(rect(), image);
     }
 };

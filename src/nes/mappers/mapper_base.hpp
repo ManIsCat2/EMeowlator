@@ -1,10 +1,11 @@
 #pragma once
 
 #include "../../savestate.hpp"
+#include "../bus.hpp"
 #include <stdint.h>
 #include <string>
 
-class MapperBase {
+class MapperBase : public HasNESBus {
 public:
     enum BankSize {
         BANK_1K,
@@ -23,7 +24,7 @@ public:
 
     uint16_t subMapper = 0;
 
-    uint8_t PRGRam[0x2000]; //or WRAM
+    uint8_t PRGRam[0x2000]; //or called WRAM
     uint8_t *SRAM = nullptr;
 
     virtual ~MapperBase();

@@ -9,6 +9,8 @@
 #include "filters/filters.hpp"
 #include "mappers/mapper_base.hpp"
 
+#include <QImage>
+
 enum class MirrorMode {
     HORIZONTAL,
     VERTICAL,
@@ -24,13 +26,13 @@ enum class VideoFilter {
     GRAYSCALE
 };
 
-class PPU {
+class NesPPU {
 public:
-    PPU();
-    ~PPU();
+    NesPPU();
+    ~NesPPU();
     std::vector<uint8_t> ChrData{};
-    std::array<uint8_t, VRAM_SIZE> VRAM{};
-    std::array<uint8_t, PALRAM_SIZE> paletteRAM{};
+    std::array<uint8_t, NES_VRAM_SIZE> VRAM{};
+    std::array<uint8_t, NES_PALRAM_SIZE> paletteRAM{};
     uint8_t OAM[0x100];
     uint32_t *frameBuffer = nullptr;
     uint8_t *palIndexBuf = nullptr;
@@ -87,6 +89,9 @@ public:
 
     MapperBase* romMapper = nullptr;
 
+    QImage *rawOutputImage = nullptr;
+    QImage *filteredOutputImage = nullptr;
+
     void reset(void);
     void resetBusDecay(void);
     void decayDataBus(void);
@@ -103,7 +108,7 @@ public:
     void InitFilter(VideoFilter filter);
 };
 
-extern PPU ppu;
+extern NesPPU nesPpu;
 extern uint32_t nesPalette[64];
 extern uint32_t nesPaletteDefault[64];
 extern float rainbowHoverPhase;

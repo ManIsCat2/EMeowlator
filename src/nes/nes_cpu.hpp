@@ -8,10 +8,11 @@
 #include "../main.hpp"
 
 #include <stdio.h>
+#include "bus.hpp"
 
-class CPU {
+class NesCPU : public HasNESBus {
 public:
-    CPU() { }
+    NesCPU() { }
 
     //make code more readable
     enum Flags {
@@ -26,7 +27,7 @@ public:
     };
 
     bool CPUPaused = false;
-    uint8_t RAM[RAM_SIZE];
+    uint8_t RAM[NES_RAM_SIZE];
     uint8_t dataBus = 0;
     bool NMIDetector = false;
     bool doNMI = false;
@@ -54,6 +55,10 @@ public:
         SP = SPReg;
         P = PReg;
     }
+    
+    void setExternalIRQ(bool irq) {
+        IRQPending = irq;
+    }
 
     void run(uint32_t maxCycles);
 
@@ -66,14 +71,14 @@ public:
     uint8_t pop();
 
 private:
-    uint64_t cycles;
-    uint8_t A, X, Y;
-    uint16_t PC;
-    uint8_t SP;
-    uint8_t P;
+    uint64_t cycles = 0;
+    uint8_t A, X, Y = 0;
+    uint16_t PC = 0;
+    uint8_t SP = 0;
+    uint8_t P = 0;
 
     uint8_t fetch() { return dataBus = read(PC++); }
     uint16_t fetch16() { return fetch() | (fetch() << 8); }
 };
 
-extern CPU cpu;
+extern NesCPU nesCpu;

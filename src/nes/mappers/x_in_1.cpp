@@ -26,7 +26,7 @@ void XIn1::cpuWrite(uint16_t addr, uint8_t value) {
 
 		setCHRBank(0, chr);
 
-		ppu.Mirroring = addr & 0x80 ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL;
+		ppu->Mirroring = addr & 0x80 ? MirrorMode::HORIZONTAL : MirrorMode::VERTICAL;
         return;
     }
     MapperBase::cpuWrite(addr, value);

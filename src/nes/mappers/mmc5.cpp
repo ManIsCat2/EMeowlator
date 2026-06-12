@@ -56,7 +56,7 @@ uint8_t MMC5::cpuRead(uint16_t addr) {
                 return EXRAM[addr & 0x3FF];
 
             case 3:
-                return cpu.dataBus;
+                return cpu->dataBus;
         }
     }
 
@@ -65,10 +65,10 @@ uint8_t MMC5::cpuRead(uint16_t addr) {
             uint8_t val = 0;
 
             if (irqPending) val |= 0x80;
-            if (ppu.ScanLine >= 0 && ppu.ScanLine < 240) val |= 0x40;
+            if (ppu->ScanLine >= 0 && ppu->ScanLine < 240) val |= 0x40;
 
             irqPending = false;
-            cpu.IRQPending = false;
+            cpu->setExternalIRQ(false);
 
             return val;
         }
@@ -170,7 +170,7 @@ void MMC5::cpuWrite(uint16_t addr, uint8_t value) {
             irqEnabled = (value & 0x80) != 0;
 
             if (!irqEnabled) {
-                cpu.IRQPending = false;
+                cpu->setExternalIRQ(false);
             }
             break;
 
@@ -348,10 +348,10 @@ uint8_t MMC5::readVRAM(uint16_t addr) {
     uint16_t offs = addr & 0x03FF;
 
     switch (nametableMap[nt]) {
-        case 0: return ppu.VRAM[offs];
-        case 1: return ppu.VRAM[0x400 + offs];
+        case 0: return ppu->VRAM[offs];
+        case 1: return ppu->VRAM[0x400 + offs];
         case 2:
-            if (EXRAMMode == 3) return cpu.dataBus;
+            if (EXRAMMode == 3) return cpu->dataBus;
             return EXRAM[offs];
         case 3:
             return fillModeRead(offs);
@@ -368,11 +368,11 @@ void MMC5::writeVRAM(uint16_t addr, uint8_t value) {
 
     switch (nametableMap[nt]) {
         case 0:
-            ppu.VRAM[offs] = value;
+            ppu->VRAM[offs] = value;
             break;
 
         case 1:
-            ppu.VRAM[0x400 + offs] = value;
+            ppu->VRAM[0x400 + offs] = value;
             break;
 
         case 2:
@@ -392,18 +392,18 @@ void MMC5::clockCPU(void) {
 }
 
 void MMC5::clockPPU(void) {
-    if (ppu.Dot == 0) {
-        if (ppu.ScanLine >= 0 && ppu.ScanLine < 240) {
-            if (ppu.mask.renderBackground || ppu.mask.renderSprites) {
+    if (ppu->Dot == 0) {
+        if (ppu->ScanLine >= 0 && ppu->ScanLine < 240) {
+            if (ppu->mask.renderBackground || ppu->mask.renderSprites) {
                 currentScanline++;
                 if (irqScanline != 0 && currentScanline == irqScanline) {
                     irqPending = true;
                     if (irqEnabled) {
-                        cpu.IRQPending = true;
+                        cpu->setExternalIRQ(true);
                     }
                 }
             }
-        } else if (ppu.ScanLine == 261) {
+        } else if (ppu->ScanLine == 261) {
             currentScanline = 0;
             irqPending = false;
         }
@@ -414,10 +414,10 @@ uint8_t MMC5::readCHR(uint16_t addr, bool sprite) {
     addr &= 0x1FFF;
 
     if (usingExtendedAttributes() && !sprite) {
-        uint8_t ex = getEXRAMByte(ppu.VRAMAddr);
+        uint8_t ex = getEXRAMByte(ppu->VRAMAddr);
         uint32_t bank = (ex & 0x3F) | (chrUpperBits << 6);
         uint32_t finalAddr = (bank << 12) | (addr & 0x0FFF);
-        return ppu.ChrData[finalAddr % getNESRom()->CHRRomSize];
+        return ppu->ChrData[finalAddr % getNESRom()->CHRRomSize];
     }
 
     return MapperBase::readCHR(addr, sprite);
@@ -428,7 +428,7 @@ bool MMC5::usingExtendedAttributes() {
         return false;
     }
 
-    uint8_t nt = (ppu.VRAMAddr >> 10) & 0x03;
+    uint8_t nt = (ppu->VRAMAddr >> 10) & 0x03;
 
     return nametableMap[nt] == 2;
 }

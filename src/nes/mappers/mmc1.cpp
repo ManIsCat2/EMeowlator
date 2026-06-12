@@ -59,10 +59,10 @@ void MMC1::modifyRegister(uint16_t addr, uint8_t val) {
         case 0x8000:
             control = val;
             switch (val & 0x03) {
-                case 0: ppu.Mirroring = MirrorMode::SCREEN_A; break;
-                case 1: ppu.Mirroring = MirrorMode::SCREEN_B; break;
-                case 2: ppu.Mirroring = MirrorMode::VERTICAL; break;
-                case 3: ppu.Mirroring = MirrorMode::HORIZONTAL; break;
+                case 0: ppu->Mirroring = MirrorMode::SCREEN_A; break;
+                case 1: ppu->Mirroring = MirrorMode::SCREEN_B; break;
+                case 2: ppu->Mirroring = MirrorMode::VERTICAL; break;
+                case 3: ppu->Mirroring = MirrorMode::HORIZONTAL; break;
             }
 
             slotSelect = (val & 0x04) != 0;

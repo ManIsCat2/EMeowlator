@@ -80,7 +80,7 @@ void JyCompany::cpuWrite(uint16_t addr, uint8_t value) {
                 break;
             case 0xC000:
                 irqEnabled = value & 0x01;
-                if(!irqEnabled) cpu.IRQPending = false;
+                if(!irqEnabled) cpu->setExternalIRQ(false);
                 break;
             case 0xC001:
 				irqCountDirection = (value >> 6) & 0x03;
@@ -91,7 +91,7 @@ void JyCompany::cpuWrite(uint16_t addr, uint8_t value) {
 				break;
             case 0xC002:
 				irqEnabled = false;
-				cpu.IRQPending = false;
+				cpu->setExternalIRQ(false);
 				break;
 			case 0xC003: irqEnabled = true; break;
             case 0xC004: irqPrescaler = value ^ irqXorReg; break;
@@ -202,10 +202,10 @@ void JyCompany::updateState() {
 
 void JyCompany::updateMirroring() {
     switch(mirroringReg) {
-        case 0: ppu.Mirroring = MirrorMode::VERTICAL; break;
-        case 1: ppu.Mirroring = MirrorMode::HORIZONTAL; break;
-        case 2: ppu.Mirroring = MirrorMode::SCREEN_A; break;
-        case 3: ppu.Mirroring = MirrorMode::SCREEN_B; break;
+        case 0: ppu->Mirroring = MirrorMode::VERTICAL; break;
+        case 1: ppu->Mirroring = MirrorMode::HORIZONTAL; break;
+        case 2: ppu->Mirroring = MirrorMode::SCREEN_A; break;
+        case 3: ppu->Mirroring = MirrorMode::SCREEN_B; break;
     }
 }
 
@@ -229,12 +229,12 @@ void JyCompany::clockIRQ(void) {
         if (irqCountDirection == 0x01) {
             irqCounter++;
             if (irqCounter == 0 && irqEnabled) {
-                cpu.IRQPending = true;
+                cpu->setExternalIRQ(true);
             }
         } else if (irqCountDirection == 0x02) {
             irqCounter--;
             if (irqCounter == 0xFF && irqEnabled) {
-                cpu.IRQPending = true;
+                cpu->setExternalIRQ(true);
             }
         }
     }
@@ -250,16 +250,16 @@ void JyCompany::clockPPU(void) {
     if (irqSource == 1) {
         //incredible
         // clockIRQ();
-        if ((ppu.ScanLine + 1) % 262 < 241 && ppu.Dot == 261) {
+        if ((ppu->ScanLine + 1) % 262 < 241 && ppu->Dot == 261) {
             if (irqCountDirection == 0x01) {
                 //irqCounter++;
                 if (irqCounter++ == 0 && irqEnabled) {
-                    cpu.IRQPending = true;
+                    cpu->setExternalIRQ(true);
                 }
             } else if (irqCountDirection == 0x02) {
                 //irqCounter--;
                 if (irqCounter-- == 0xFF && irqEnabled) {
-                    cpu.IRQPending = true;
+                    cpu->setExternalIRQ(true);
                 }
             }
         }
