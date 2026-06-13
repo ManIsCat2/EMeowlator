@@ -8,7 +8,7 @@
 #include "../main.hpp"
 
 #include <stdio.h>
-#include "bus.hpp"
+#include "nes_bus.hpp"
 
 class NesCPU : public HasNESBus {
 public:

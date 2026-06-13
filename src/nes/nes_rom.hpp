@@ -5,7 +5,6 @@ enum class HeaderVersion {
     INES,
 };
 
-
 #include <cstdint>
 #include <iostream>
 #include <array>

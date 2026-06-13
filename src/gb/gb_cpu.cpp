@@ -1,0 +1,1453 @@
+#include "gb_cpu.hpp"
+#include "gb_ppu.hpp"
+
+GbCPU gbCpu;
+
+void GbCPU::reset() {
+    connectBus(nullptr, &gbPpu);
+    A = 0x01;
+    F = 0xB0;
+    B = 0x00; C = 0x13;
+    D = 0x00; E = 0xD8;
+    H = 0x01; L = 0x4D;
+    SP = 0xFFFE;
+    PC = 0x0100;
+    cycles = 0;
+    IME = false;
+
+    IE = 0; IF = 0xe1;
+
+    joypadReg = 0x30;
+
+    for (int i = 0; i < 8192; i++) {
+        WRAM[i] = 0x00;
+    }
+    for (int i = 0; i < 128; i++) {
+        HRAM[i] = 0x00;
+    }
+
+    ppu->reset();
+}
+
+//#define GBCPU_DBG
+#ifdef GBCPU_DBG
+#define PRINT_DBG_CPU(...) printf(__VA_ARGS__)
+#else
+#define PRINT_DBG_CPU(...)
+#endif
+
+void GbCPU::handleInterrupts() {
+    if (!IME) return;
+
+    uint8_t pendingInterrupts = IF & IE & 0x1F;
+    if (pendingInterrupts > 0) {
+        if (pendingInterrupts & 0x01) { 
+            IME = false;          
+            IF &= ~0x01; 
+            push(PC >> 8); push(PC & 0xFF);
+            PC = 0x0040;          
+            cycles += 20;         
+            return;
+        }
+        
+        if (pendingInterrupts & 0x02) { 
+            IME = false;
+            IF &= ~0x02;
+            push(PC >> 8); push(PC & 0xFF);
+            PC = 0x0048;
+            cycles += 20;
+            return;
+        }
+
+        if (pendingInterrupts & 0x04) { 
+            IME = false;
+            IF &= ~0x04;
+            push(PC >> 8); push(PC & 0xFF);
+            PC = 0x0050;
+            cycles += 20;
+            return;
+        }
+
+        if (pendingInterrupts & 0x08) { 
+            IME = false;
+            IF &= ~0x08;
+            push(PC >> 8); push(PC & 0xFF);
+            PC = 0x0056;
+            cycles += 20;
+            return;
+        }
+
+        if (pendingInterrupts & 0x10) { 
+            IME = false;
+            IF &= ~0x10;
+            push(PC >> 8); push(PC & 0xFF);
+            PC = 0x0060;
+            cycles += 20;
+            return;
+        }
+    }
+}
+
+void GbCPU::run(uint32_t maxCycles) {
+    uint32_t cyclesRun = 0;
+
+    while (cyclesRun < maxCycles) {
+        if (!romIsLoaded || CPUPaused) return;
+
+        handleInterrupts();
+
+        uint8_t opcode = fetch();
+        execute(opcode);
+        
+        cyclesRun += cycles;
+
+        ppu->Step(cycles);
+    }
+}
+
+uint8_t GbCPU::opINC(uint8_t value) {
+    uint8_t result = value + 1;
+    
+    F &= FlagC; 
+    if (result == 0) F |= FlagZ;
+    if ((value & 0x0F) == 0x0F) F |= FlagH;
+    
+    return result;
+}
+
+void GbCPU::execute(uint8_t opcode) {
+   // PRINT_DBG_CPU("PC: %04X | Opcode: %02X | L: %02X | Z-Flag: %d\n", PC, opcode, L, (F & FlagZ) != 0);
+    switch (opcode) {
+        case 0x00: // NOP
+            PRINT_DBG_CPU("NOP\n");
+            cycles = 4;
+            break;
+
+        case 0x01: { // LD BC, d16
+            uint16_t imm16 = fetch16();
+            PRINT_DBG_CPU("LD BC, $0x%04X\n", imm16);
+            setBC(imm16);
+            cycles = 12;
+            break;
+        }
+
+        case 0x02: // LD (BC), A
+            PRINT_DBG_CPU("LD (BC), A\n");
+            write(getBC(), A);
+            cycles = 8;
+            break;
+
+        case 0x03: // INC BC
+            PRINT_DBG_CPU("INC BC\n");
+            setBC(getBC() + 1);
+            cycles = 8;
+            break;
+
+        case 0x04: // INC B
+            PRINT_DBG_CPU("INC B\n");
+            B = opINC(B);
+            
+            cycles = 4;
+            break;
+
+        case 0x05:
+            PRINT_DBG_CPU("DEC B\n");
+            F = FlagN | (F & FlagC) | (((B & 0x0F) == 0x00) ? FlagH : 0);
+            B--;
+            if (B == 0) {
+                F |= FlagZ;
+            }
+            cycles = 4;
+            break;
+
+        case 0x06: // LD B, d8
+            B = fetch();
+            PRINT_DBG_CPU("LD B, $0x%02X\n", B);
+            cycles = 8;
+            break;
+
+        case 0x09: {
+            PRINT_DBG_CPU("ADD HL, BC\n");
+            uint32_t hl = (H << 8) | L;
+            uint32_t bc = (B << 8) | C;
+            uint32_t result = hl + bc;
+            
+            F &= ~(FlagN | FlagH | FlagC);
+            if (((hl & 0x0FFF) + (bc & 0x0FFF)) > 0x0FFF) {
+                F |= FlagH;
+            }
+            if (result > 0xFFFF) {
+                F |= FlagC;
+            }
+            
+            H = (result >> 8) & 0xFF;
+            L = result & 0xFF;
+            cycles = 8;
+            break;
+        }
+
+        case 0x0C: // INC C
+            PRINT_DBG_CPU("INC C\n");
+            C = opINC(C);
+            
+            cycles = 4;
+            break;
+
+        case 0x0A:
+            PRINT_DBG_CPU("LD A, (BC)\n");
+            A = read(getBC());
+            cycles = 8;
+            break;
+
+        case 0x0B: // DEC BC
+            PRINT_DBG_CPU("DEC BC\n");
+            setBC(getBC() - 1);
+            cycles = 8;
+            break;
+
+        case 0x0D:
+            PRINT_DBG_CPU("DEC C\n");
+            F = FlagN | (F & FlagC) | (((C & 0x0F) == 0x00) ? FlagH : 0);
+            C--;
+            if (C == 0) {
+                F |= FlagZ;
+            }
+            cycles = 4;
+            break;
+
+        case 0x0E: // LD C, d8
+            C = fetch();
+            PRINT_DBG_CPU("LD C, $0x%02X\n", C);
+            cycles = 8;
+            break;
+
+        case 0x11: { // LD DE, d16
+            uint16_t imm16 = fetch16();
+            PRINT_DBG_CPU("LD DE, $0x%04X\n", imm16);
+            setDE(imm16);
+            cycles = 12;
+            break;
+        }
+
+        case 0x12: // LD (DE), A
+            PRINT_DBG_CPU("LD (DE), A\n");
+            write(getDE(), A);
+            cycles = 8;
+            break;
+
+        case 0x13: // INC DE
+            PRINT_DBG_CPU("INC DE\n");
+            setDE(getDE() + 1);
+            cycles = 8;
+            break;
+
+        case 0x14:
+            PRINT_DBG_CPU("INC D\n");
+            D = opINC(D);
+
+            cycles = 4;
+            break;
+
+        case 0x15:
+            PRINT_DBG_CPU("DEC D\n");
+            F = FlagN | (F & FlagC) | (((D & 0x0F) == 0x00) ? FlagH : 0);
+            D--;
+            if (D == 0) {
+                F |= FlagZ;
+            }
+            cycles = 4;
+            break;
+
+        case 0x16: // LD D, d8
+            D = fetch();
+            PRINT_DBG_CPU("LD D, $0x%02X\n", D);
+            cycles = 8;
+            break;
+
+        case 0x18: { // JR r8 (Relative Jump)
+            int8_t offset = (int8_t)fetch();
+            PRINT_DBG_CPU("JR %d\n", offset);
+            PC += offset;
+            cycles = 12;
+            break;
+        }
+
+        case 0x19: {
+            PRINT_DBG_CPU("ADD HL, DE\n");
+            uint32_t hl = (H << 8) | L;
+            uint32_t de = (D << 8) | E;
+            uint32_t result = hl + de;
+            
+            F &= ~(FlagN | FlagH | FlagC);
+            if (((hl & 0x0FFF) + (de & 0x0FFF)) > 0x0FFF) {
+                F |= FlagH;
+            }
+            if (result > 0xFFFF) {
+                F |= FlagC;
+            }
+            
+            H = (result >> 8) & 0xFF;
+            L = result & 0xFF;
+            cycles = 8;
+            break;
+        }
+
+        case 0x1A: // LD A, (DE)
+            PRINT_DBG_CPU("LD A, (DE)\n");
+            A = read(getDE());
+            cycles = 8;
+            break;
+
+        case 0x1C: // INC E
+            PRINT_DBG_CPU("INC E\n");
+            E = opINC(E);
+
+            cycles = 4;
+            break;
+
+        case 0x1D:
+            PRINT_DBG_CPU("DEC E\n");
+            F = FlagN | (F & FlagC) | (((E & 0x0F) == 0x00) ? FlagH : 0);
+            E--;
+            if (E == 0) {
+                F |= FlagZ;
+            }
+            cycles = 4;
+            break;
+
+        case 0x1E: // LD E, d8
+            E = fetch();
+            PRINT_DBG_CPU("LD E, $0x%02X\n", E);
+            cycles = 8;
+            break;
+
+        case 0x1F: {
+            PRINT_DBG_CPU("RRA\n");
+            uint8_t old_carry = (F & FlagC) ? 1 : 0;
+            uint8_t next_carry = A & 0x01;
+            
+            A = (A >> 1) | (old_carry << 7);
+            
+            F = 0;
+            if (next_carry) {
+                F |= FlagC;
+            }
+            
+            cycles = 4;
+            break;
+        }
+
+        case 0x20: { // JR NZ, e8
+            int8_t offset = (int8_t)fetch();
+            if (!(F & FlagZ)) {
+                PC += offset;
+                cycles = 12;
+            } else {
+                cycles = 8;
+            }
+            break;
+        }
+
+        case 0x21: { // LD HL, d16
+            uint16_t imm16 = fetch16();
+            PRINT_DBG_CPU("LD HL, $0x%04X\n", imm16);
+            setHL(imm16);
+            cycles = 12;
+            break;
+        }
+
+        case 0x22: // LD (HL+), A
+            PRINT_DBG_CPU("LD (HL+), A\n");
+            write(getHL(), A);
+            setHL(getHL() + 1);
+            cycles = 8;
+            break;
+
+        case 0x23: // INC HL
+            PRINT_DBG_CPU("INC HL\n");
+            setHL(getHL() + 1);
+            cycles = 8;
+            break;
+
+        case 0x24:
+            PRINT_DBG_CPU("INC H\n");
+            H = opINC(H);
+
+            cycles = 4;
+            break;
+
+        case 0x25:
+            PRINT_DBG_CPU("DEC H\n");
+            F = FlagN | (F & FlagC) | (((H & 0x0F) == 0x00) ? FlagH : 0);
+            H--;
+            if (H == 0) {
+                F |= FlagZ;
+            }
+            cycles = 4;
+            break;
+
+        case 0x26: // LD H, d8
+            H = fetch();
+            PRINT_DBG_CPU("LD H, $0x%02X\n", H);
+            cycles = 8;
+            break;
+
+        case 0x27: {
+            PRINT_DBG_CPU("DAA\n");
+            uint8_t correction = 0;
+            bool set_carry = false;
+
+            if (!(F & FlagN)) {
+                if ((F & FlagH) || ((A & 0x0F) > 0x09)) {
+                    correction |= 0x06;
+                }
+                if ((F & FlagC) || (A > 0x99)) {
+                    correction |= 0x60;
+                    set_carry = true;
+                }
+                A += correction;
+            } else {
+                if (F & FlagH) {
+                    correction |= 0x06;
+                }
+                if (F & FlagC) {
+                    correction |= 0x60;
+                    set_carry = true;
+                }
+                A -= correction;
+            }
+
+            F &= ~(FlagH | FlagZ | FlagC);
+            if (set_carry) {
+                F |= FlagC;
+            }
+            if (A == 0) {
+                F |= FlagZ;
+            }
+
+            cycles = 4;
+            break;
+        }
+
+        case 0x28: { // JR Z, r8
+            int8_t offset = (int8_t)fetch();
+            PRINT_DBG_CPU("JR Z, %d\n", offset);
+            if (F & FlagZ) {
+                PC += offset;
+                cycles = 12;
+            } else {
+                cycles = 8;
+            }
+            break;
+        }
+
+        case 0x2A: // LD A, (HL+)
+            PRINT_DBG_CPU("LD A, (HL+)\n");
+            A = read(getHL());
+            setHL(getHL() + 1);
+            cycles = 8;
+            break;
+
+        case 0x2C:
+            PRINT_DBG_CPU("INC L\n");
+            L = opINC(L);
+
+            break;
+
+        case 0x2D:
+            PRINT_DBG_CPU("DEC L\n");
+            F = FlagN | (F & FlagC) | (((L & 0x0F) == 0x00) ? FlagH : 0);
+            L--;
+            if (L == 0) {
+                F |= FlagZ;
+            }
+            cycles = 4;
+            break;
+
+        case 0x2E: // LD L, d8
+            L = fetch();
+            PRINT_DBG_CPU("LD L, $0x%02X\n", L);
+            cycles = 8;
+            break;
+
+        case 0x2F: // CPL
+            PRINT_DBG_CPU("CPL\n");
+            A = ~A;
+            F |= (FlagN | FlagH);
+            cycles = 4;
+            break;
+
+        case 0x29: {
+            PRINT_DBG_CPU("ADD HL, HL\n");
+            uint32_t hl = (H << 8) | L;
+            uint32_t result = hl + hl;
+            
+            F &= ~(FlagN | FlagH | FlagC);
+            if (((hl & 0x0FFF) + (hl & 0x0FFF)) > 0x0FFF) {
+                F |= FlagH;
+            }
+            if (result > 0xFFFF) {
+                F |= FlagC;
+            }
+            
+            H = (result >> 8) & 0xFF;
+            L = result & 0xFF;
+            cycles = 8;
+            break;
+        }
+
+        case 0x30: {
+            int8_t offset = (int8_t)fetch();
+            PRINT_DBG_CPU("JR NC, %d\n", offset);
+            if (!(F & FlagC)) {
+                PC += offset;
+                cycles = 12;
+            } else {
+                cycles = 8;
+            }
+            break;
+        }
+
+        case 0x31: { // LD SP, d16
+            uint16_t imm16 = fetch16();
+            PRINT_DBG_CPU("LD SP, $0x%04X\n", imm16);
+            SP = imm16;
+            cycles = 12;
+            break;
+        }
+
+        case 0x32: // LD (HL-), A
+            PRINT_DBG_CPU("LD (HL-), A\n");
+            write(getHL(), A);
+            setHL(getHL() - 1);
+            cycles = 8;
+            break;
+
+        case 0x34: {
+            PRINT_DBG_CPU("INC (HL)\n");
+            uint16_t address = (H << 8) | L;
+            uint8_t value = read(address);
+            
+            F &= ~(FlagN | FlagH | FlagZ);
+            if ((value & 0x0F) == 0x0F) {
+                F |= FlagH;
+            }
+            
+            value++;
+            
+            if (value == 0) {
+                F |= FlagZ;
+            }
+            
+            write(address, value);
+            cycles = 12;
+            break;
+        }
+
+        case 0x35: {
+            PRINT_DBG_CPU("DEC (HL)\n");
+            uint16_t address = (H << 8) | L;
+            uint8_t value = read(address);
+            
+            F &= ~(FlagZ | FlagH);
+            if ((value & 0x0F) == 0) {
+                F |= FlagH;
+            }
+            
+            value--;
+            
+            if (value == 0) {
+                F |= FlagZ;
+            }
+            F |= FlagN;
+            
+            write(address, value);
+            cycles = 12;
+            break;
+        }
+
+        case 0x36: { // LD (HL), d8
+            uint8_t imm8 = fetch();
+            PRINT_DBG_CPU("LD (HL), $0x%02X\n", imm8);
+            write(getHL(), imm8);
+            cycles = 12;
+            break;
+        }
+        
+        case 0x38: {
+            int8_t offset = (int8_t)fetch();
+            PRINT_DBG_CPU("JR C, %d\n", offset);
+            if (F & FlagC) {
+                PC += offset;
+                cycles = 12;
+            } else {
+                cycles = 8;
+            }
+            break;
+        }
+
+        case 0x3A: {
+            PRINT_DBG_CPU("LD A, (HL-)\n");
+            uint16_t hl = (H << 8) | L;
+            A = read(hl);
+            hl--;
+            H = (hl >> 8) & 0xFF;
+            L = hl & 0xFF;
+            cycles = 8;
+            break;
+        }
+
+        case 0x3C:
+            PRINT_DBG_CPU("INC A\n");
+            A = opINC(A);
+            
+            cycles = 4;
+            break;
+
+        case 0x3D:
+            PRINT_DBG_CPU("DEC A\n");
+            F &= ~FlagN;
+            F &= ~FlagH;
+            F &= ~FlagZ;
+
+            if ((A & 0x0F) == 0) {
+                F |= FlagH;
+            }
+            A--;
+            if (A == 0) {
+                F |= FlagZ;
+            }
+            F |= FlagN;
+            
+            cycles = 4;
+            break;
+
+        case 0x3E: // LD A, d8
+            A = fetch();
+            PRINT_DBG_CPU("LD A, $0x%02X\n", A);
+            cycles = 8;
+            break;
+
+        case 0x40: //this instruction is so peak
+            PRINT_DBG_CPU("LD B, B\n");
+            //B = B;
+            cycles = 4;
+            break;
+
+        case 0x46:
+            PRINT_DBG_CPU("LD B, (HL)\n");
+            B = read((H << 8) | L);
+            cycles = 8;
+            break;
+
+        case 0x47: // LD B, A
+            PRINT_DBG_CPU("LD B, A\n");
+            B = A;
+            cycles = 4;
+            break;
+
+        case 0x4E:
+            PRINT_DBG_CPU("LD C, (HL)\n");
+            C = read((H << 8) | L);
+            cycles = 8;
+            break;
+
+        case 0x4F: // LD C, A
+            PRINT_DBG_CPU("LD C, A\n");
+            C = A;
+            cycles = 4;
+            break;
+
+        case 0x57:
+            PRINT_DBG_CPU("LD D, A\n");
+            D = A;
+            cycles = 4;
+            break;
+
+        case 0x5F:
+            PRINT_DBG_CPU("LD E, A\n");
+            E = A;
+            cycles = 4;
+            break;
+
+        case 0x54:
+            PRINT_DBG_CPU("LD D, H\n");
+            D = H;
+            cycles = 4;
+            break;
+
+        case 0x56: // LD D, (HL)
+            PRINT_DBG_CPU("LD D, (HL)\n");
+            D = read(getHL());
+            cycles = 8;
+            break;
+
+        case 0x5D:
+            PRINT_DBG_CPU("LD E, L\n");
+            E = L;
+            cycles = 4;
+            break;
+
+        case 0x5E: // LD E, (HL)
+            PRINT_DBG_CPU("LD E, (HL)\n");
+            E = read(getHL());
+            cycles = 8;
+            break;
+
+        case 0x60:
+            PRINT_DBG_CPU("LD H, B\n");
+            H = B;
+            cycles = 4;
+            break;
+
+        case 0x62:
+            PRINT_DBG_CPU("LD H, D\n");
+            H = D;
+            cycles = 4;
+            break;
+
+        case 0x66: // LD H, (HL)
+            PRINT_DBG_CPU("LD H, (HL)\n");
+            H = read(getHL());
+            cycles = 8;
+            break;
+
+        case 0x67:
+            PRINT_DBG_CPU("LD H, A\n");
+            H = A;
+            cycles = 4;
+            break;
+
+        case 0x6B:
+            PRINT_DBG_CPU("LD L, E\n");
+            L = E;
+            cycles = 4;
+            break;
+
+        case 0x6E: // LD L, (HL)
+            PRINT_DBG_CPU("LD L, (HL)\n");
+            L = read(getHL());
+            cycles = 8;
+            break;
+
+        case 0x6F:
+            PRINT_DBG_CPU("LD L, A\n");
+            L = A;
+            cycles = 4;
+            break;
+
+        case 0x69:
+            PRINT_DBG_CPU("LD L, C\n");
+            L = C;
+            cycles = 4;
+            break;
+
+        case 0x70:
+            PRINT_DBG_CPU("LD (HL), B\n");
+            write((H << 8) | L, B);
+            cycles = 8;
+            break;
+
+        case 0x71:
+            PRINT_DBG_CPU("LD (HL), C\n");
+            write((H << 8) | L, C);
+            cycles = 8;
+            break;
+
+        case 0x72:
+            PRINT_DBG_CPU("LD (HL), D\n");
+            write((H << 8) | L, D);
+            cycles = 8;
+            break;
+
+        case 0x73: {
+            PRINT_DBG_CPU("LD (HL), E\n");
+            uint16_t address = (H << 8) | L;
+            write(address, E);
+            cycles = 8;
+            break;
+        }
+
+        case 0x77: // LD (HL), A
+            PRINT_DBG_CPU("LD (HL), A\n");
+            write(getHL(), A);
+            cycles = 8;
+            break;
+
+        case 0x78: // LD A, B
+            PRINT_DBG_CPU("LD A, B\n");
+            A = B;
+            cycles = 4;
+            break;
+
+        case 0x79: // LD A, C
+            PRINT_DBG_CPU("LD A, C\n");
+            A = C;
+            cycles = 4;
+            break;
+
+        case 0x7A: // LD A, D
+            PRINT_DBG_CPU("LD A, D\n");
+            A = D;
+            cycles = 4;
+            break;
+
+        case 0x7B: // LD A, E
+            PRINT_DBG_CPU("LD A, E\n");
+            A = E;
+            cycles = 4;
+            break;
+
+        case 0x7C: // LD A, H
+            PRINT_DBG_CPU("LD A, H\n");
+            A = H;
+            cycles = 4;
+            break;
+
+        case 0x7D: // LD A, L
+            PRINT_DBG_CPU("LD A, L\n");
+            A = L;
+            cycles = 4;
+            break;
+
+        case 0x7E: // LD A, (HL)
+            PRINT_DBG_CPU("LD A, (HL)\n");
+            A = read(getHL());
+            cycles = 8;
+            break;
+
+        case 0x85: {
+            PRINT_DBG_CPU("ADD A, L\n");
+            uint16_t result = A + L;
+            
+            F = 0;
+            if ((result & 0xFF) == 0) {
+                F |= FlagZ;
+            }
+            if (((A & 0x0F) + (L & 0x0F)) > 0x0F) {
+                F |= FlagH;
+            }
+            if (result > 0xFF) {
+                F |= FlagC;
+            }
+            
+            A = result & 0xFF;
+            cycles = 4;
+            break;
+        }
+
+        case 0x87: { // ADD A, A
+            PRINT_DBG_CPU("ADD A, A\n");
+            uint8_t val = A;
+            uint16_t result = A + val;
+            
+            F = 0;
+            if ((result & 0xFF) == 0) F |= FlagZ;
+            if (((A & 0x0F) + (val & 0x0F)) > 0x0F) F |= FlagH;
+            if (result > 0xFF) F |= FlagC;
+            
+            A = (uint8_t)result;
+            cycles = 4;
+            break;
+        }
+
+        case 0xA1: // AND C
+            PRINT_DBG_CPU("AND C\n");
+            A &= C;
+            F = ((A == 0) ? FlagZ : 0) | FlagH;
+            cycles = 4;
+            break;
+
+        case 0xA7:
+            PRINT_DBG_CPU("AND A\n");
+            A &= A;
+            F = ((A == 0) ? FlagZ : 0) | FlagH;
+            cycles = 4;
+            break;
+
+        case 0xA9: // XOR C
+            PRINT_DBG_CPU("XOR C\n");
+            A ^= C;
+            F = (A == 0) ? FlagZ : 0;
+            cycles = 4;
+            break;
+
+        case 0xAE: {
+            PRINT_DBG_CPU("XOR (HL)\n");
+            uint8_t value = read((H << 8) | L);
+            A ^= value;
+            F = 0;
+            if (A == 0) {
+                F |= FlagZ;
+            }
+            cycles = 8;
+            break;
+        }
+
+        case 0xAF: // XOR A
+            PRINT_DBG_CPU("XOR A\n");
+            A ^= A;
+            F = FlagZ;
+            cycles = 4;
+            break;
+
+        case 0xB0: // OR B
+            PRINT_DBG_CPU("OR B\n");
+            A |= B;
+            F = (A == 0) ? FlagZ : 0;
+            cycles = 4;
+            break;
+
+        case 0xB1: // OR C
+            PRINT_DBG_CPU("OR C\n");
+            A |= C;
+            F = (A == 0) ? FlagZ : 0;
+            cycles = 4;
+            break;
+
+        case 0xB6: {
+            PRINT_DBG_CPU("OR (HL)\n");
+            uint8_t value = read((H << 8) | L);
+            A |= value;
+            F = 0;
+            if (A == 0) {
+                F |= FlagZ;
+            }
+            cycles = 8;
+            break;
+        }
+
+        case 0xB7:
+            PRINT_DBG_CPU("OR A\n");
+            A |= A;
+            F = 0;
+            if (A == 0) {
+                F |= FlagZ;
+            }
+            cycles = 4;
+            break;
+
+        case 0xBB: { // CP E
+            PRINT_DBG_CPU("CP E\n");
+            uint8_t res = A - E;
+            
+            F = FlagN;
+            if (res == 0) F |= FlagZ;
+            if (A < E)    F |= FlagC;
+            if ((A & 0x0F) < (E & 0x0F)) F |= FlagH;
+            
+            cycles = 4;
+            break;
+        }
+
+        case 0xC0:
+            PRINT_DBG_CPU("RET NZ\n");
+            if (!(F & FlagZ)) {
+                uint8_t low = pop();
+                uint8_t high = pop();
+                PC = (high << 8) | low;
+                cycles = 20;
+            } else {
+                cycles = 8;
+            }
+            break;
+
+        case 0xC1: // POP BC
+            PRINT_DBG_CPU("POP BC\n");
+            C = pop();
+            B = pop();
+            cycles = 12;
+            break;
+
+        case 0xC2: {
+            uint8_t low = fetch();
+            uint8_t high = fetch();
+            uint16_t address = (high << 8) | low;
+            PRINT_DBG_CPU("JP NZ, $0x%04X\n", address);
+            
+            if (!(F & FlagZ)) {
+                PC = address;
+                cycles = 16;
+            } else {
+                cycles = 12;
+            }
+            break;
+        }
+
+        case 0xC3: { // JP nn
+            uint16_t dest = fetch16();
+            PRINT_DBG_CPU("JP $0x%04X\n", dest);
+            PC = dest;
+            cycles = 16;
+            break;
+        }
+
+        case 0xC4: { 
+            uint16_t dest = fetch16();
+            if (!(F & FlagZ)) {
+                push(PC >> 8);
+                push(PC & 0xFF);
+                PC = dest;
+                cycles = 24;
+            } else {
+                cycles = 12;
+            }
+            break;
+        }
+
+        case 0xCD: { // CALL nn
+            uint16_t dest = fetch16();
+            PRINT_DBG_CPU("CALL $0x%04X\n", dest);
+            push(PC >> 8);
+            push(PC & 0xFF);
+            PC = dest;
+            cycles = 24;
+            break;
+        }
+
+        case 0xC5: // PUSH BC
+            PRINT_DBG_CPU("PUSH BC\n");
+            push(B);
+            push(C);
+            cycles = 16;
+            break;
+
+        case 0xC6: {
+            uint8_t imm8 = fetch();
+            PRINT_DBG_CPU("ADD A, $0x%02X\n", imm8);
+            uint16_t result = A + imm8;
+            
+            F = 0;
+            if (((A & 0x0F) + (imm8 & 0x0F)) > 0x0F) {
+                F |= FlagH;
+            }
+            if (result > 0xFF) {
+                F |= FlagC;
+            }
+            
+            A = (uint8_t)result;
+            if (A == 0) {
+                F |= FlagZ;
+            }
+            
+            cycles = 8;
+            break;
+        }
+
+        case 0xC8:
+            PRINT_DBG_CPU("RET Z\n");
+            if (F & FlagZ) {
+                uint8_t low = pop();
+                uint8_t high = pop();
+                PC = (high << 8) | low;
+                cycles = 20;
+            } else {
+                cycles = 8;
+            }
+            break;
+
+        case 0xC9: { // RET
+            PRINT_DBG_CPU("RET\n");
+            uint16_t low = pop();
+            uint16_t high = pop();
+            PC = (high << 8) | low;
+            cycles = 16;
+            break;
+        }
+
+        case 0xCA: {
+            uint8_t low = fetch();
+            uint8_t high = fetch();
+            uint16_t address = (high << 8) | low;
+            PRINT_DBG_CPU("JP Z, $0x%04X\n", address);
+            
+            if (F & FlagZ) {
+                PC = address;
+                cycles = 16;
+            } else {
+                cycles = 12;
+            }
+            break;
+        }
+
+        case 0xCE: {
+            uint8_t imm8 = fetch();
+            PRINT_DBG_CPU("ADC A, $0x%02X\n", imm8);
+            uint8_t carry = (F & FlagC) ? 1 : 0;
+            int result = A + imm8 + carry;
+            
+            F = 0;
+            if (((A & 0x0F) + (imm8 & 0x0F) + carry) > 0x0F) {
+                F |= FlagH;
+            }
+            if (result > 0xFF) {
+                F |= FlagC;
+            }
+            
+            A = (uint8_t)result;
+            if (A == 0) {
+                F |= FlagZ;
+            }
+            
+            cycles = 8;
+            break;
+        }
+
+        case 0xD0:
+            PRINT_DBG_CPU("RET NC\n");
+            if (!(F & FlagC)) {
+                uint8_t low = pop();
+                uint8_t high = pop();
+                PC = (high << 8) | low;
+                cycles = 20;
+            } else {
+                cycles = 8;
+            }
+            break;
+
+        case 0xD1:
+            PRINT_DBG_CPU("POP DE\n");
+            E = pop();
+            D = pop();
+            cycles = 12;
+            break;
+
+        case 0xD5:
+            PRINT_DBG_CPU("PUSH DE\n");
+            push(D);
+            push(E);
+            cycles = 16;
+            break;
+
+        case 0xD6: {
+            uint8_t imm8 = fetch();
+            PRINT_DBG_CPU("SUB A, $0x%02X\n", imm8);
+            
+            F = FlagN;
+            if ((A & 0x0F) < (imm8 & 0x0F)) {
+                F |= FlagH;
+            }
+            if (A < imm8) {
+                F |= FlagC;
+            }
+            
+            A -= imm8;
+            if (A == 0) {
+                F |= FlagZ;
+            }
+            
+            cycles = 8;
+            break;
+        }
+
+        case 0xD8:
+            PRINT_DBG_CPU("RET C\n");
+            if (F & FlagC) {
+                uint8_t low = pop();
+                uint8_t high = pop();
+                PC = (high << 8) | low;
+                cycles = 20;
+            } else {
+                cycles = 8;
+            }
+            break;
+
+        case 0xD9: {
+            PRINT_DBG_CPU("RETI\n");
+            uint8_t low = pop();
+            uint8_t high = pop();
+            PC = (high << 8) | low;
+            IME = true;
+            cycles = 16;
+            break;
+        }
+
+        case 0xE0: { // LDH (a8), A
+            uint8_t offset = fetch();
+            PRINT_DBG_CPU("LDH ($FF00 + $0x%02X), A\n", offset);
+            write(0xFF00 + offset, A);
+            cycles = 12;
+            break;
+        }
+
+        case 0xE1:
+            PRINT_DBG_CPU("POP HL\n");
+            L = pop();
+            H = pop();
+            cycles = 12;
+            break;
+
+        case 0xE2: // LD ($FF00+C), A
+            PRINT_DBG_CPU("LD ($FF00+C), A\n");
+            write(0xFF00 + C, A);
+            cycles = 8;
+            break;
+
+        case 0xE5: // PUSH HL
+            PRINT_DBG_CPU("PUSH HL\n");
+            push(H);
+            push(L);
+            cycles = 16;
+            break;
+
+        case 0xE6: { // AND d8
+            uint8_t imm8 = fetch();
+            PRINT_DBG_CPU("AND $0x%02X\n", imm8);
+            A &= imm8;
+            F = ((A == 0) ? FlagZ : 0) | FlagH;
+            cycles = 8;
+            break;
+        }
+
+        case 0xE9: {
+            PRINT_DBG_CPU("JP (HL)\n");
+            PC = (H << 8) | L;
+            cycles = 4;
+            break;
+        }
+
+        case 0xEA: { // LD (nn), A
+            uint16_t dest = fetch16();
+            PRINT_DBG_CPU("LD ($0x%04X), A\n", dest);
+            write(dest, A);
+            cycles = 16;
+            break;
+        }
+
+        case 0xEE: {
+            uint8_t imm8 = fetch();
+            PRINT_DBG_CPU("XOR $0x%02X\n", imm8);
+            A ^= imm8;
+            F = 0;
+            if (A == 0) {
+                F |= FlagZ;
+            }
+            cycles = 8;
+            break;
+        }
+
+        case 0xEF: { // RST $28
+            PRINT_DBG_CPU("RST $28\n");
+            SP -= 2;
+            write(SP, PC & 0xFF);
+            write(SP + 1, (PC >> 8) & 0xFF);
+
+            PC = 0x0028;
+            cycles = 16;
+            break;
+        }
+
+        case 0xF0: { // LDH A, (a8)
+            uint8_t offset = fetch();
+            PRINT_DBG_CPU("LDH A, ($FF00 + $0x%02X)\n", offset);
+            A = read(0xFF00 + offset);
+            cycles = 12;
+            break;
+        }
+
+        case 0xF1: // POP AF
+            PRINT_DBG_CPU("POP AF\n");
+            F = pop() & 0xF0;
+            A = pop();
+            cycles = 12;
+            break;
+
+        case 0xF2: // LD A, ($FF00+C)
+            PRINT_DBG_CPU("LD A, ($FF00+C)\n");
+            A = read(0xFF00 + C);
+            cycles = 8;
+            break;
+
+        case 0xF3: // DI
+            PRINT_DBG_CPU("DI\n");
+            IME = false;
+            cycles = 4;
+            break;
+
+        case 0xF5: // PUSH AF
+            PRINT_DBG_CPU("PUSH AF\n");
+            push(A);
+            push(F & 0xF0);
+            cycles = 16;
+            break;
+
+        case 0xFA: { // LD A, (nn)
+            uint16_t src = fetch16();
+            PRINT_DBG_CPU("LD A, ($0x%04X)\n", src);
+            A = read(src);
+            cycles = 16;
+            break;
+        }
+
+        case 0xFB: // EI
+            PRINT_DBG_CPU("EI\n");
+            IME = true; 
+            cycles = 4;
+            break;
+
+        case 0xFE: { // CP d8
+            uint8_t imm8 = fetch();
+            PRINT_DBG_CPU("CP $0x%02X\n", imm8);
+            
+            F = FlagN;
+            if (A == imm8) F |= FlagZ;
+            if ((A & 0x0F) < (imm8 & 0x0F)) F |= FlagH;
+            if (A < imm8) F |= FlagC;
+            
+            cycles = 8;
+            break;
+        }
+
+        case 0xCB: { // Prefix CB
+            uint8_t cbOpcode = fetch();
+            PRINT_DBG_CPU("CB ");
+            executeCB(cbOpcode);
+            break;
+        }
+
+        default: {
+            char errorMsg[256];
+            sprintf(errorMsg, "CPU crashed after reaching unimplemented opcode 0x%02X", opcode);
+            romIsLoaded = false;
+            reset();
+            DebugPrintLog("CPU", "%s", errorMsg);
+            QMessageBox::critical((QMainWindow*)globalQTWin, "Fatal error", errorMsg);
+            break;
+        }
+    }
+}
+
+void GbCPU::executeCB(uint8_t cbOpcode) {
+    cycles = 8;
+    switch (cbOpcode) {
+        case 0x11: { // RL C
+            uint8_t old_carry = (F & FlagC) ? 1 : 0;
+            uint8_t next_carry = (C & 0x80) ? 1 : 0;
+            C = (C << 1) | old_carry;
+            F = 0;
+            if (C == 0) F |= FlagZ;
+            if (next_carry) F |= FlagC;
+            break;
+        }
+        case 0x37: { // SWAP A
+            uint8_t low = A & 0x0F;
+            uint8_t high = A & 0xF0;
+            A = (low << 4) | (high >> 4);
+            F = (A == 0) ? FlagZ : 0;
+            break;
+        }
+        case 0x3F: { // SRL A
+            uint8_t carry = A & 0x01;
+            A >>= 1;
+            F = 0;
+            if (A == 0) F |= FlagZ;
+            if (carry) F |= FlagC;
+            break;
+        }
+        case 0x7C: { // BIT 7, H
+            F = (F & FlagC) | FlagH;
+            if (!(H & 0x80)) {
+                F |= FlagZ;
+            }
+            break;
+        }
+        case 0x87: { // RES 0, A
+            A &= ~0x01;
+            break;
+        }
+        default:
+            cycles = 8;
+            break;
+    }
+}
+
+uint8_t GbCPU::read(uint16_t addr) {
+    if (addr <= 0x7FFF) {
+        return getGBRom()->ROM[addr];
+    }
+
+    if (addr >= 0x8000 && addr <= 0x9FFF) {
+        return ppu->readVRAM(addr);
+    }
+    if (addr >= 0xFE00 && addr <= 0xFE9F) {
+        return ppu->readOAM(addr);
+    }
+    if (addr >= 0xFF40 && addr <= 0xFF4B) {
+        return ppu->readRegister(addr);
+    }
+    if (addr >= 0xC000 && addr <= 0xDFFF) {
+        return WRAM[addr - 0xC000];
+    }
+    if (addr >= 0xE000 && addr <= 0xFDFF) {
+        return WRAM[addr - 0x2000];
+    }
+    if (addr >= 0xFF80 && addr <= 0xFFFE) {
+        return HRAM[addr - 0xFF80];
+    }
+
+    if (addr == 0xFF0F) return IF;
+    if (addr == 0xFFFF) return IE;
+
+    return 0xFF;
+}
+
+void GbCPU::write(uint16_t addr, uint8_t value) {
+    if (addr <= 0x7FFF) {
+        return;
+    }
+
+    if (addr >= 0x8000 && addr <= 0x9FFF) {
+        ppu->writeVRAM(addr, value);
+        return;
+    }
+    if (addr >= 0xFE00 && addr <= 0xFE9F) {
+        ppu->writeOAM(addr, value);
+        return;
+    }
+    
+    if (addr == 0xFF46) {
+        ppu->writeRegister(addr, value);
+        uint16_t srcHeader = value << 8;
+        for (uint16_t i = 0; i < 160; i++) {
+            uint8_t byteData = read(srcHeader + i); 
+            ppu->writeOAM(0xFE00 + i, byteData);
+        }
+        return;
+    }
+
+    if (addr >= 0xFF40 && addr <= 0xFF4B) {
+        ppu->writeRegister(addr, value);
+        return;
+    }
+    if (addr >= 0xC000 && addr <= 0xDFFF) {
+        WRAM[addr - 0xC000] = value;
+        return;
+    }
+    if (addr >= 0xE000 && addr <= 0xFDFF) {
+        WRAM[addr - 0x2000] = value;
+        return;
+    }
+    if (addr >= 0xFF80 && addr <= 0xFFFE) {
+        HRAM[addr - 0xFF80] = value;
+        return;
+    }
+    if (addr == 0xFF0F) {
+        IF = value | 0xE0;
+        return;
+    }
+    if (addr == 0xFFFF) {
+        IE = value;
+        return;
+    }
+}
+
+void GbCPU::push(uint8_t value) {
+    SP--;
+    write(SP, value);
+}
+
+uint8_t GbCPU::pop() {
+    uint8_t value = read(SP);
+    SP++;
+    return value;
+}

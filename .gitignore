@@ -1,5 +1,7 @@
 *.asm
 *.nes
+*.gb
+*.gbc
 todo
 *.o
 build/*

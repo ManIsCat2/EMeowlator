@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../savestate.hpp"
-#include "../bus.hpp"
+#include "../nes_bus.hpp"
 #include <stdint.h>
 #include <string>
 

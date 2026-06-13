@@ -1,4 +1,4 @@
-DIRS := src src/nes src/nes/mappers src/nes/filters
+DIRS := src src/nes src/nes/mappers src/nes/filters src/gb
 TARGET := MeowNES
 BUILD_DIR := build
 

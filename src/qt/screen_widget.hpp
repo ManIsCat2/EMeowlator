@@ -6,7 +6,7 @@
 
 class ScreenWidget : public QWidget {
 public:
-    QImage image;
+    QImage *image = nullptr;
 
     ScreenWidget(QWidget *parent = nullptr) : QWidget(parent) {
         setFixedSize(256*2, 240*2);
@@ -15,6 +15,6 @@ public:
 protected:
     void paintEvent(QPaintEvent *) override {
         QPainter p(this);
-        if (romIsLoaded) p.drawImage(rect(), image);
+        if (romIsLoaded && image) p.drawImage(rect(), *image);
     }
 };

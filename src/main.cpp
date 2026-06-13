@@ -2,6 +2,10 @@
 #include "nes/nes_apu.hpp"
 #include "nes/nes_rom.hpp"
 #include "nes/nes_console.hpp"
+//#include "gb/gb_cpu.hpp"
+//#include "gb/gb_apu.hpp"
+#include "gb/gb_rom.hpp"
+#include "gb/gb_console.hpp"
 #include "audio.hpp"
 
 #include "main.hpp"
@@ -67,24 +71,37 @@ QTimer cpuTimer;
 
 std::string allowedExts[] = {
     ".nes",
+    ".gb"
 };
 bool loadConsoleWithGame(const std::string &file) {
-    bool allow = true;
+    bool allow = false;
+    std::string matchedExt = "";
+
     for (auto &ext : allowedExts) {
-        if (file.find(ext) == std::string::npos) {
-            allow = false;
+        if (file.length() >= ext.length() && 
+            file.compare(file.length() - ext.length(), ext.length(), ext) == 0) {
+            allow = true;
+            matchedExt = ext;
             break;
         }
     }
+    
     if (!allow) {
         DebugPrintLog("LOADER", "Console not supported");
         QMessageBox::critical((QMainWindow*)globalQTWin, "Error", "Console not supported");
         return false;
     }
-    if (emuConsole) { delete emuConsole; emuConsole = nullptr; }
-    if (file.find(".nes") != std::string::npos) {
+    
+    if (matchedExt == ".nes") {
         emuConsole = new NESConsole;
-    };
+    } else if (matchedExt == ".gb") {
+        emuConsole = new GBConsole;
+    }
+    
+    if (!emuConsole) {
+        return false;
+    }
+    
     emuConsole->init();
     return emuConsole->loadGame(file);
 }
@@ -166,9 +183,9 @@ int main(int argc, char *argv[]) {
     QObject::connect(openAction, &QAction::triggered, [&]() {
         QString file = QFileDialog::getOpenFileName(
             &window,
-            "Open NES ROM",
+            "Open ROM",
             "",
-            "NES ROM (*.nes)"
+            "Supported ROMs (*.nes *.gb)"
         );
 
         if (!file.isEmpty()) {
@@ -601,7 +618,7 @@ int main(int argc, char *argv[]) {
         screen->update();
         if (romIsLoaded) {
             emuConsole->runFrame();
-            screen->image = *emuConsole->getOutputImage();
+            screen->image = emuConsole->getOutputImage();
             rainbowHoverPhase += 0.002f;
             if (rainbowHoverPhase > 1.0f) rainbowHoverPhase -= 1.0f;
         }

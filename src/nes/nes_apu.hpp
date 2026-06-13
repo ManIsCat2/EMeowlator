@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include "bus.hpp"
+#include "nes_bus.hpp"
 
 struct PulseChannel {
     bool enable = false;
