@@ -9,12 +9,19 @@ public:
     QImage *image = nullptr;
 
     ScreenWidget(QWidget *parent = nullptr) : QWidget(parent) {
-        setFixedSize(256*2, 240*2);
+        setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
     }
 
 protected:
     void paintEvent(QPaintEvent *) override {
         QPainter p(this);
         if (romIsLoaded && image) p.drawImage(rect(), *image);
+    }
+
+    QSize sizeHint() const override {
+        if (romIsLoaded && image) {
+            return image->size()*2;
+        }
+        return QSize(256*2, 240*2);
     }
 };

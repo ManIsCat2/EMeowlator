@@ -193,8 +193,11 @@ int main(int argc, char *argv[]) {
                 romIsLoaded = true;
                 startCPUTimer();
                 emuConsole->reset();
-                window.setFixedSize(emuConsole->getDisplayWidth()*2, emuConsole->getDisplayHeight()*2);
-                screen->setFixedSize(emuConsole->getDisplayWidth()*2, emuConsole->getDisplayHeight()*2);
+
+                int w = emuConsole->getDisplayWidth() * 2.5;
+                int h = emuConsole->getDisplayHeight() * 2.5;
+                screen->resize(w, h);
+                window.resize(w, h + window.menuBar()->height());
             } else {
                 romIsLoaded = false;
             }
@@ -624,7 +627,7 @@ int main(int argc, char *argv[]) {
         }
     });
 
-    window.setFixedSize(256*2, 240*2);
+    window.resize(256*2, 240*2);
 
     QPixmap pixmap;
     pixmap.loadFromData(MeowNESIcon, sizeof(MeowNESIcon) / sizeof(MeowNESIcon[0]));
@@ -640,11 +643,14 @@ int main(int argc, char *argv[]) {
 
     if (argc > 1) {
         if (loadConsoleWithGame(argv[1])) {
-            emuConsole->reset();
             romIsLoaded = true;
             startCPUTimer();
-            window.setFixedSize(emuConsole->getDisplayWidth()*2, emuConsole->getDisplayHeight()*2);
-            screen->setFixedSize(emuConsole->getDisplayWidth()*2, emuConsole->getDisplayHeight()*2);
+            emuConsole->reset();
+
+            int w = emuConsole->getDisplayWidth() * 2.5;
+            int h = emuConsole->getDisplayHeight() * 2.5;
+            screen->resize(w, h);
+            window.resize(w, h + window.menuBar()->height());
         } else {
             romIsLoaded = false;
         }
