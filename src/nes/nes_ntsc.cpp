@@ -1,7 +1,7 @@
 /* nes_ntsc 0.2.2. http://www.slack.net/~ant/ */
 
 /*
-* Modified to be used with MeowNES, grep "MeowNES edit" to see the changes.
+* Modified to be used with EMeowlator, grep "EMeowlator edit" to see the changes.
 */
 
 #include "nes_ntsc.h"
@@ -138,7 +138,7 @@ void nes_ntsc_init( nes_ntsc_t* ntsc, nes_ntsc_setup_t const* setup )
 			float q = TO_ANGLE_COS( color ) * sat;
 			float y = (hi + lo) * 0.5f;
 
-			// MeowNES edit: Add 32bit palette entry
+			// EMeowlator edit: Add 32bit palette entry
 			if ( setup->_32bit_palette )
 			{
 				unsigned int in = setup->_32bit_palette [(entry & 0x3F)];

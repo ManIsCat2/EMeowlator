@@ -1,5 +1,5 @@
 DIRS := src src/nes src/nes/mappers src/nes/filters src/gb
-TARGET := MeowNES
+TARGET := EMeowlator
 BUILD_DIR := build
 
 ifeq ($(OS),Windows_NT)

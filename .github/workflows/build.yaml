@@ -1,4 +1,4 @@
-name: Build MeowNES
+name: Build EMeowlator
 
 on:
   workflow_dispatch:
@@ -44,5 +44,5 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: MeowNES-${{ matrix.arch.name }}
+          name: EMeowlator-${{ matrix.arch.name }}
           path: ./build/

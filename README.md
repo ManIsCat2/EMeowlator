@@ -1,8 +1,8 @@
-# MeowNES
+# EMeowlator
 
-MeowNES is a NES Emulator made by a Cat.
+EMeowlator is a multi-system emulator made by a Cat.
 
-Uses nes_ntsc for the NTSC Video Filter which I got from Mesen2, couldn't find the original source. It is modified to be used with MeowNES though.
+## NES
 
 Supported mappers:
 - NROM (Mapper 0)
@@ -19,6 +19,9 @@ Supported mappers:
 - SunSoft FME-7 (Mapper 69)
 - SL12 (?) (Mapper 116)
 - J.Y. Company ASIC (Mapper 90, 209 and 211) (WIP)
+
+## Game Boy
+The whole GB support right now is kinda bad, so everything is WIP.
 
 # Building
 
@@ -46,13 +49,13 @@ pacman -S mingw-w64-x86_64-SDL2 mingw-w64-x86_64-qt6 mingw-w64-x86_64-toolchain
 
 ## Step 2: Clone the Repository
 ```bash
-git clone https://github.com/ManIsCat2/MeowNES
+git clone https://github.com/ManIsCat2/EMeowlator
 ```
 
 ## Step 3: Compile
 ```bash
-cd path/to/MeowNES
+cd path/to/EMeowlator
 make -j$(nproc)
 ```
 
-The built executable will be located in the `build/` folder inside MeowNES.
+The built executable will be located in the `build/` folder inside EMeowlator.

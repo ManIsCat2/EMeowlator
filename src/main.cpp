@@ -29,7 +29,7 @@ int hoveredPaletteIndex = -1;
 
 void *globalQTWin;
 
-unsigned char MeowNESIcon[] = {
+unsigned char EMeowlatorIcon[] = {
     0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
     0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x10,
     0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0xf3, 0xff, 0x61, 0x00, 0x00, 0x00,
@@ -476,7 +476,7 @@ int main(int argc, char *argv[]) {
                 dialog,
                 "Export Palette",
                 "",
-                "MeowNES Palette (*.paw)"
+                "EMeowlator Palette (*.paw)"
             );
 
             if (!file.isEmpty()) {
@@ -492,7 +492,7 @@ int main(int argc, char *argv[]) {
                 dialog,
                 "Import Palette",
                 "",
-                "MeowNES Palette (*.paw)"
+                "EMeowlator Palette (*.paw)"
             );
 
             if (!file.isEmpty()) {
@@ -548,7 +548,7 @@ int main(int argc, char *argv[]) {
             &window,
             "Write Savestate",
             "",
-            "MeowNES Savestate (*.nya)"
+            "EMeowlator Savestate (*.nya)"
         );
 
         if (!file.isEmpty()) {
@@ -561,7 +561,7 @@ int main(int argc, char *argv[]) {
             &window,
             "Load Savestate",
             "",
-            "MeowNES Savestate (*.nya)"
+            "EMeowlator Savestate (*.nya)"
         );
 
         if (!file.isEmpty()) {
@@ -630,8 +630,8 @@ int main(int argc, char *argv[]) {
     window.resize(256*2, 240*2);
 
     QPixmap pixmap;
-    pixmap.loadFromData(MeowNESIcon, sizeof(MeowNESIcon) / sizeof(MeowNESIcon[0]));
-    window.setWindowTitle("MeowNES");
+    pixmap.loadFromData(EMeowlatorIcon, sizeof(EMeowlatorIcon) / sizeof(EMeowlatorIcon[0]));
+    window.setWindowTitle("EMeowlator");
     window.setWindowIcon(QIcon(pixmap));
     window.show();
 
