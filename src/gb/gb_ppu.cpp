@@ -12,7 +12,7 @@ const uint32_t originalGbcPal[4] = {
 };
 
 GbPPU::GbPPU() {
-    std::memset(frameBuffer, 0, sizeof(frameBuffer));
+    memset(frameBuffer, 0, sizeof(frameBuffer));
     rawOutputImage = new QImage((uint8_t*)frameBuffer, 160, 144, 640, QImage::Format_RGB32);
 }
 
@@ -26,7 +26,7 @@ void GbPPU::reset() {
     std::memset(OAM, 0, sizeof(OAM));
     std::memset(frameBuffer, 0, sizeof(frameBuffer));
     LCDC = 0x91;
-    STAT = 0x85;
+    STAT = 0x82;
     BGP = 0xFC;
     LY = 0x00;
     scanlineCounter = 456;
@@ -36,36 +36,65 @@ void GbPPU::Step(uint8_t cycles) {
     if (!(LCDC & 0x80)) {
         LY = 0;
         scanlineCounter = 456;
-        STAT = (STAT & 0xFC) | 0x00;
-        return; 
+        STAT = (STAT & ~0x03) | 0x00;
+        return;
     }
 
     scanlineCounter -= cycles;
 
-    if (scanlineCounter <= 0) {
+    uint8_t oldMode = STAT & 0x03;
+    uint8_t newMode;
+
+    if (LY >= 144) {
+        newMode = 1;
+    } else if (scanlineCounter >= 376) {
+        newMode = 2;
+    } else if (scanlineCounter >= 204) {
+        newMode = 3;
+    } else {
+        newMode = 0;
+    }
+
+    if (newMode != oldMode) {
+        if (oldMode == 3 && newMode == 0) {
+            RenderScanline();
+        }
+
+        switch (newMode) {
+            case 0:
+                if (STAT & 0x08) cpu->IF |= 0x02;
+                break;
+
+            case 1:
+                if (STAT & 0x10) cpu->IF |= 0x02;
+                break;
+
+            case 2:
+                if (STAT & 0x20) cpu->IF |= 0x02;
+                break;
+        }
+
+        STAT = (STAT & ~0x03) | newMode;
+    }
+
+    while (scanlineCounter <= 0) {
         scanlineCounter += 456;
         LY++;
 
-        if (LY < 144) {
-            RenderScanline();
-            STAT = (STAT & 0xFC) | 0x02;
-            if (STAT & 0x20) cpu->IF |= 0x02;
-        } 
-        else if (LY == 144) {
-            STAT = (STAT & 0xFC) | 0x01;
+        if (LY == 144) {
             cpu->IF |= 0x01;
-            if (STAT & 0x10) cpu->IF |= 0x02;
-        } 
-        else if (LY > 153) {
+        }
+
+        if (LY > 153) {
             LY = 0;
-            STAT = (STAT & 0xFC) | 0x02;
-            if (STAT & 0x20) cpu->IF |= 0x02;
         }
 
         if (LY == LYC) {
             STAT |= 0x04;
+
             if (STAT & 0x40) cpu->IF |= 0x02;
-        } else {
+        }
+        else {
             STAT &= ~0x04;
         }
     }
@@ -176,15 +205,23 @@ void GbPPU::RenderScanline() {
     }
 }
 
-uint8_t GbPPU::readVRAM(uint16_t addr) { return VRAM[addr - 0x8000]; }
-void GbPPU::writeVRAM(uint16_t addr, uint8_t value) { VRAM[addr - 0x8000] = value; }
-uint8_t GbPPU::readOAM(uint16_t addr) { return OAM[addr - 0xFE00]; }
-void GbPPU::writeOAM(uint16_t addr, uint8_t value) { OAM[addr - 0xFE00] = value; }
+uint8_t GbPPU::readVRAM(uint16_t addr) {
+    return VRAM[addr - 0x8000];
+}
+void GbPPU::writeVRAM(uint16_t addr, uint8_t value) {
+    VRAM[addr - 0x8000] = value;
+}
+uint8_t GbPPU::readOAM(uint16_t addr) {
+    return OAM[addr - 0xFE00];
+}
+void GbPPU::writeOAM(uint16_t addr, uint8_t value) {
+    OAM[addr - 0xFE00] = value;
+}
 
 uint8_t GbPPU::readRegister(uint16_t addr) {
     switch (addr) {
         case 0xFF40: return LCDC;
-        case 0xFF41: return STAT;
+        case 0xFF41: return STAT | 0x80;
         case 0xFF42: return SCY;
         case 0xFF43: return SCX;
         case 0xFF44: return LY;
@@ -210,9 +247,12 @@ void GbPPU::writeRegister(uint16_t addr, uint8_t value) {
             }
             break;
         }
-        case 0xFF41: STAT = (STAT & 0x07) | (value & 0xF8); break;
+        case 0xFF41:
+            STAT = (STAT & 0x07) | (value & 0x78);
+            break;
         case 0xFF42: SCY = value; break;
         case 0xFF43: SCX = value; break;
+        case 0xFF44: LY = 0; break;
         case 0xFF45: LYC = value; break;
         case 0xFF46: DMA = value; break;
         case 0xFF47: BGP = value; break;

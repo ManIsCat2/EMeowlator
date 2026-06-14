@@ -4,6 +4,7 @@
 
 class NESConsole : public Console {
 public:
+    ConsoleType getConsoleType(void) override { return ConsoleType::NES; }
     bool loadGame(const std::string &filename) override;
     void runFrame(void) override;
     int getDisplayWidth(void) override;
@@ -14,5 +15,6 @@ public:
     void writeSave(void) override;
     void loadSave(void) override;
     void init(void) override;
+    void pause(void) override;
     void reset(void) override;
 };

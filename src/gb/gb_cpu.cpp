@@ -5,6 +5,7 @@ GbCPU gbCpu;
 
 void GbCPU::reset() {
     connectBus(nullptr, &gbPpu);
+    paused = false;
     A = 0x01;
     F = 0xB0;
     B = 0x00; C = 0x13;
@@ -17,7 +18,17 @@ void GbCPU::reset() {
 
     IE = 0; IF = 0xe1;
 
+    DIV = 0xAB;
+    TIMA = 0;
+    TMA = 0;
+    TAC = 0;
+
+    divCounter = 0;
+    timerCounter = 0;
+
     joypadReg = 0x30;
+
+    halted = false;
 
     for (int i = 0; i < 8192; i++) {
         WRAM[i] = 0x00;
@@ -40,11 +51,14 @@ static const uint16_t interruptVectors[5] = {
     0x0040, // vblank
     0x0048, // lcd stat
     0x0050, // timer
-    0x0056, // serial
+    0x0058, // serial
     0x0060  // controller/joypad
 };
 
 void GbCPU::handleInterrupts() {
+    if (halted && (IF & IE & 0x1F)) {
+        halted = false;
+    }
     if (!IME) return;
 
     uint8_t pending = IF & IE & 0x1F;
@@ -52,7 +66,6 @@ void GbCPU::handleInterrupts() {
 
     for (int i = 0; i < 5; i++) {
         if (pending & (1 << i)) {
-
             IME = false;
             IF &= ~(1 << i);
 
@@ -67,22 +80,61 @@ void GbCPU::handleInterrupts() {
     }
 }
 
+void GbCPU::updateTimers(uint8_t cycles) {
+    divCounter += cycles;
+
+    while (divCounter >= 256) {
+        divCounter -= 256;
+        DIV++;
+    }
+
+    if (!(TAC & 0x04)) return;
+
+    int freq = 0;
+    switch (TAC & 0x03) {
+        case 0: freq = 1024; break;
+        case 1: freq = 16;   break;
+        case 2: freq = 64;   break;
+        case 3: freq = 256;  break;
+    }
+
+    timerCounter += cycles;
+    while (timerCounter >= freq) {
+        timerCounter -= freq;
+
+        if (TIMA == 0xFF) {
+            TIMA = TMA;
+            IF |= 0x04;
+        } else {
+            TIMA++;
+        }
+    }
+}
+
 void GbCPU::run(uint32_t maxCycles) {
     uint32_t cyclesRun = 0;
 
     while (cyclesRun < maxCycles) {
-        if (!romIsLoaded || CPUPaused) return;
+        if (!romIsLoaded || paused) return;
 
         cycles = 0; 
-
         handleInterrupts();
 
         if (cycles == 0) {
-            uint8_t opcode = fetch();
-            execute(opcode);
+            if (halted) {
+                cycles = 4;
+
+                if (!IME && (IF & IE & 0x01F)) {
+                    halted = false;
+                }
+            } else {
+                uint8_t opcode = fetch();
+                execute(opcode);
+            }
         }
         
         cyclesRun += cycles;
+        updateTimers(cycles);
         ppu->Step(cycles);
     }
 }
@@ -138,9 +190,10 @@ void GbCPU::execute(uint8_t opcode) {
             break;
 
         case 0x07: {
-            uint8_t carry = (A >> 7) & 1;
+           uint8_t carry = (A >> 7) & 1;
             A = (A << 1) | carry;
-            if (carry) F |= FlagC;
+            F = carry ? FlagC : 0;
+            cycles = 4;
             break;
         }
 
@@ -273,6 +326,12 @@ void GbCPU::execute(uint8_t opcode) {
         case 0x1A: // LD A, (DE)
             PRINT_DBG_CPU("LD A, (DE)\n");
             A = read(getDE());
+            cycles = 8;
+            break;
+
+        case 0x1B: // DEC DE
+            PRINT_DBG_CPU("DEC DE\n");
+            setDE(getDE() - 1);
             cycles = 8;
             break;
 
@@ -423,6 +482,12 @@ void GbCPU::execute(uint8_t opcode) {
             PRINT_DBG_CPU("LD A, (HL+)\n");
             A = read(getHL());
             setHL(getHL() + 1);
+            cycles = 8;
+            break;
+
+        case 0x2B: // DEC HL
+            PRINT_DBG_CPU("DEC HL\n");
+            setHL(getHL() - 1);
             cycles = 8;
             break;
 
@@ -679,6 +744,12 @@ void GbCPU::execute(uint8_t opcode) {
             cycles = 4;
             break;
 
+        case 0x61:
+            PRINT_DBG_CPU("LD H, C\n");
+            H = C;
+            cycles = 4;
+            break;
+
         case 0x62:
             PRINT_DBG_CPU("LD H, D\n");
             H = D;
@@ -747,6 +818,13 @@ void GbCPU::execute(uint8_t opcode) {
             break;
         }
 
+        case 0x76: { // HALT
+            PRINT_DBG_CPU("HALT\n");
+            halted = true;
+            cycles = 4;
+            break;
+        }
+
         case 0x77: // LD (HL), A
             PRINT_DBG_CPU("LD (HL), A\n");
             write(getHL(), A);
@@ -802,6 +880,46 @@ void GbCPU::execute(uint8_t opcode) {
             if ((uint8_t)result == 0) F |= FlagZ;
             if (((A & 0xF) + (B & 0xF)) > 0xF) F |= FlagH;
             if (result > 0xFF) F |= FlagC;
+            A = (uint8_t)result;
+            cycles = 4;
+            break;
+        }
+
+        case 0x82: { // ADD A, D
+            PRINT_DBG_CPU("ADD A, D\n");
+            uint16_t result = A + D;
+            
+            F = 0;
+            if ((uint8_t)result == 0) {
+                F |= FlagZ;
+            }
+            if (((A & 0x0F) + (D & 0x0F)) > 0x0F) {
+                F |= FlagH;
+            }
+            if (result > 0xFF) {
+                F |= FlagC;
+            }
+            
+            A = (uint8_t)result;
+            cycles = 4;
+            break;
+        }
+
+        case 0x83: { // ADD A, E
+            PRINT_DBG_CPU("ADD A, E\n");
+            uint16_t result = A + E;
+            
+            F = 0;
+            if ((uint8_t)result == 0) {
+                F |= FlagZ;
+            }
+            if (((A & 0x0F) + (E & 0x0F)) > 0x0F) {
+                F |= FlagH;
+            }
+            if (result > 0xFF) {
+                F |= FlagC;
+            }
+            
             A = (uint8_t)result;
             cycles = 4;
             break;
@@ -878,6 +996,49 @@ void GbCPU::execute(uint8_t opcode) {
             break;
         }
 
+        case 0x8E: { // ADC A, (HL)
+            PRINT_DBG_CPU("ADC A, (HL)\n");
+            uint8_t value = read(getHL());
+            uint8_t carry = (F & FlagC) ? 1 : 0;
+            int result = A + value + carry;
+            
+            F = 0;
+            if (((A & 0x0F) + (value & 0x0F) + carry) > 0x0F) {
+                F |= FlagH;
+            }
+            if (result > 0xFF) {
+                F |= FlagC;
+            }
+            
+            A = (uint8_t)result;
+            if (A == 0) {
+                F |= FlagZ;
+            }
+            
+            cycles = 8;
+            break;
+        }
+
+        case 0x96: { // SUB A, (HL)
+            PRINT_DBG_CPU("SUB A, (HL)\n");
+            uint8_t value = read(getHL());
+
+            F = FlagN;
+            if ((A & 0x0F) < (value & 0x0F)) {
+                F |= FlagH;
+            }
+            if (A < value) {
+                F |= FlagC;
+            }
+            A -= value;
+            if (A == 0) {
+                F |= FlagZ;
+            }
+            
+            cycles = 8;
+            break;
+        }
+
         case 0xA1: // AND C
             PRINT_DBG_CPU("AND C\n");
             A &= C;
@@ -932,6 +1093,13 @@ void GbCPU::execute(uint8_t opcode) {
             cycles = 4;
             break;
 
+        case 0xB2: // OR D
+            PRINT_DBG_CPU("OR D\n");
+            A |= D;
+            F = (A == 0) ? FlagZ : 0;
+            cycles = 4;
+            break;
+
         case 0xB6: {
             PRINT_DBG_CPU("OR (HL)\n");
             uint8_t value = read(getHL());
@@ -953,6 +1121,44 @@ void GbCPU::execute(uint8_t opcode) {
             }
             cycles = 4;
             break;
+
+        case 0xB8: { // CP B
+            PRINT_DBG_CPU("CP B\n");
+            uint8_t result = A - B;
+            
+            F = FlagN;
+            if (result == 0) {
+                F |= FlagZ;
+            }
+            if ((A & 0x0F) < (B & 0x0F)) {
+                F |= FlagH;
+            }
+            if (A < B) {
+                F |= FlagC;
+            }
+            
+            cycles = 4;
+            break;
+        }
+
+        case 0xB9: { // CP C
+            PRINT_DBG_CPU("CP C\n");
+            uint8_t result = A - C;
+
+            F = FlagN;
+            if (result == 0) {
+                F |= FlagZ;
+            }
+            if ((A & 0x0F) < (C & 0x0F)) {
+                F |= FlagH;
+            }
+            if (A < C) {
+                F |= FlagC;
+            }
+            
+            cycles = 4;
+            break;
+        }
 
         case 0xBB: { // CP E
             PRINT_DBG_CPU("CP E\n");
@@ -1108,6 +1314,19 @@ void GbCPU::execute(uint8_t opcode) {
             if (F & FlagZ) {
                 PC = address;
                 cycles = 16;
+            } else {
+                cycles = 12;
+            }
+            break;
+        }
+
+        case 0xCC: { // CALL Z, nn
+            uint16_t dest = fetch16();
+            if (F & FlagZ) {
+                push(PC >> 8);
+                push(PC & 0xFF);
+                PC = dest;
+                cycles = 24;
             } else {
                 cycles = 12;
             }
@@ -1355,7 +1574,7 @@ void GbCPU::execute(uint8_t opcode) {
             break;
         }
 
-        case 0xCB: { // Prefix CB
+        case 0xCB: { // prefix CB
             uint8_t cbOpcode = fetch();
             PRINT_DBG_CPU("CB ");
             executeCB(cbOpcode);
@@ -1432,13 +1651,21 @@ void GbCPU::executeCB(uint8_t cbOpcode) {
 }
 
 uint8_t GbCPU::read(uint16_t addr) {
-    if (addr <= 0x7FFF) return getGBRom()->ROM[addr];
-    if (addr >= 0x8000 && addr <= 0x9FFF) return ppu->readVRAM(addr);
-    if (addr >= 0xA000 && addr <= 0xBFFF) return 0xFF;
-    if (addr >= 0xC000 && addr <= 0xDFFF) return WRAM[addr - 0xC000];
-    if (addr >= 0xE000 && addr <= 0xFDFF) return WRAM[addr - 0x2000];
-    if (addr >= 0xFE00 && addr <= 0xFE9F) return ppu->readOAM(addr);
-    if (addr >= 0xFEA0 && addr <= 0xFEFF) return 0x00;
+    if (addr >= 0x8000 && addr <= 0x9FFF) {
+        return ppu->readVRAM(addr);
+    }
+    if (addr >= 0xC000 && addr <= 0xDFFF) {
+        return WRAM[addr - 0xC000];
+    }
+    if (addr >= 0xE000 && addr <= 0xFDFF) {
+        return WRAM[addr - 0x2000];
+    }
+    if (addr >= 0xFE00 && addr <= 0xFE9F) {
+        return ppu->readOAM(addr);
+    }
+    if (addr >= 0xFEA0 && addr <= 0xFEFF) {
+        return 0x00;
+    }
 
     if (addr == 0xFF00) {
         uint8_t res = 0xC0 | (joypadReg & 0x30) | 0x0F; 
@@ -1460,29 +1687,66 @@ uint8_t GbCPU::read(uint16_t addr) {
         return res;
     }
 
-    if (addr == 0xFF0F) return IF;
-    if (addr >= 0xFF40 && addr <= 0xFF4B) return ppu->readRegister(addr);
-    if (addr >= 0xFF01 && addr <= 0xFF7F) return 0x00;
-    if (addr >= 0xFF80 && addr <= 0xFFFE) return HRAM[addr - 0xFF80];
-    if (addr == 0xFFFF) return IE;
-
-    return 0xFF;
+    if (addr == 0xFF0F) {
+        return IF | 0xE0;
+    }
+    if (addr >= 0xFF40 && addr <= 0xFF4B) {
+        return ppu->readRegister(addr);
+    }
+    if (addr == 0xFF04) {
+        return DIV;
+    }
+    if (addr == 0xFF05) {
+        return TIMA;
+    }
+    if (addr == 0xFF06) {
+        return TMA;
+    }
+    if (addr == 0xFF07) {
+        return TAC;
+    }
+    if (addr >= 0xFF01 && addr <= 0xFF7F) {
+        return 0x00;
+    }
+    if (addr >= 0xFF80 && addr <= 0xFFFE) {
+        return HRAM[addr - 0xFF80];
+    }
+    if (addr == 0xFFFF) {
+        return IE;
+    }
+    return getGBRom()->mbc->cpuRead(addr);
 }
 
 void GbCPU::write(uint16_t addr, uint8_t value) {
-    if (addr <= 0x7FFF) return;
-    if (addr >= 0x8000 && addr <= 0x9FFF) { ppu->writeVRAM(addr, value); return; }
-    if (addr >= 0xA000 && addr <= 0xBFFF) return;
-    if (addr >= 0xC000 && addr <= 0xDFFF) { WRAM[addr - 0xC000] = value; return; }
-    if (addr >= 0xE000 && addr <= 0xFDFF) { WRAM[addr - 0x2000] = value; return; }
-    if (addr >= 0xFE00 && addr <= 0xFE9F) { ppu->writeOAM(addr, value); return; }
-    if (addr >= 0xFEA0 && addr <= 0xFEFF) return;
+    dataBus = value;
+    if (addr >= 0x8000 && addr <= 0x9FFF) {
+        ppu->writeVRAM(addr, value);
+        return;
+    }
+    if (addr >= 0xC000 && addr <= 0xDFFF) {
+        WRAM[addr - 0xC000] = value;
+        return;
+    }
+    if (addr >= 0xE000 && addr <= 0xFDFF) {
+        WRAM[addr - 0x2000] = value;
+        return;
+    }
+    if (addr >= 0xFE00 && addr <= 0xFE9F) {
+        ppu->writeOAM(addr, value);
+        return;
+    }
+    if (addr >= 0xFEA0 && addr <= 0xFEFF) {
+        return;
+    }
 
     if (addr == 0xFF00) {
         joypadReg = (joypadReg & 0xCF) | (value & 0x30);
         return;
     }
-    if (addr == 0xFF0F) { IF = value | 0xE0; return; }
+    if (addr == 0xFF0F) {
+        IF = value | 0xE0;
+        return;
+    }
     
     if (addr == 0xFF46) {
         ppu->writeRegister(addr, value);
@@ -1494,10 +1758,39 @@ void GbCPU::write(uint16_t addr, uint8_t value) {
         return;
     }
 
-    if (addr >= 0xFF40 && addr <= 0xFF4B) { ppu->writeRegister(addr, value); return; }
-    if (addr >= 0xFF01 && addr <= 0xFF7F) return;
-    if (addr >= 0xFF80 && addr <= 0xFFFE) { HRAM[addr - 0xFF80] = value; return; }
-    if (addr == 0xFFFF) { IE = value; return; }
+    if (addr >= 0xFF40 && addr <= 0xFF4B) {
+        ppu->writeRegister(addr, value);
+        return;
+    }
+    if (addr == 0xFF04) {
+        DIV = 0;
+        divCounter = 0;
+        return;
+    }
+    if (addr == 0xFF05) {
+        TIMA = value;
+        return;
+    }
+    if (addr == 0xFF06) {
+        TMA = value;
+        return;
+    }
+    if (addr == 0xFF07) {
+        TAC = value & 0x07;
+        return;
+    }
+    if (addr >= 0xFF01 && addr <= 0xFF7F) {
+        return;
+    }
+    if (addr >= 0xFF80 && addr <= 0xFFFE) {
+        HRAM[addr - 0xFF80] = value;
+        return;
+    }
+    if (addr == 0xFFFF) {
+        IE = value;
+        return;
+    }
+    getGBRom()->mbc->cpuWrite(addr, value);
 }
 
 void GbCPU::push(uint8_t value) {

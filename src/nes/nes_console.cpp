@@ -73,6 +73,10 @@ void NESConsole::init(void) {
     nesPpu.Init();
 }
 
+void NESConsole::pause(void) {
+    nesCpu.paused = !nesCpu.paused;
+}
+
 void NESConsole::reset(void) {
     nesCpu.reset();
 }

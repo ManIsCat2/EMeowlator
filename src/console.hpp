@@ -14,10 +14,16 @@ enum class ConsoleRegion {
 class ROMImage {
 public:
     ConsoleRegion Region = ConsoleRegion::NTSC;
-    uint8_t *data = nullptr;
+    std::string Name = "";
 
     virtual ~ROMImage() { }
     virtual bool load(const std::string &file) { (void)file; return false; }
+};
+
+enum class ConsoleType {
+    UNKNOWN,
+    NES,
+    GAMEBOY,
 };
 
 class Console {
@@ -25,6 +31,7 @@ public:
     ROMImage *rom = nullptr;
 
     virtual ~Console() { if (rom) { delete rom; rom = nullptr; } }
+    virtual ConsoleType getConsoleType(void) { return ConsoleType::UNKNOWN; }
     virtual bool loadGame(const std::string &filename) { (void)filename; return false; }
     virtual void runFrame(void) {}
     virtual int getDisplayWidth(void) { return 0; }
@@ -35,6 +42,7 @@ public:
     virtual void writeSave(void) {}
     virtual void loadSave(void) {}
     virtual void init(void) {}
+    virtual void pause(void) {}
     virtual void reset(void) {}
 };
 

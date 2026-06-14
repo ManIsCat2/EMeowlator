@@ -1,0 +1,24 @@
+#pragma once
+
+#include <stdint.h>
+#include "../gb_bus.hpp"
+
+class MBCBase : public HasGBBus {
+public:
+    struct MemPage {
+        uint8_t* ptr = nullptr;
+        bool write = false;
+    };
+
+    uint8_t *cartRAM = nullptr;
+    MemPage CPUPages[256];
+
+    virtual ~MBCBase();
+    virtual uint8_t cpuRead(uint16_t addr);
+    virtual void cpuWrite(uint16_t addr, uint8_t value);
+    virtual const char *getName(void) { return ""; }
+    void mapCPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable);
+    void unmapCPUMemory(uint16_t start, uint16_t end);
+    virtual void reset(void) {}
+    void initialize(void);
+};

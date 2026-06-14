@@ -70,6 +70,10 @@ void GBConsole::init(void) {
     
 }
 
+void GBConsole::pause(void) {
+    gbCpu.paused = !gbCpu.paused;
+}
+
 void GBConsole::reset(void) {
     gbCpu.reset();
 }

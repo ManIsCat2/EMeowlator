@@ -19,11 +19,17 @@ public:
         FlagZ = (1 << 7),
     };
 
-    bool CPUPaused = false;
+    bool paused = false;
     
     uint8_t WRAM[8192];
     uint8_t HRAM[128];
-    
+
+    uint16_t divCounter = 0;
+    uint16_t timerCounter = 0;
+    uint8_t DIV = 0;
+    uint8_t TIMA = 0;
+    uint8_t TMA = 0;
+    uint8_t TAC = 0;
     uint8_t dataBus = 0;
     bool IME = false;
 
@@ -55,6 +61,7 @@ public:
     void execute(uint8_t opcode);
     void executeCB(uint8_t opcode);
     void handleInterrupts();
+    void updateTimers(uint8_t cycles);
 
     uint8_t read(uint16_t addr);
     void write(uint16_t addr, uint8_t value);
@@ -68,7 +75,8 @@ public:
     uint8_t joypadReg = 0x30;
 private:
     uint64_t cycles = 0;
-    
+    bool halted = false;
+
     uint8_t A = 0, F = 0;
     uint8_t B = 0, C = 0;
     uint8_t D = 0, E = 0;

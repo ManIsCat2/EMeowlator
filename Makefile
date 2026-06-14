@@ -1,4 +1,4 @@
-DIRS := src src/nes src/nes/mappers src/nes/filters src/gb
+DIRS := src src/nes src/nes/mappers src/nes/filters src/gb src/gb/mbcs
 TARGET := EMeowlator
 BUILD_DIR := build
 

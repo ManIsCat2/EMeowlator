@@ -25,7 +25,6 @@ public:
     bool hasBattery = false;
     HeaderVersion Version = HeaderVersion::INES;
     uint8_t *ROM = nullptr;
-    std::string Name = "";
     uint16_t ResetVec = 0;
     MirrorMode Mirroring = MirrorMode::HORIZONTAL;
     uint8_t PRGNumPages = 0;

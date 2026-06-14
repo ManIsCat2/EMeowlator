@@ -103,7 +103,14 @@ bool loadConsoleWithGame(const std::string &file) {
     }
     
     emuConsole->init();
-    return emuConsole->loadGame(file);
+
+    bool ret = emuConsole->loadGame(file);
+
+    if (!ret) {
+        romIsLoaded = false;
+        delete emuConsole;
+    }
+    return ret;
 }
 
 void startCPUTimer(void) {
@@ -198,8 +205,6 @@ int main(int argc, char *argv[]) {
                 int h = emuConsole->getDisplayHeight() * 2.5;
                 screen->resize(w, h);
                 window.resize(w, h + window.menuBar()->height());
-            } else {
-                romIsLoaded = false;
             }
         }
     });
@@ -217,8 +222,7 @@ int main(int argc, char *argv[]) {
         DebugPrintLog("GAME", "Reset Game");
     });
     QObject::connect(gamePauseAction, &QAction::triggered, [&]() {
-        nesCpu.CPUPaused = !nesCpu.CPUPaused;
-        DebugPrintLog("GAME", nesCpu.CPUPaused ? "Paused Game" : "Unpaused Game");
+        if (emuConsole) emuConsole->pause();
     });
     QObject::connect(keyEditAction, &QAction::triggered, [&]() {
         QDialog *dialog = new QDialog(&window);
@@ -570,37 +574,47 @@ int main(int argc, char *argv[]) {
         }
     });*/
     QObject::connect(romInfoAction, &QAction::triggered, [&]() {
-        std::string fileStr = "File: " + getNESRom()->Name;
-        std::string HeaderHexStr;
-        for (int i = 0; i < 8; i++) {
-            char Buf[4];
-            snprintf(Buf, sizeof(Buf), "%02X", getNESRom()->Header[i]);
-            HeaderHexStr += Buf;
-            if (i < 7) HeaderHexStr += " ";
-        }
-        HeaderHexStr = "Header: " + HeaderHexStr;
-        std::string headVerStr = "Header Version: " + std::string(getNESRom()->Version == HeaderVersion::NES2_0 ? "NES2.0" : "INES");
-        char PRGSizeStr[128];
-        sprintf(PRGSizeStr, "PRG Size: %uKiB (%u x 16KiB)", getNESRom()->PRGNumPages * 16, getNESRom()->PRGNumPages);
-        char CHRSizeStr[128];
-        sprintf(CHRSizeStr, "CHR Size: %uKiB (%u x 8KiB)", getNESRom()->CHRNumPages * 8, getNESRom()->CHRNumPages);
-        std::string mapperStr = "Mapper: " + std::string(getNESRom()->mapper ? getNESRom()->mapper->getName() : (getNESRom()->MapperID ? "Unknown" : "NROM")) + " (Mapper " + std::to_string(getNESRom()->MapperID)+")";
-        std::string subMapperStr = "Sub Mapper: " + std::to_string(getNESRom()->SubMapperID);
-        std::string mirrorStr = "Mirroring: " + std::string(getNESRom()->Mirroring == MirrorMode::HORIZONTAL ? "Horizontal" : "Vertical");
-        std::string batteryStr = "Battery: " + std::string(getNESRom()->hasBattery ? "Yes" : "No");
-        std::string CHRRamStr = "CHR-RAM: " + std::string(getNESRom()->CHRRomSize == 0 ? "Yes" : "No");
-        char batterySizeStr[128];
-        size_t SRAMSize = getNESRom()->hasBattery ? getNESRom()->mapper->getSRAMSize() : 0x0000; 
-        sprintf(batterySizeStr, "SRAM/Battery Size: 0x%zx (%zu)", SRAMSize, SRAMSize);
-        char RESETVecStr[128];
-        sprintf(RESETVecStr, "RESET Vector: 0x%x", getNESRom()->ResetVec);
-        
+        std::string fullInfo = "ROM isn't loaded!";
+
         QDialog* dialog = new QDialog(&window);
         dialog->setWindowTitle("ROM Info");
         dialog->setFixedSize(350, 250);
 
-        std::string fullInfo = joinLines({fileStr, HeaderHexStr, headVerStr, PRGSizeStr, CHRSizeStr, mapperStr, subMapperStr, mirrorStr, batteryStr, CHRRamStr, batterySizeStr, RESETVecStr});
-        if (!romIsLoaded) fullInfo = "ROM isn't loaded!";
+        if (emuConsole) {
+            std::string fileStr = "File: " + getRom()->Name;
+            if (emuConsole->getConsoleType() == ConsoleType::NES) {
+                std::string HeaderHexStr;
+                for (int i = 0; i < 8; i++) {
+                    char Buf[4];
+                    snprintf(Buf, sizeof(Buf), "%02X", getNESRom()->Header[i]);
+                    HeaderHexStr += Buf;
+                    if (i < 7) HeaderHexStr += " ";
+                }
+                HeaderHexStr = "Header: " + HeaderHexStr;
+                std::string headVerStr = "Header Version: " + std::string(getNESRom()->Version == HeaderVersion::NES2_0 ? "NES2.0" : "INES");
+                char PRGSizeStr[128];
+                sprintf(PRGSizeStr, "PRG Size: %uKiB (%u x 16KiB)", getNESRom()->PRGNumPages * 16, getNESRom()->PRGNumPages);
+                char CHRSizeStr[128];
+                sprintf(CHRSizeStr, "CHR Size: %uKiB (%u x 8KiB)", getNESRom()->CHRNumPages * 8, getNESRom()->CHRNumPages);
+                std::string mapperStr = "Mapper: " + std::string(getNESRom()->mapper ? getNESRom()->mapper->getName() : (getNESRom()->MapperID ? "Unknown" : "NROM")) + " (Mapper " + std::to_string(getNESRom()->MapperID)+")";
+                std::string subMapperStr = "Sub Mapper: " + std::to_string(getNESRom()->SubMapperID);
+                std::string mirrorStr = "Mirroring: " + std::string(getNESRom()->Mirroring == MirrorMode::HORIZONTAL ? "Horizontal" : "Vertical");
+                std::string batteryStr = "Battery: " + std::string(getNESRom()->hasBattery ? "Yes" : "No");
+                std::string CHRRamStr = "CHR-RAM: " + std::string(getNESRom()->CHRRomSize == 0 ? "Yes" : "No");
+                char batterySizeStr[128];
+                size_t SRAMSize = getNESRom()->hasBattery ? getNESRom()->mapper->getSRAMSize() : 0x0000; 
+                sprintf(batterySizeStr, "SRAM/Battery Size: 0x%zx (%zu)", SRAMSize, SRAMSize);
+                char RESETVecStr[128];
+                sprintf(RESETVecStr, "RESET Vector: 0x%x", getNESRom()->ResetVec);
+
+                fullInfo = joinLines({fileStr, HeaderHexStr, headVerStr, PRGSizeStr, CHRSizeStr, mapperStr, subMapperStr, mirrorStr, batteryStr, CHRRamStr, batterySizeStr, RESETVecStr});
+            } else if (emuConsole->getConsoleType() == ConsoleType::GAMEBOY) {
+                std::string titleStr = "Title: " + getGBRom()->Title;
+                std::string mapperStr = "Mapper: " + std::string(getGBRom()->mbc->getName());
+
+                fullInfo = joinLines({fileStr, titleStr, mapperStr});
+            }
+        }
         QLabel* label = new QLabel(QString::fromStdString(fullInfo), dialog);
         label->setAlignment(Qt::AlignCenter);
 
@@ -651,8 +665,6 @@ int main(int argc, char *argv[]) {
             int h = emuConsole->getDisplayHeight() * 2.5;
             screen->resize(w, h);
             window.resize(w, h + window.menuBar()->height());
-        } else {
-            romIsLoaded = false;
         }
     }
 

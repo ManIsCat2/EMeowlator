@@ -7,6 +7,7 @@ NesCPU nesCpu;
 
 void NesCPU::reset() {
     connectBus(nullptr, &nesPpu, &nesApu);
+    paused = false;
     A = X = Y = 0;
     SP = 0xFD;
     P = 0x24;
@@ -26,7 +27,7 @@ void NesCPU::run(uint32_t maxCycles) {
     uint64_t cyclesRun = 0;
 
     while (cyclesRun < maxCycles) {
-        if (!romIsLoaded || CPUPaused || !romMapper) return;
+        if (!romIsLoaded || paused || !romMapper) return;
         bool prevNMIDetect = NMIDetector;
         NMIDetector = ppu->Vblank && ppu->control.enableNMI;
         uint8_t opcode = 0x00;
