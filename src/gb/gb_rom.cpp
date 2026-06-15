@@ -53,6 +53,10 @@ bool GbROM::load(const std::string &filename) {
         case 0x03: ramSize = 32 * 1024; break;
         case 0x04: ramSize = 128 * 1024; break;
         case 0x05: ramSize = 64 * 1024; break;
+        default: {
+            ramSize = 0x2000;
+            break;
+        }
     }
     switch (cartType) {
         case 0x00:

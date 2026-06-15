@@ -109,6 +109,7 @@ bool loadConsoleWithGame(const std::string &file) {
     if (!ret) {
         romIsLoaded = false;
         delete emuConsole;
+        emuConsole = nullptr;
     }
     return ret;
 }
@@ -580,7 +581,7 @@ int main(int argc, char *argv[]) {
         dialog->setWindowTitle("ROM Info");
         dialog->setFixedSize(350, 250);
 
-        if (emuConsole) {
+        if (emuConsole && romIsLoaded) {
             std::string fileStr = "File: " + getRom()->Name;
             if (emuConsole->getConsoleType() == ConsoleType::NES) {
                 std::string HeaderHexStr;
@@ -650,7 +651,10 @@ int main(int argc, char *argv[]) {
     window.show();
 
     QObject::connect(&app, &QApplication::aboutToQuit, [&]() {
-        if (emuConsole) emuConsole->writeSave();
+        if (emuConsole) {
+            emuConsole->writeSave();
+            delete emuConsole;
+        }
         audioSystem.close();
         Config::Write("meowconf.txt");
     });

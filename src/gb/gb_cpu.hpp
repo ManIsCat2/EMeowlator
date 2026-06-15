@@ -20,9 +20,6 @@ public:
     };
 
     bool paused = false;
-    
-    uint8_t WRAM[8192];
-    uint8_t HRAM[128];
 
     uint16_t divCounter = 0;
     uint16_t timerCounter = 0;
@@ -104,11 +101,109 @@ private:
         
         return result;
     }
+    uint8_t opSUB(uint8_t val) {
+        F = FlagN;
+        if ((A & 0x0F) < (val & 0x0F)) {
+            F |= FlagH;
+        }
+        if (A < val) {
+            F |= FlagC;
+        }
+        uint8_t result = A - val;
+        if (result == 0) {
+            F |= FlagZ;
+        }
+        return result;
+    }
+    uint8_t opSBC(uint8_t val) {
+        uint8_t carry = (F & FlagC) ? 1 : 0;
+        int result = A - val - carry;
+        
+        F = FlagN;
+        if (((A & 0x0F) - (val & 0x0F) - carry) < 0) {
+            F |= FlagH;
+        }
+        if (result < 0) {
+            F |= FlagC;
+        }
+        
+        uint8_t res8 = (uint8_t)result;
+        if (res8 == 0) {
+            F |= FlagZ;
+        }
+        return res8;
+    }
+
+    uint8_t opADD(uint8_t val) {
+        uint16_t result = A + val;
+        F = 0;
+        if ((uint8_t)result == 0) {
+            F |= FlagZ;
+        }
+        if (((A & 0x0F) + (val & 0x0F)) > 0x0F) {
+            F |= FlagH;
+        }
+        if (result > 0xFF) {
+            F |= FlagC;
+        }
+        return (uint8_t)result;
+    }
+    uint16_t opADD16(uint16_t val) {
+        uint32_t hl = getHL();
+        uint32_t result = hl + val;
+        
+        F &= ~(FlagN | FlagH | FlagC);
+        if (((hl & 0x0FFF) + (val & 0x0FFF)) > 0x0FFF) {
+            F |= FlagH;
+        }
+        if (result > 0xFFFF) {
+            F |= FlagC;
+        }
+        
+        return (uint16_t)result;
+    }
+
+    uint8_t opADC(uint8_t val) {
+        uint8_t carry = (F & FlagC) ? 1 : 0;
+        int result = A + val + carry;
+        F = 0;
+        if (((A & 0x0F) + (val & 0x0F) + carry) > 0x0F) {
+            F |= FlagH;
+        }
+        if (result > 0xFF) {
+            F |= FlagC;
+        }
+        uint8_t res8 = (uint8_t)result;
+        if (res8 == 0) {
+            F |= FlagZ;
+        }
+        return res8;
+    }
+
+    uint8_t opOR(uint8_t val) {
+        A |= val;
+        F = (A == 0) ? FlagZ : 0;
+        return A;
+    }
+
     uint8_t cbRL(uint8_t v) {
         uint8_t oldCarry = (F & FlagC) ? 1 : 0;
         uint8_t newCarry = (v & 0x80) ? 1 : 0;
 
         v = (v << 1) | oldCarry;
+
+        F = 0;
+        if (v == 0) F |= FlagZ;
+        if (newCarry) F |= FlagC;
+
+        return v;
+    }
+
+    uint8_t cbRR(uint8_t v) {
+        uint8_t oldCarry = (F & FlagC) ? 1 : 0;
+        uint8_t newCarry = (v & 0x01) ? 1 : 0;
+
+        v = (v >> 1) | (oldCarry << 7);
 
         F = 0;
         if (v == 0) F |= FlagZ;

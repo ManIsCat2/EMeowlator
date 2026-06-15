@@ -6,6 +6,7 @@ GbCPU gbCpu;
 void GbCPU::reset() {
     connectBus(nullptr, &gbPpu);
     paused = false;
+
     A = 0x01;
     F = 0xB0;
     B = 0x00; C = 0x13;
@@ -29,13 +30,6 @@ void GbCPU::reset() {
     joypadReg = 0x30;
 
     halted = false;
-
-    for (int i = 0; i < 8192; i++) {
-        WRAM[i] = 0x00;
-    }
-    for (int i = 0; i < 128; i++) {
-        HRAM[i] = 0x00;
-    }
 
     ppu->reset();
 }
@@ -199,20 +193,9 @@ void GbCPU::execute(uint8_t opcode) {
 
         case 0x09: {
             PRINT_DBG_CPU("ADD HL, BC\n");
-            uint32_t hl = getHL();
-            uint32_t bc = (B << 8) | C;
-            uint32_t result = hl + bc;
-            
-            F &= ~(FlagN | FlagH | FlagC);
-            if (((hl & 0x0FFF) + (bc & 0x0FFF)) > 0x0FFF) {
-                F |= FlagH;
-            }
-            if (result > 0xFFFF) {
-                F |= FlagC;
-            }
-            
-            H = (result >> 8) & 0xFF;
-            L = result & 0xFF;
+            uint16_t res16 = opADD16((B << 8) | C);
+            H = (res16 >> 8) & 0xFF;
+            L = res16 & 0xFF;
             cycles = 8;
             break;
         }
@@ -251,6 +234,20 @@ void GbCPU::execute(uint8_t opcode) {
             PRINT_DBG_CPU("LD C, $0x%02X\n", C);
             cycles = 8;
             break;
+
+        case 0x0F: {
+            PRINT_DBG_CPU("RRCA\n");
+            uint8_t bit0 = A & 0x01;
+            A = (A >> 1) | (bit0 << 7);
+
+            F = 0;
+            if (bit0) {
+                F |= FlagC;
+            }
+
+            cycles = 4;
+            break;
+        }
 
         case 0x11: { // LD DE, d16
             uint16_t imm16 = fetch16();
@@ -295,6 +292,21 @@ void GbCPU::execute(uint8_t opcode) {
             cycles = 8;
             break;
 
+        case 0x17: {
+            PRINT_DBG_CPU("RLA\n");
+            uint8_t oldCarry = (F & FlagC) ? 1 : 0;
+            uint8_t newCarry = (A & 0x80) ? 1 : 0;
+            A = (A << 1) | oldCarry;
+
+            F = 0;
+            if (newCarry) {
+                F |= FlagC;
+            }
+            
+            cycles = 4;
+            break;
+        }
+
         case 0x18: { // JR r8
             int8_t offset = (int8_t)fetch();
             PRINT_DBG_CPU("JR %d\n", offset);
@@ -305,20 +317,9 @@ void GbCPU::execute(uint8_t opcode) {
 
         case 0x19: {
             PRINT_DBG_CPU("ADD HL, DE\n");
-            uint32_t hl = getHL();
-            uint32_t de = (D << 8) | E;
-            uint32_t result = hl + de;
-            
-            F &= ~(FlagN | FlagH | FlagC);
-            if (((hl & 0x0FFF) + (de & 0x0FFF)) > 0x0FFF) {
-                F |= FlagH;
-            }
-            if (result > 0xFFFF) {
-                F |= FlagC;
-            }
-            
-            H = (result >> 8) & 0xFF;
-            L = result & 0xFF;
+            uint16_t res16 = opADD16((D << 8) | E);
+            H = (res16 >> 8) & 0xFF;
+            L = res16 & 0xFF;
             cycles = 8;
             break;
         }
@@ -523,19 +524,9 @@ void GbCPU::execute(uint8_t opcode) {
 
         case 0x29: {
             PRINT_DBG_CPU("ADD HL, HL\n");
-            uint32_t hl = getHL();
-            uint32_t result = hl + hl;
-            
-            F &= ~(FlagN | FlagH | FlagC);
-            if (((hl & 0x0FFF) + (hl & 0x0FFF)) > 0x0FFF) {
-                F |= FlagH;
-            }
-            if (result > 0xFFFF) {
-                F |= FlagC;
-            }
-            
-            H = (result >> 8) & 0xFF;
-            L = result & 0xFF;
+            uint16_t res16 = opADD16(getHL());
+            H = (res16 >> 8) & 0xFF;
+            L = res16 & 0xFF;
             cycles = 8;
             break;
         }
@@ -678,6 +669,13 @@ void GbCPU::execute(uint8_t opcode) {
             cycles = 4;
             break;
 
+        case 0x44: {
+            PRINT_DBG_CPU("LD B, H\n");
+            B = H;
+            cycles = 4;
+            break;
+        }
+
         case 0x46:
             PRINT_DBG_CPU("LD B, (HL)\n");
             B = read(getHL());
@@ -689,6 +687,20 @@ void GbCPU::execute(uint8_t opcode) {
             B = A;
             cycles = 4;
             break;
+
+        case 0x48: {
+            PRINT_DBG_CPU("LD C, B\n");
+            C = B;
+            cycles = 4;
+            break;
+        }
+
+        case 0x4D: {
+            PRINT_DBG_CPU("LD C, L\n");
+            C = L;
+            cycles = 4;
+            break;
+        }
 
         case 0x4E:
             PRINT_DBG_CPU("LD C, (HL)\n");
@@ -875,167 +887,225 @@ void GbCPU::execute(uint8_t opcode) {
 
         case 0x80: {
             PRINT_DBG_CPU("ADD A, B\n");
-            uint16_t result = A + B;
-            F = 0;
-            if ((uint8_t)result == 0) F |= FlagZ;
-            if (((A & 0xF) + (B & 0xF)) > 0xF) F |= FlagH;
-            if (result > 0xFF) F |= FlagC;
-            A = (uint8_t)result;
+            A = opADD(B);
             cycles = 4;
             break;
         }
 
-        case 0x82: { // ADD A, D
+        case 0x81: {
+            PRINT_DBG_CPU("ADD A, C\n");
+            A = opADD(C);
+            cycles = 4;
+            break;
+        }
+
+        case 0x82: {
             PRINT_DBG_CPU("ADD A, D\n");
-            uint16_t result = A + D;
-            
-            F = 0;
-            if ((uint8_t)result == 0) {
-                F |= FlagZ;
-            }
-            if (((A & 0x0F) + (D & 0x0F)) > 0x0F) {
-                F |= FlagH;
-            }
-            if (result > 0xFF) {
-                F |= FlagC;
-            }
-            
-            A = (uint8_t)result;
+            A = opADD(D);
             cycles = 4;
             break;
         }
 
-        case 0x83: { // ADD A, E
+        case 0x83: {
             PRINT_DBG_CPU("ADD A, E\n");
-            uint16_t result = A + E;
-            
-            F = 0;
-            if ((uint8_t)result == 0) {
-                F |= FlagZ;
-            }
-            if (((A & 0x0F) + (E & 0x0F)) > 0x0F) {
-                F |= FlagH;
-            }
-            if (result > 0xFF) {
-                F |= FlagC;
-            }
-            
-            A = (uint8_t)result;
+            A = opADD(E);
+            cycles = 4;
+            break;
+        }
+
+        case 0x84: {
+            PRINT_DBG_CPU("ADD A, H\n");
+            A = opADD(H);
             cycles = 4;
             break;
         }
 
         case 0x85: {
             PRINT_DBG_CPU("ADD A, L\n");
-            uint16_t result = A + L;
-            
-            F = 0;
-            if ((result & 0xFF) == 0) {
-                F |= FlagZ;
-            }
-            if (((A & 0x0F) + (L & 0x0F)) > 0x0F) {
-                F |= FlagH;
-            }
-            if (result > 0xFF) {
-                F |= FlagC;
-            }
-            
-            A = result & 0xFF;
+            A = opADD(L);
             cycles = 4;
             break;
         }
 
-        case 0x86: { // ADD A,(HL)
-            PRINT_DBG_CPU("ADD A,(HL)\n");
-            uint8_t value = read(getHL());
-            uint16_t result = A + value;
-
-            F = 0;
-
-            if (((A & 0x0F) + (value & 0x0F)) > 0x0F)
-                F |= FlagH;
-
-            if (result > 0xFF)
-                F |= FlagC;
-
-            A = (uint8_t)result;
-
-            if (A == 0)
-                F |= FlagZ;
-
+        case 0x86: {
+            PRINT_DBG_CPU("ADD A, (HL)\n");
+            A = opADD(read(getHL()));
             cycles = 8;
             break;
         }
 
-        case 0x87: { // ADD A, A
+        case 0x87: {
             PRINT_DBG_CPU("ADD A, A\n");
-            uint8_t val = A;
-            uint16_t result = A + val;
-            
-            F = 0;
-            if ((result & 0xFF) == 0) F |= FlagZ;
-            if (((A & 0x0F) + (val & 0x0F)) > 0x0F) F |= FlagH;
-            if (result > 0xFF) F |= FlagC;
-            
-            A = (uint8_t)result;
+            A = opADD(A);
+            cycles = 4;
+            break;
+        }
+
+        case 0x88: {
+            PRINT_DBG_CPU("ADC A, B\n");
+            A = opADC(B);
             cycles = 4;
             break;
         }
 
         case 0x89: {
-            uint8_t carry = (F & FlagC) ? 1 : 0;
-            uint16_t result = A + C + carry;
-
-            F = 0;
-            if ((uint8_t)result == 0) F |= FlagZ;
-            if (((A & 0xF) + (C & 0xF) + carry) > 0xF) F |= FlagH;
-            if (result > 0xFF) F |= FlagC;
-
-            A = (uint8_t)result;
+            PRINT_DBG_CPU("ADC A, C\n");
+            A = opADC(C);
             cycles = 4;
             break;
         }
 
-        case 0x8E: { // ADC A, (HL)
+        case 0x8A: {
+            PRINT_DBG_CPU("ADC A, D\n");
+            A = opADC(D);
+            cycles = 4;
+            break;
+        }
+
+        case 0x8B: {
+            PRINT_DBG_CPU("ADC A, E\n");
+            A = opADC(E);
+            cycles = 4;
+            break;
+        }
+
+        case 0x8C: {
+            PRINT_DBG_CPU("ADC A, H\n");
+            A = opADC(H);
+            cycles = 4;
+            break;
+        }
+
+        case 0x8D: {
+            PRINT_DBG_CPU("ADC A, L\n");
+            A = opADC(L);
+            cycles = 4;
+            break;
+        }
+
+        case 0x8E: {
             PRINT_DBG_CPU("ADC A, (HL)\n");
-            uint8_t value = read(getHL());
-            uint8_t carry = (F & FlagC) ? 1 : 0;
-            int result = A + value + carry;
-            
-            F = 0;
-            if (((A & 0x0F) + (value & 0x0F) + carry) > 0x0F) {
-                F |= FlagH;
-            }
-            if (result > 0xFF) {
-                F |= FlagC;
-            }
-            
-            A = (uint8_t)result;
-            if (A == 0) {
-                F |= FlagZ;
-            }
-            
+            A = opADC(read(getHL()));
             cycles = 8;
+            break;
+        }
+
+        case 0x8F: {
+            PRINT_DBG_CPU("ADC A, A\n");
+            A = opADC(A);
+            cycles = 4;
+            break;
+        }
+
+        case 0x90: {
+            PRINT_DBG_CPU("SUB A, B\n");
+            A = opSUB(B);
+            cycles = 4;
+            break;
+        }
+
+        case 0x91: { // SUB A, C
+            PRINT_DBG_CPU("SUB A, C\n");
+            A = opSUB(C);
+            cycles = 4;
+            break;
+        }
+
+        case 0x92: { // SUB A, D
+            PRINT_DBG_CPU("SUB A, D\n");
+            A = opSUB(D);
+            cycles = 4;
+            break;
+        }
+
+        case 0x93: { // SUB A, E
+            PRINT_DBG_CPU("SUB A, E\n");
+            A = opSUB(E);
+            cycles = 4;
+            break;
+        }
+
+        case 0x94: { // SUB A, H
+            PRINT_DBG_CPU("SUB A, H\n");
+            A = opSUB(H);
+            cycles = 4;
+            break;
+        }
+
+        case 0x95: { // SUB A, L
+            PRINT_DBG_CPU("SUB A, L\n");
+            A = opSUB(L);
+            cycles = 4;
             break;
         }
 
         case 0x96: { // SUB A, (HL)
             PRINT_DBG_CPU("SUB A, (HL)\n");
-            uint8_t value = read(getHL());
-
-            F = FlagN;
-            if ((A & 0x0F) < (value & 0x0F)) {
-                F |= FlagH;
-            }
-            if (A < value) {
-                F |= FlagC;
-            }
-            A -= value;
-            if (A == 0) {
-                F |= FlagZ;
-            }
-            
+            A = opSUB(read(getHL()));
             cycles = 8;
+            break;
+        }
+
+        case 0x97: { // SUB A, A
+            PRINT_DBG_CPU("SUB A, A\n");
+            A = opSUB(A);
+            cycles = 4;
+            break;
+        }
+
+        case 0x98: { // SBC A, B
+            PRINT_DBG_CPU("SBC A, B\n");
+            A = opSBC(B);
+            cycles = 4;
+            break;
+        }
+
+        case 0x99: { // SBC A, C
+            PRINT_DBG_CPU("SBC A, C\n");
+            A = opSBC(C);
+            cycles = 4;
+            break;
+        }
+
+        case 0x9A: { // SBC A, D
+            PRINT_DBG_CPU("SBC A, D\n");
+            A = opSBC(D);
+            cycles = 4;
+            break;
+        }
+
+        case 0x9B: { // SBC A, E
+            PRINT_DBG_CPU("SBC A, E\n");
+            A = opSBC(E);
+            cycles = 4;
+            break;
+        }
+
+        case 0x9C: { // SBC A, H
+            PRINT_DBG_CPU("SBC A, H\n");
+            A = opSBC(H);
+            cycles = 4;
+            break;
+        }
+
+        case 0x9D: { // SBC A, L
+            PRINT_DBG_CPU("SBC A, L\n");
+            A = opSBC(L);
+            cycles = 4;
+            break;
+        }
+
+        case 0x9E: { // SBC A, (HL)
+            PRINT_DBG_CPU("SBC A, (HL)\n");
+            A = opSBC(read(getHL()));
+            cycles = 8;
+            break;
+        }
+
+        case 0x9F: { // SBC A, A
+            PRINT_DBG_CPU("SBC A, A\n");
+            A = opSBC(A);
+            cycles = 4;
             break;
         }
 
@@ -1079,83 +1149,100 @@ void GbCPU::execute(uint8_t opcode) {
             cycles = 4;
             break;
 
-        case 0xB0: // OR B
+        case 0xB0: {
             PRINT_DBG_CPU("OR B\n");
-            A |= B;
-            F = (A == 0) ? FlagZ : 0;
+            A = opOR(B);
             cycles = 4;
             break;
+        }
 
-        case 0xB1: // OR C
+        case 0xB1: {
             PRINT_DBG_CPU("OR C\n");
-            A |= C;
-            F = (A == 0) ? FlagZ : 0;
+            A = opOR(C);
             cycles = 4;
             break;
+        }
 
-        case 0xB2: // OR D
+        case 0xB2: {
             PRINT_DBG_CPU("OR D\n");
-            A |= D;
-            F = (A == 0) ? FlagZ : 0;
+            A = opOR(D);
             cycles = 4;
             break;
+        }
+
+        case 0xB3: {
+            PRINT_DBG_CPU("OR E\n");
+            A = opOR(E);
+            cycles = 4;
+            break;
+        }
+
+        case 0xB4: {
+            PRINT_DBG_CPU("OR H\n");
+            A = opOR(H);
+            cycles = 4;
+            break;
+        }
+
+        case 0xB5: {
+            PRINT_DBG_CPU("OR L\n");
+            A = opOR(L);
+            cycles = 4;
+            break;
+        }
 
         case 0xB6: {
             PRINT_DBG_CPU("OR (HL)\n");
-            uint8_t value = read(getHL());
-            A |= value;
-            F = 0;
-            if (A == 0) {
-                F |= FlagZ;
-            }
+            A = opOR(read(getHL()));
             cycles = 8;
             break;
         }
 
-        case 0xB7:
+        case 0xB7: {
             PRINT_DBG_CPU("OR A\n");
-            A |= A;
-            F = 0;
-            if (A == 0) {
-                F |= FlagZ;
-            }
-            cycles = 4;
-            break;
-
-        case 0xB8: { // CP B
-            PRINT_DBG_CPU("CP B\n");
-            uint8_t result = A - B;
-            
-            F = FlagN;
-            if (result == 0) {
-                F |= FlagZ;
-            }
-            if ((A & 0x0F) < (B & 0x0F)) {
-                F |= FlagH;
-            }
-            if (A < B) {
-                F |= FlagC;
-            }
-            
+            A = opOR(A);
             cycles = 4;
             break;
         }
 
-        case 0xB9: { // CP C
-            PRINT_DBG_CPU("CP C\n");
-            uint8_t result = A - C;
+        case 0xB8: {
+            PRINT_DBG_CPU("CP B\n");
+            opSUB(B);
+            cycles = 4;
+            break;
+        }
 
-            F = FlagN;
-            if (result == 0) {
-                F |= FlagZ;
-            }
-            if ((A & 0x0F) < (C & 0x0F)) {
-                F |= FlagH;
-            }
-            if (A < C) {
-                F |= FlagC;
-            }
-            
+        case 0xB9: {
+            PRINT_DBG_CPU("CP C\n");
+            opSUB(C);
+            cycles = 4;
+            break;
+        }
+
+        case 0xBA: { // CP D
+            PRINT_DBG_CPU("CP D\n");
+            opSUB(D);
+            cycles = 4;
+            break;
+        }
+
+        case 0xBC: { // CP H
+            PRINT_DBG_CPU("CP H\n");
+            opSUB(H);
+            cycles = 4;
+            break;
+        }
+
+        case 0xBD: { // CP L
+            PRINT_DBG_CPU("CP L\n");
+            opSUB(L);
+            cycles = 4;
+            break;
+        }
+
+        case 0xBF: { // CP A
+            PRINT_DBG_CPU("CP A\n");
+            opSUB(A);
             cycles = 4;
             break;
         }
@@ -1265,21 +1352,7 @@ void GbCPU::execute(uint8_t opcode) {
         case 0xC6: {
             uint8_t imm8 = fetch();
             PRINT_DBG_CPU("ADD A, $0x%02X\n", imm8);
-            uint16_t result = A + imm8;
-            
-            F = 0;
-            if (((A & 0x0F) + (imm8 & 0x0F)) > 0x0F) {
-                F |= FlagH;
-            }
-            if (result > 0xFF) {
-                F |= FlagC;
-            }
-            
-            A = (uint8_t)result;
-            if (A == 0) {
-                F |= FlagZ;
-            }
-            
+            A = opADD(imm8);
             cycles = 8;
             break;
         }
@@ -1336,22 +1409,7 @@ void GbCPU::execute(uint8_t opcode) {
         case 0xCE: {
             uint8_t imm8 = fetch();
             PRINT_DBG_CPU("ADC A, $0x%02X\n", imm8);
-            uint8_t carry = (F & FlagC) ? 1 : 0;
-            int result = A + imm8 + carry;
-            
-            F = 0;
-            if (((A & 0x0F) + (imm8 & 0x0F) + carry) > 0x0F) {
-                F |= FlagH;
-            }
-            if (result > 0xFF) {
-                F |= FlagC;
-            }
-            
-            A = (uint8_t)result;
-            if (A == 0) {
-                F |= FlagZ;
-            }
-            
+            A = opADC(imm8);
             cycles = 8;
             break;
         }
@@ -1375,6 +1433,55 @@ void GbCPU::execute(uint8_t opcode) {
             cycles = 12;
             break;
 
+        case 0xD2: {
+            uint16_t address = fetch16();
+            PRINT_DBG_CPU("JP NC, $0x%04X\n", address);
+            
+            if (!(F & FlagC)) {
+                PC = address;
+                cycles = 16;
+            } else {
+                cycles = 12;
+            }
+            break;
+        }
+
+        case 0xD4: {
+            uint16_t dest = fetch16();
+            PRINT_DBG_CPU("CALL NC, $0x%04X\n", dest);
+            
+            if (!(F & FlagC)) {
+                push(PC >> 8);
+                push(PC & 0xFF);
+                PC = dest;
+                cycles = 24;
+            } else {
+                cycles = 12;
+            }
+            break;
+        }
+
+        case 0xDA: {
+            uint16_t address = fetch16();
+            PRINT_DBG_CPU("JP C, $0x%04X\n", address);
+            
+            if (F & FlagC) {
+                PC = address;
+                cycles = 16;
+            } else {
+                cycles = 12;
+            }
+            break;
+        }
+
+        case 0xDE: {
+            uint8_t imm8 = fetch();
+            PRINT_DBG_CPU("SBC A, $0x%02X\n", imm8);
+            A = opSBC(imm8);
+            cycles = 8;
+            break;
+        }
+
         case 0xD5:
             PRINT_DBG_CPU("PUSH DE\n");
             push(D);
@@ -1385,20 +1492,7 @@ void GbCPU::execute(uint8_t opcode) {
         case 0xD6: {
             uint8_t imm8 = fetch();
             PRINT_DBG_CPU("SUB A, $0x%02X\n", imm8);
-            
-            F = FlagN;
-            if ((A & 0x0F) < (imm8 & 0x0F)) {
-                F |= FlagH;
-            }
-            if (A < imm8) {
-                F |= FlagC;
-            }
-            
-            A -= imm8;
-            if (A == 0) {
-                F |= FlagZ;
-            }
-            
+            A = opSUB(imm8);
             cycles = 8;
             break;
         }
@@ -1534,15 +1628,10 @@ void GbCPU::execute(uint8_t opcode) {
             cycles = 16;
             break;
 
-        case 0xF6: { // OR d8
+        case 0xF6: {
             uint8_t imm8 = fetch();
             PRINT_DBG_CPU("OR $0x%02X\n", imm8);
-            A |= imm8;
-            F = 0;
-            if (A == 0) {
-                F |= FlagZ;
-            }
-
+            A = opOR(imm8);
             cycles = 8;
             break;
         }
@@ -1602,6 +1691,13 @@ void GbCPU::executeCB(uint8_t cbOpcode) {
         case 0x14: H = cbRL(H); break;
         case 0x15: L = cbRL(L); break;
         case 0x17: A = cbRL(A); break;
+        case 0x18: B = cbRR(B); break;
+        case 0x19: C = cbRR(C); break;
+        case 0x1A: D = cbRR(D); break;
+        case 0x1B: E = cbRR(E); break;
+        case 0x1C: H = cbRR(H); break;
+        case 0x1D: L = cbRR(L); break;
+        case 0x1F: A = cbRR(A); break;
         case 0x20: B = cbSLA(B); break;
         case 0x21: C = cbSLA(C); break;
         case 0x22: D = cbSLA(D); break;
@@ -1651,20 +1747,11 @@ void GbCPU::executeCB(uint8_t cbOpcode) {
 }
 
 uint8_t GbCPU::read(uint16_t addr) {
-    if (addr >= 0x8000 && addr <= 0x9FFF) {
-        return ppu->readVRAM(addr);
-    }
-    if (addr >= 0xC000 && addr <= 0xDFFF) {
-        return WRAM[addr - 0xC000];
-    }
-    if (addr >= 0xE000 && addr <= 0xFDFF) {
-        return WRAM[addr - 0x2000];
-    }
     if (addr >= 0xFE00 && addr <= 0xFE9F) {
         return ppu->readOAM(addr);
     }
     if (addr >= 0xFEA0 && addr <= 0xFEFF) {
-        return 0x00;
+        return dataBus;
     }
 
     if (addr == 0xFF00) {
@@ -1709,7 +1796,7 @@ uint8_t GbCPU::read(uint16_t addr) {
         return 0x00;
     }
     if (addr >= 0xFF80 && addr <= 0xFFFE) {
-        return HRAM[addr - 0xFF80];
+        return getGBRom()->mbc->HRAM[addr - 0xFF80];
     }
     if (addr == 0xFFFF) {
         return IE;
@@ -1719,18 +1806,6 @@ uint8_t GbCPU::read(uint16_t addr) {
 
 void GbCPU::write(uint16_t addr, uint8_t value) {
     dataBus = value;
-    if (addr >= 0x8000 && addr <= 0x9FFF) {
-        ppu->writeVRAM(addr, value);
-        return;
-    }
-    if (addr >= 0xC000 && addr <= 0xDFFF) {
-        WRAM[addr - 0xC000] = value;
-        return;
-    }
-    if (addr >= 0xE000 && addr <= 0xFDFF) {
-        WRAM[addr - 0x2000] = value;
-        return;
-    }
     if (addr >= 0xFE00 && addr <= 0xFE9F) {
         ppu->writeOAM(addr, value);
         return;
@@ -1783,7 +1858,7 @@ void GbCPU::write(uint16_t addr, uint8_t value) {
         return;
     }
     if (addr >= 0xFF80 && addr <= 0xFFFE) {
-        HRAM[addr - 0xFF80] = value;
+        getGBRom()->mbc->HRAM[addr - 0xFF80] = value;
         return;
     }
     if (addr == 0xFFFF) {

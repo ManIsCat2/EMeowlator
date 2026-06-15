@@ -10,8 +10,10 @@ public:
         bool write = false;
     };
 
-    uint8_t *cartRAM = nullptr;
     MemPage CPUPages[256];
+    uint8_t *cartRAM = nullptr;
+    uint8_t WRAM[8192];
+    uint8_t HRAM[128];
 
     virtual ~MBCBase();
     virtual uint8_t cpuRead(uint16_t addr);

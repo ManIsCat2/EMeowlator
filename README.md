@@ -4,6 +4,8 @@ EMeowlator is a multi-system emulator made by a Cat.
 
 ## NES
 
+Can play most of the NES library.
+
 Supported mappers:
 - NROM (Mapper 0)
 - MMC1 (Mapper 1)
