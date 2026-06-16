@@ -186,6 +186,28 @@ private:
         return A;
     }
 
+    uint8_t opXOR(uint8_t value) {
+        uint8_t result = A ^ value;
+
+        F = 0;
+        if (result == 0) {
+            F |= FlagZ;
+        }
+
+        return result;
+    }
+
+    uint8_t opAND(uint8_t value) {
+        uint8_t result = A & value;
+
+        F = FlagH;
+        if (result == 0) {
+            F |= FlagZ;
+        }
+
+        return result;
+    }
+
     uint8_t cbRL(uint8_t v) {
         uint8_t oldCarry = (F & FlagC) ? 1 : 0;
         uint8_t newCarry = (v & 0x80) ? 1 : 0;

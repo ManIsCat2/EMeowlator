@@ -191,6 +191,17 @@ void GbCPU::execute(uint8_t opcode) {
             break;
         }
 
+        case 0x08: {
+            uint16_t address = fetch16();
+            PRINT_DBG_CPU("LD ($0x%04X), SP\n", address);
+
+            write(address, (uint8_t)(SP & 0xFF));
+            write(address + 1, (uint8_t)(SP >> 8));
+
+            cycles = 20;
+            break;
+        }
+
         case 0x09: {
             PRINT_DBG_CPU("ADD HL, BC\n");
             uint16_t res16 = opADD16((B << 8) | C);
@@ -558,6 +569,13 @@ void GbCPU::execute(uint8_t opcode) {
             cycles = 8;
             break;
 
+        case 0x33: {
+            PRINT_DBG_CPU("INC SP\n");
+            SP++;
+            cycles = 8;
+            break;
+        }
+
         case 0x34: {
             PRINT_DBG_CPU("INC (HL)\n");
             uint16_t address = getHL();
@@ -621,6 +639,13 @@ void GbCPU::execute(uint8_t opcode) {
             break;
         }
 
+        case 0x39: {
+            PRINT_DBG_CPU("ADD HL, SP\n");
+            setHL(opADD16(SP));
+            cycles = 8;
+            break;
+        }
+
         case 0x3A: {
             PRINT_DBG_CPU("LD A, (HL-)\n");
             uint16_t hl = getHL();
@@ -628,6 +653,13 @@ void GbCPU::execute(uint8_t opcode) {
             hl--;
             H = (hl >> 8) & 0xFF;
             L = hl & 0xFF;
+            cycles = 8;
+            break;
+        }
+
+        case 0x3B: {
+            PRINT_DBG_CPU("DEC SP\n");
+            SP--;
             cycles = 8;
             break;
         }
@@ -663,15 +695,55 @@ void GbCPU::execute(uint8_t opcode) {
             cycles = 8;
             break;
 
-        case 0x40: //this instruction is so peak
+        case 0x3F: {
+            PRINT_DBG_CPU("CCF\n");
+
+            bool carry = (F & FlagC) != 0;
+            F &= ~(FlagN | FlagH | FlagC);
+            if (!carry) {
+                F |= FlagC;
+            }
+            cycles = 4;
+            break;
+        }
+
+        case 0x40:
             PRINT_DBG_CPU("LD B, B\n");
             //B = B;
             cycles = 4;
             break;
 
+        case 0x41: {
+            PRINT_DBG_CPU("LD B, C\n");
+            B = C;
+            cycles = 4;
+            break;
+        }
+
+        case 0x42: {
+            PRINT_DBG_CPU("LD B, D\n");
+            B = D;
+            cycles = 4;
+            break;
+        }
+
+        case 0x43: {
+            PRINT_DBG_CPU("LD B, E\n");
+            B = E;
+            cycles = 4;
+            break;
+        }
+
         case 0x44: {
             PRINT_DBG_CPU("LD B, H\n");
             B = H;
+            cycles = 4;
+            break;
+        }
+        
+        case 0x45: {
+            PRINT_DBG_CPU("LD B, L\n");
+            B = L;
             cycles = 4;
             break;
         }
@@ -695,6 +767,34 @@ void GbCPU::execute(uint8_t opcode) {
             break;
         }
 
+        case 0x49: {
+            PRINT_DBG_CPU("LD C, C\n");
+            //C = C;
+            cycles = 4;
+            break;
+        }
+
+        case 0x4A: {
+            PRINT_DBG_CPU("LD C, D\n");
+            C = D;
+            cycles = 4;
+            break;
+        }
+
+        case 0x4B: {
+            PRINT_DBG_CPU("LD C, E\n");
+            C = E;
+            cycles = 4;
+            break;
+        }
+
+        case 0x4C: {
+            PRINT_DBG_CPU("LD C, H\n");
+            C = H;
+            cycles = 4;
+            break;
+        }
+
         case 0x4D: {
             PRINT_DBG_CPU("LD C, L\n");
             C = L;
@@ -714,40 +814,113 @@ void GbCPU::execute(uint8_t opcode) {
             cycles = 4;
             break;
 
+        case 0x50: {
+            PRINT_DBG_CPU("LD D, B\n");
+            D = B;
+            cycles = 4;
+            break;
+        }
+
+        case 0x51: {
+            PRINT_DBG_CPU("LD D, C\n");
+            D = C;
+            cycles = 4;
+            break;
+        }
+
+        case 0x52: {
+            PRINT_DBG_CPU("LD D, D\n");
+            //D = D;
+            cycles = 4;
+            break;
+        }
+
+        case 0x53: {
+            PRINT_DBG_CPU("LD D, E\n");
+            D = E;
+            cycles = 4;
+            break;
+        }
+
+        case 0x54: {
+            PRINT_DBG_CPU("LD D, H\n");
+            D = H;
+            cycles = 4;
+            break;
+        }
+
+        case 0x55: {
+            PRINT_DBG_CPU("LD D, L\n");
+            D = L;
+            cycles = 4;
+            break;
+        }
+
+        case 0x56: {
+            PRINT_DBG_CPU("LD D, (HL)\n");
+            D = read(getHL());
+            cycles = 8;
+            break;
+        }
+
         case 0x57:
             PRINT_DBG_CPU("LD D, A\n");
             D = A;
             cycles = 4;
             break;
 
-        case 0x5F:
-            PRINT_DBG_CPU("LD E, A\n");
-            E = A;
+        case 0x58: {
+            PRINT_DBG_CPU("LD E, B\n");
+            E = B;
             cycles = 4;
             break;
+        }
 
-        case 0x54:
-            PRINT_DBG_CPU("LD D, H\n");
-            D = H;
+        case 0x59: {
+            PRINT_DBG_CPU("LD E, C\n");
+            E = C;
             cycles = 4;
             break;
+        }
 
-        case 0x56: // LD D, (HL)
-            PRINT_DBG_CPU("LD D, (HL)\n");
-            D = read(getHL());
-            cycles = 8;
+        case 0x5A: {
+            PRINT_DBG_CPU("LD E, D\n");
+            E = D;
+            cycles = 4;
             break;
+        }
 
-        case 0x5D:
+        case 0x5B: {
+            PRINT_DBG_CPU("LD E, E\n");
+            //E = E;
+            cycles = 4;
+            break;
+        }
+
+        case 0x5C: {
+            PRINT_DBG_CPU("LD E, H\n");
+            E = H;
+            cycles = 4;
+            break;
+        }
+
+        case 0x5D: {
             PRINT_DBG_CPU("LD E, L\n");
             E = L;
             cycles = 4;
             break;
+        }
 
         case 0x5E: // LD E, (HL)
             PRINT_DBG_CPU("LD E, (HL)\n");
             E = read(getHL());
             cycles = 8;
+            break;
+
+        case 0x5F:
+            PRINT_DBG_CPU("LD E, A\n");
+            E = A;
+            cycles = 4;
             break;
 
         case 0x60:
@@ -767,6 +940,27 @@ void GbCPU::execute(uint8_t opcode) {
             H = D;
             cycles = 4;
             break;
+        
+        case 0x63: {
+            PRINT_DBG_CPU("LD H, E\n");
+            H = E;
+            cycles = 4;
+            break;
+        }
+
+        case 0x64: {
+            PRINT_DBG_CPU("LD H, H\n");
+            //H = H;
+            cycles = 4;
+            break;
+        }
+
+        case 0x65: {
+            PRINT_DBG_CPU("LD H, L\n");
+            H = L;
+            cycles = 4;
+            break;
+        }
 
         case 0x66: // LD H, (HL)
             PRINT_DBG_CPU("LD H, (HL)\n");
@@ -774,17 +968,54 @@ void GbCPU::execute(uint8_t opcode) {
             cycles = 8;
             break;
 
-        case 0x67:
+        case 0x67: {
             PRINT_DBG_CPU("LD H, A\n");
             H = A;
             cycles = 4;
             break;
+        }
 
-        case 0x6B:
+        case 0x68: {
+            PRINT_DBG_CPU("LD L, B\n");
+            L = B;
+            cycles = 4;
+            break;
+        }
+
+        case 0x69: {
+            PRINT_DBG_CPU("LD L, C\n");
+            L = C;
+            cycles = 4;
+            break;
+        }
+
+        case 0x6A: {
+            PRINT_DBG_CPU("LD L, D\n");
+            L = D;
+            cycles = 4;
+            break;
+        }
+
+        case 0x6B: {
             PRINT_DBG_CPU("LD L, E\n");
             L = E;
             cycles = 4;
             break;
+        }
+
+        case 0x6C: {
+            PRINT_DBG_CPU("LD L, H\n");
+            L = H;
+            cycles = 4;
+            break;
+        }
+
+        case 0x6D: {
+            PRINT_DBG_CPU("LD L, L\n");
+            //L = L;
+            cycles = 4;
+            break;
+        }
 
         case 0x6E: // LD L, (HL)
             PRINT_DBG_CPU("LD L, (HL)\n");
@@ -795,12 +1026,6 @@ void GbCPU::execute(uint8_t opcode) {
         case 0x6F:
             PRINT_DBG_CPU("LD L, A\n");
             L = A;
-            cycles = 4;
-            break;
-
-        case 0x69:
-            PRINT_DBG_CPU("LD L, C\n");
-            L = C;
             cycles = 4;
             break;
 
@@ -826,6 +1051,20 @@ void GbCPU::execute(uint8_t opcode) {
             PRINT_DBG_CPU("LD (HL), E\n");
             uint16_t address = getHL();
             write(address, E);
+            cycles = 8;
+            break;
+        }
+
+        case 0x74: {
+            PRINT_DBG_CPU("LD (HL), H\n");
+            write(getHL(), H);
+            cycles = 8;
+            break;
+        }
+
+        case 0x75: {
+            PRINT_DBG_CPU("LD (HL), L\n");
+            write(getHL(), L);
             cycles = 8;
             break;
         }
@@ -884,6 +1123,13 @@ void GbCPU::execute(uint8_t opcode) {
             A = read(getHL());
             cycles = 8;
             break;
+
+        case 0x7F: {
+            PRINT_DBG_CPU("LD A, A\n");
+            //A = A;
+            cycles = 4;
+            break;
+        }
 
         case 0x80: {
             PRINT_DBG_CPU("ADD A, B\n");
@@ -1109,43 +1355,107 @@ void GbCPU::execute(uint8_t opcode) {
             break;
         }
 
-        case 0xA1: // AND C
-            PRINT_DBG_CPU("AND C\n");
-            A &= C;
-            F = ((A == 0) ? FlagZ : 0) | FlagH;
+        case 0xA0: {
+            PRINT_DBG_CPU("AND B\n");
+            A = opAND(B);
             cycles = 4;
             break;
+        }
 
-        case 0xA7:
+        case 0xA1: {
+            PRINT_DBG_CPU("AND C\n");
+            A = opAND(C);
+            cycles = 4;
+            break;
+        }
+
+        case 0xA2: {
+            PRINT_DBG_CPU("AND D\n");
+            A = opAND(D);
+            cycles = 4;
+            break;
+        }
+
+        case 0xA3: {
+            PRINT_DBG_CPU("AND E\n");
+            A = opAND(E);
+            cycles = 4;
+            break;
+        }
+
+        case 0xA4: {
+            PRINT_DBG_CPU("AND H\n");
+            A = opAND(H);
+            cycles = 4;
+            break;
+        }
+
+        case 0xA5: {
+            PRINT_DBG_CPU("AND L\n");
+            A = opAND(L);
+            cycles = 4;
+            break;
+        }
+
+        case 0xA6: {
+            PRINT_DBG_CPU("AND (HL)\n");
+            A = opAND(read(getHL()));
+            cycles = 8;
+            break;
+        }
+
+        case 0xA7: {
             PRINT_DBG_CPU("AND A\n");
-            F = ((A == 0) ? FlagZ : 0) | FlagH; 
-            
+            A = opAND(A);
+            cycles = 4;
+            break;
+        }
+
+        case 0xA8: // XOR B
+            PRINT_DBG_CPU("XOR B\n");
+            A = opXOR(B);
             cycles = 4;
             break;
 
         case 0xA9: // XOR C
             PRINT_DBG_CPU("XOR C\n");
-            A ^= C;
-            F = (A == 0) ? FlagZ : 0;
+            A = opXOR(C);
             cycles = 4;
             break;
 
-        case 0xAE: {
+        case 0xAA: // XOR D
+            PRINT_DBG_CPU("XOR D\n");
+            A = opXOR(D);
+            cycles = 4;
+            break;
+
+        case 0xAB: // XOR E
+            PRINT_DBG_CPU("XOR E\n");
+            A = opXOR(E);
+            cycles = 4;
+            break;
+
+        case 0xAC: // XOR H
+            PRINT_DBG_CPU("XOR H\n");
+            A = opXOR(H);
+            cycles = 4;
+            break;
+
+        case 0xAD: // XOR L
+            PRINT_DBG_CPU("XOR L\n");
+            A = opXOR(L);
+            cycles = 4;
+            break;
+
+        case 0xAE: // XOR (HL)
             PRINT_DBG_CPU("XOR (HL)\n");
-            uint8_t value = read(getHL());
-            A ^= value;
-            F = 0;
-            if (A == 0) {
-                F |= FlagZ;
-            }
+            A = opXOR(read(getHL()));
             cycles = 8;
             break;
-        }
 
         case 0xAF: // XOR A
             PRINT_DBG_CPU("XOR A\n");
-            A ^= A;
-            F = FlagZ;
+            A = opXOR(A);
             cycles = 4;
             break;
 
@@ -1547,12 +1857,32 @@ void GbCPU::execute(uint8_t opcode) {
             cycles = 16;
             break;
 
-        case 0xE6: { // AND d8
+        case 0xE6: {
             uint8_t imm8 = fetch();
+
             PRINT_DBG_CPU("AND $0x%02X\n", imm8);
-            A &= imm8;
-            F = ((A == 0) ? FlagZ : 0) | FlagH;
+
+            A = opAND(imm8);
+
             cycles = 8;
+            break;
+        }
+
+        case 0xE8: {
+            int8_t offset = (int8_t)fetch();
+            PRINT_DBG_CPU("ADD SP, %d\n", offset);
+
+            uint16_t unsignedOff = (uint16_t)(uint8_t)offset;
+            bool hFlag = ((SP & 0x0F) + (unsignedOff & 0x0F)) > 0x0F;
+            bool cFlag = ((SP & 0xFF) + (unsignedOff & 0xFF)) > 0xFF;
+
+            SP = (uint16_t)(SP + offset);
+
+            F = 0;
+            if (hFlag) F |= FlagH;
+            if (cFlag) F |= FlagC;
+
+            cycles = 16;
             break;
         }
 
@@ -1571,17 +1901,11 @@ void GbCPU::execute(uint8_t opcode) {
             break;
         }
 
-        case 0xEE: {
-            uint8_t imm8 = fetch();
+        case 0xEE: // XOR d8
             PRINT_DBG_CPU("XOR $0x%02X\n", imm8);
-            A ^= imm8;
-            F = 0;
-            if (A == 0) {
-                F |= FlagZ;
-            }
+            A = opXOR(fetch());
             cycles = 8;
             break;
-        }
 
         case 0xEF: { // RST $28
             PRINT_DBG_CPU("RST $28\n");
@@ -1632,6 +1956,31 @@ void GbCPU::execute(uint8_t opcode) {
             uint8_t imm8 = fetch();
             PRINT_DBG_CPU("OR $0x%02X\n", imm8);
             A = opOR(imm8);
+            cycles = 8;
+            break;
+        }
+
+        case 0xF8: {
+            int8_t offset = (int8_t)fetch();
+            PRINT_DBG_CPU("LD HL, SP + %d\n", offset);
+
+            uint16_t unsignedOff = (uint16_t)(uint8_t)offset;
+            bool hFlag = ((SP & 0x0F) + (unsignedOff & 0x0F)) > 0x0F;
+            bool cFlag = ((SP & 0xFF) + (unsignedOff & 0xFF)) > 0xFF;
+
+            setHL((uint16_t)(SP + offset));
+
+            F = 0;
+            if (hFlag) F |= FlagH;
+            if (cFlag) F |= FlagC;
+
+            cycles = 12;
+            break;
+        }
+
+        case 0xF9: {
+            PRINT_DBG_CPU("LD SP, HL\n");
+            SP = (uint16_t)((H << 8) | L);
             cycles = 8;
             break;
         }

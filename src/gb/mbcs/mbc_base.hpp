@@ -6,7 +6,7 @@
 class MBCBase : public HasGBBus {
 public:
     struct MemPage {
-        uint8_t* ptr = nullptr;
+        uint8_t *ptr = nullptr;
         bool write = false;
     };
 
