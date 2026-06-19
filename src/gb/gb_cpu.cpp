@@ -16,6 +16,8 @@ void GbCPU::reset() {
     PC = 0x0100;
     cycles = 0;
     IME = false;
+    EIPending = 0;
+    HALTBug = false;
 
     IE = 0; IF = 0xe1;
 
@@ -50,13 +52,15 @@ static const uint16_t interruptVectors[5] = {
 };
 
 void GbCPU::handleInterrupts() {
-    if (halted && (IF & IE & 0x1F)) {
+    uint8_t pending = IF & IE & 0x1F;
+
+    if (halted && pending) {
         halted = false;
+        if (!IME) {
+            HALTBug = true;
+        }
     }
     if (!IME) return;
-
-    uint8_t pending = IF & IE & 0x1F;
-    if (!pending) return;
 
     for (int i = 0; i < 5; i++) {
         if (pending & (1 << i)) {
@@ -117,13 +121,16 @@ void GbCPU::run(uint32_t maxCycles) {
         if (cycles == 0) {
             if (halted) {
                 cycles = 4;
-
-                if (!IME && (IF & IE & 0x01F)) {
-                    halted = false;
-                }
             } else {
                 uint8_t opcode = fetch();
                 execute(opcode);
+
+                if (EIPending > 0) {
+                    EIPending--;
+                    if (EIPending == 0) {
+                        IME = true;
+                    }
+                }
             }
         }
         
@@ -2071,7 +2078,7 @@ void GbCPU::execute(uint8_t opcode) {
 
         case 0xFB: // EI
             PRINT_DBG_CPU("EI\n");
-            IME = true; 
+            EIPending = 2; 
             cycles = 4;
             break;
 

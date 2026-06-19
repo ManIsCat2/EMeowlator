@@ -29,6 +29,8 @@ public:
     uint8_t TAC = 0;
     uint8_t dataBus = 0;
     bool IME = false;
+    uint8_t EIPending = 0;
+    bool HALTBug = false;
 
     void reset();
 
@@ -330,7 +332,15 @@ private:
         }
     }
 
-    uint8_t fetch() { return dataBus = read(PC++); }
+    uint8_t fetch() { 
+        uint8_t opcode = read(PC);
+        if (HALTBug) {
+            HALTBug = false;
+        } else {
+            PC++;
+        }
+        return dataBus = opcode;
+    }
     uint16_t fetch16() { return fetch() | (fetch() << 8); }
 };
 
