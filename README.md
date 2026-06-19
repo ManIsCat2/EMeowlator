@@ -46,7 +46,7 @@ sudo dnf install qt6-qtbase-devel SDL2-devel make clang
 
 ### Windows (MinGW)
 ```bash
-pacman -S mingw-w64-x86_64-SDL2 mingw-w64-x86_64-qt6 mingw-w64-x86_64-toolchain
+pacman -S mingw-w64-x86_64-SDL2 mingw-w64-x86_64-qt6 mingw-w64-x86_64-toolchain mingw-w64-x86_64-ntldd mingw-w64-x86_64-pkg-config
 ```
 
 ## Step 2: Clone the Repository

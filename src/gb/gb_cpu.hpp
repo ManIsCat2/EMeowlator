@@ -208,146 +208,125 @@ private:
         return result;
     }
 
-    uint8_t cbRL(uint8_t v) {
-        uint8_t oldCarry = (F & FlagC) ? 1 : 0;
-        uint8_t newCarry = (v & 0x80) ? 1 : 0;
-
-        v = (v << 1) | oldCarry;
-
+    uint8_t cbRLC(uint8_t v) {
+        uint8_t carry = (v >> 7) & 1;
+        uint8_t result = (v << 1) | carry;
         F = 0;
-        if (v == 0) F |= FlagZ;
-        if (newCarry) F |= FlagC;
+        if (result == 0) {
+            F |= FlagZ;
+        }
+        if (carry != 0) {
+            F |= FlagC;
+        }
+        return result;
+    }
 
-        return v;
+    uint8_t cbRRC(uint8_t v) {
+        uint8_t carry = v & 1;
+        uint8_t result = (v >> 1) | (carry << 7);
+        F = 0;
+        if (result == 0) {
+            F |= FlagZ;
+        }
+        if (carry != 0) {
+            F |= FlagC;
+        }
+        return result;
+    }
+
+    uint8_t cbRL(uint8_t v) {
+        uint8_t oldCarry = 0;
+        if ((F & FlagC) != 0) {
+            oldCarry = 1;
+        }
+        uint8_t newCarry = (v >> 7) & 1;
+        uint8_t result = (v << 1) | oldCarry;
+        F = 0;
+        if (result == 0) {
+            F |= FlagZ;
+        }
+        if (newCarry != 0) {
+            F |= FlagC;
+        }
+        return result;
     }
 
     uint8_t cbRR(uint8_t v) {
-        uint8_t oldCarry = (F & FlagC) ? 1 : 0;
-        uint8_t newCarry = (v & 0x01) ? 1 : 0;
-
-        v = (v >> 1) | (oldCarry << 7);
-
+        uint8_t oldCarry = 0;
+        if ((F & FlagC) != 0) {
+            oldCarry = 1;
+        }
+        uint8_t newCarry = v & 1;
+        uint8_t result = (v >> 1) | (oldCarry << 7);
         F = 0;
-        if (v == 0) F |= FlagZ;
-        if (newCarry) F |= FlagC;
-
-        return v;
+        if (result == 0) {
+            F |= FlagZ;
+        }
+        if (newCarry != 0) {
+            F |= FlagC;
+        }
+        return result;
     }
 
     uint8_t cbSLA(uint8_t v) {
-        uint8_t carry = v & 0x80;
-
-        v <<= 1;
-
+        uint8_t carry = (v >> 7) & 1;
+        uint8_t result = v << 1;
         F = 0;
-        if (v == 0) F |= FlagZ;
-        if (carry) F |= FlagC;
+        if (result == 0) {
+            F |= FlagZ;
+        }
+        if (carry != 0) {
+            F |= FlagC;
+        }
+        return result;
+    }
 
-        return v;
+    uint8_t cbSRA(uint8_t v) {
+        uint8_t carry = v & 1;
+        uint8_t sign = v & 0x80;
+        uint8_t result = (v >> 1) | sign;
+        F = 0;
+        if (result == 0) {
+            F |= FlagZ;
+        }
+        if (carry != 0) {
+            F |= FlagC;
+        }
+
+        return result;
     }
 
     uint8_t cbSRL(uint8_t v) {
         uint8_t carry = v & 1;
-
-        v >>= 1;
-
+        uint8_t result = v >> 1;
         F = 0;
-        if (v == 0) F |= FlagZ;
-        if (carry) F |= FlagC;
-
-        return v;
+        if (result == 0) {
+            F |= FlagZ;
+        }
+        if (carry != 0) {
+            F |= FlagC;
+        }
+        return result;
     }
 
     uint8_t cbSWAP(uint8_t v) {
-        v = (v << 4) | (v >> 4);
-
-        F = (v == 0) ? FlagZ : 0;
-
-        return v;
-    }
-
-    void cbBITHalf(int bit, uint8_t value) {
-        F &= FlagC;
-        F |= FlagH;
-        F &= ~FlagN;
-
-        if (!(value & (1 << bit)))
+        uint8_t low = v & 0x0F;
+        uint8_t high = v & 0xF0;
+        uint8_t result = (low << 4) | (high >> 4);
+        F = 0;
+        if (result == 0) {
             F |= FlagZ;
-        else
+        }
+        return result;
+    }
+
+    void cbBIT(int bit, uint8_t v) {
+        F &= ~FlagN;
+        F |= FlagH;
+        if ((v & (1 << bit)) == 0) {
+            F |= FlagZ;
+        } else {
             F &= ~FlagZ;
-    }
-
-    void cbBIT(uint8_t opcode) {
-        int bit = (opcode >> 3) & 7;
-        int reg = opcode & 7;
-
-        switch (reg) {
-            case 0: cbBITHalf(bit, B); break;
-            case 1: cbBITHalf(bit, C); break;
-            case 2: cbBITHalf(bit, D); break;
-            case 3: cbBITHalf(bit, E); break;
-            case 4: cbBITHalf(bit, H); break;
-            case 5: cbBITHalf(bit, L); break;
-            case 6: cbBITHalf(bit, read(getHL())); break;
-            case 7: cbBITHalf(bit, A); break;
-        }
-    }
-
-    uint8_t cbSETValue(int bit, uint8_t value) {
-        return value | (1 << bit);
-    }
-
-    void cbSET(uint8_t opcode) {
-        int bit = (opcode >> 3) & 7;
-        int reg = opcode & 7;
-
-        uint16_t hl = getHL();
-
-        switch (reg) {
-            case 0: B = cbSETValue(bit, B); break;
-            case 1: C = cbSETValue(bit, C); break;
-            case 2: D = cbSETValue(bit, D); break;
-            case 3: E = cbSETValue(bit, E); break;
-            case 4: H = cbSETValue(bit, H); break;
-            case 5: L = cbSETValue(bit, L); break;
-
-            case 6: {
-                uint8_t v = read(hl);
-                v = cbSETValue(bit, v);
-                write(hl, v);
-                break;
-            }
-
-            case 7: A = cbSETValue(bit, A); break;
-        }
-    }
-
-    uint8_t cbRESValue(int bit, uint8_t value) {
-        return value & ~(1 << bit);
-    }
-
-    void cbRES(uint8_t opcode) {
-        int bit = (opcode >> 3) & 7;
-        int reg = opcode & 7;
-
-        uint16_t hl = getHL();
-
-        switch (reg) {
-            case 0: B = cbRESValue(bit, B); break;
-            case 1: C = cbRESValue(bit, C); break;
-            case 2: D = cbRESValue(bit, D); break;
-            case 3: E = cbRESValue(bit, E); break;
-            case 4: H = cbRESValue(bit, H); break;
-            case 5: L = cbRESValue(bit, L); break;
-
-            case 6: {
-                uint8_t v = read(hl);
-                v = cbRESValue(bit, v);
-                write(hl, v);
-                break;
-            }
-
-            case 7: A = cbRESValue(bit, A); break;
         }
     }
 

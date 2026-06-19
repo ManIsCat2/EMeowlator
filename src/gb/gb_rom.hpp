@@ -19,5 +19,8 @@ public:
     
     std::string Title = ""; 
 
+    bool hasBattery(void);
+    bool hasRAM(void);
+    bool hasRTC(void);
     bool load(const std::string &file) override;
 };

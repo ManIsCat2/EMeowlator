@@ -13,6 +13,48 @@ GbROM::~GbROM() {
     delete mbc;
 }
 
+bool GbROM::hasBattery(void) {
+    switch (cartType) {
+        case 0x03:
+        case 0x06:
+        case 0x09:
+        case 0x0F:
+        case 0x10:
+        case 0x13:
+        case 0x1B:
+        case 0x1E:
+        case 0x22:
+        case 0xFF:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool GbROM::hasRTC(void) {
+    switch (cartType) {
+        case 0x0F:
+        case 0x10:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool GbROM::hasRAM(void) {
+    switch (cartType) {
+        case 0x02: case 0x03:
+        case 0x08: case 0x09:
+        case 0x10: case 0x12: case 0x13:
+        case 0x1A: case 0x1B: case 0x1D: case 0x1E:
+        case 0x22:
+        case 0xFF:
+            return true;
+        default:
+            return false;
+    }
+}
+
 bool GbROM::load(const std::string &filename) {
     std::filesystem::path Path(filename);
     Name = Path.filename().string();

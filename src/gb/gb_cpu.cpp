@@ -260,6 +260,13 @@ void GbCPU::execute(uint8_t opcode) {
             break;
         }
 
+        case 0x10: // STOP
+            PRINT_DBG_CPU("STOP\n");
+            fetch();
+            //halted = true; 
+            cycles = 4;
+            break;
+
         case 0x11: { // LD DE, d16
             uint16_t imm16 = fetch16();
             PRINT_DBG_CPU("LD DE, $0x%04X\n", imm16);
@@ -624,6 +631,14 @@ void GbCPU::execute(uint8_t opcode) {
             PRINT_DBG_CPU("LD (HL), $0x%02X\n", imm8);
             write(getHL(), imm8);
             cycles = 12;
+            break;
+        }
+
+        case 0x37: { // SCF
+            PRINT_DBG_CPU("SCF\n");
+            F &= ~(FlagN | FlagH);
+            F |= FlagC;
+            cycles = 4;
             break;
         }
         
@@ -1642,6 +1657,14 @@ void GbCPU::execute(uint8_t opcode) {
             break;
         }
 
+        case 0xC7:
+            PRINT_DBG_CPU("RST 00H\n");
+            push((PC >> 8) & 0xFF);
+            push(PC & 0xFF);
+            PC = 0x0000;
+            cycles = 16;
+            break;
+
         case 0xCD: { // CALL nn
             uint16_t dest = fetch16();
             PRINT_DBG_CPU("CALL $0x%04X\n", dest);
@@ -1651,6 +1674,14 @@ void GbCPU::execute(uint8_t opcode) {
             cycles = 24;
             break;
         }
+
+        case 0xCF:
+            PRINT_DBG_CPU("RST 08H\n");
+            push((PC >> 8) & 0xFF);
+            push(PC & 0xFF);
+            PC = 0x0008;
+            cycles = 16;
+            break;
 
         case 0xC5: // PUSH BC
             PRINT_DBG_CPU("PUSH BC\n");
@@ -1771,27 +1802,6 @@ void GbCPU::execute(uint8_t opcode) {
             break;
         }
 
-        case 0xDA: {
-            uint16_t address = fetch16();
-            PRINT_DBG_CPU("JP C, $0x%04X\n", address);
-            
-            if (F & FlagC) {
-                PC = address;
-                cycles = 16;
-            } else {
-                cycles = 12;
-            }
-            break;
-        }
-
-        case 0xDE: {
-            uint8_t imm8 = fetch();
-            PRINT_DBG_CPU("SBC A, $0x%02X\n", imm8);
-            A = opSBC(imm8);
-            cycles = 8;
-            break;
-        }
-
         case 0xD5:
             PRINT_DBG_CPU("PUSH DE\n");
             push(D);
@@ -1806,6 +1816,14 @@ void GbCPU::execute(uint8_t opcode) {
             cycles = 8;
             break;
         }
+
+        case 0xD7:
+            PRINT_DBG_CPU("RST 10H\n");
+            push((PC >> 8) & 0xFF);
+            push(PC & 0xFF);
+            PC = 0x0010;
+            cycles = 16;
+            break;
 
         case 0xD8:
             PRINT_DBG_CPU("RET C\n");
@@ -1828,6 +1846,49 @@ void GbCPU::execute(uint8_t opcode) {
             cycles = 16;
             break;
         }
+
+        case 0xDA: {
+            uint16_t address = fetch16();
+            PRINT_DBG_CPU("JP C, $0x%04X\n", address);
+            
+            if (F & FlagC) {
+                PC = address;
+                cycles = 16;
+            } else {
+                cycles = 12;
+            }
+            break;
+        }
+
+        case 0xDC: {
+            uint16_t addr = fetch16();
+            PRINT_DBG_CPU("CALL C, $0x%04X\n", addr);
+            if (F & FlagC) {
+                push((PC >> 8) & 0xFF);
+                push(PC & 0xFF);
+                PC = addr;
+                cycles = 24;
+            } else {
+                cycles = 12;
+            }
+            break;
+        }
+
+        case 0xDE: {
+            uint8_t imm8 = fetch();
+            PRINT_DBG_CPU("SBC A, $0x%02X\n", imm8);
+            A = opSBC(imm8);
+            cycles = 8;
+            break;
+        }
+
+        case 0xDF:
+            PRINT_DBG_CPU("RST 18H\n");
+            push((PC >> 8) & 0xFF);
+            push(PC & 0xFF);
+            PC = 0x0018;
+            cycles = 16;
+            break;
 
         case 0xE0: { // LDH (a8), A
             uint8_t offset = fetch();
@@ -1859,14 +1920,19 @@ void GbCPU::execute(uint8_t opcode) {
 
         case 0xE6: {
             uint8_t imm8 = fetch();
-
             PRINT_DBG_CPU("AND $0x%02X\n", imm8);
-
             A = opAND(imm8);
-
             cycles = 8;
             break;
         }
+
+        case 0xE7:
+            PRINT_DBG_CPU("RST 20H\n");
+            push((PC >> 8) & 0xFF);
+            push(PC & 0xFF);
+            PC = 0x0020;
+            cycles = 16;
+            break;
 
         case 0xE8: {
             int8_t offset = (int8_t)fetch();
@@ -1901,11 +1967,13 @@ void GbCPU::execute(uint8_t opcode) {
             break;
         }
 
-        case 0xEE: // XOR d8
+        case 0xEE: { // XOR d8
+            uint8_t imm8 = fetch();
             PRINT_DBG_CPU("XOR $0x%02X\n", imm8);
-            A = opXOR(fetch());
+            A = opXOR(imm8);
             cycles = 8;
             break;
+        }
 
         case 0xEF: { // RST $28
             PRINT_DBG_CPU("RST $28\n");
@@ -1960,6 +2028,14 @@ void GbCPU::execute(uint8_t opcode) {
             break;
         }
 
+        case 0xF7:
+            PRINT_DBG_CPU("RST 30H\n");
+            push((PC >> 8) & 0xFF);
+            push(PC & 0xFF);
+            PC = 0x0030;
+            cycles = 16;
+            break;
+
         case 0xF8: {
             int8_t offset = (int8_t)fetch();
             PRINT_DBG_CPU("LD HL, SP + %d\n", offset);
@@ -2012,9 +2088,17 @@ void GbCPU::execute(uint8_t opcode) {
             break;
         }
 
+        case 0xFF:
+            PRINT_DBG_CPU("RST 38H\n");
+            push((PC >> 8) & 0xFF);
+            push(PC & 0xFF);
+            PC = 0x0038;
+            cycles = 16;
+            break;
+
         case 0xCB: { // prefix CB
             uint8_t cbOpcode = fetch();
-            PRINT_DBG_CPU("CB ");
+            PRINT_DBG_CPU("CB %u\n", cbOpcode);
             executeCB(cbOpcode);
             break;
         }
@@ -2031,67 +2115,72 @@ void GbCPU::execute(uint8_t opcode) {
     }
 }
 
-void GbCPU::executeCB(uint8_t cbOpcode) {
-    switch (cbOpcode) {
-        case 0x10: B = cbRL(B); break;
-        case 0x11: C = cbRL(C); break;
-        case 0x12: D = cbRL(D); break;
-        case 0x13: E = cbRL(E); break;
-        case 0x14: H = cbRL(H); break;
-        case 0x15: L = cbRL(L); break;
-        case 0x17: A = cbRL(A); break;
-        case 0x18: B = cbRR(B); break;
-        case 0x19: C = cbRR(C); break;
-        case 0x1A: D = cbRR(D); break;
-        case 0x1B: E = cbRR(E); break;
-        case 0x1C: H = cbRR(H); break;
-        case 0x1D: L = cbRR(L); break;
-        case 0x1F: A = cbRR(A); break;
-        case 0x20: B = cbSLA(B); break;
-        case 0x21: C = cbSLA(C); break;
-        case 0x22: D = cbSLA(D); break;
-        case 0x23: E = cbSLA(E); break;
-        case 0x24: H = cbSLA(H); break;
-        case 0x25: L = cbSLA(L); break;
-        case 0x27: A = cbSLA(A); break;
-        case 0x30: B = cbSWAP(B); break;
-        case 0x31: C = cbSWAP(C); break;
-        case 0x32: D = cbSWAP(D); break;
-        case 0x33: E = cbSWAP(E); break;
-        case 0x34: H = cbSWAP(H); break;
-        case 0x35: L = cbSWAP(L); break;
-        case 0x37: A = cbSWAP(A); break;
-        case 0x38: B = cbSRL(B); break;
-        case 0x39: C = cbSRL(C); break;
-        case 0x3A: D = cbSRL(D); break;
-        case 0x3B: E = cbSRL(E); break;
-        case 0x3C: H = cbSRL(H); break;
-        case 0x3D: L = cbSRL(L); break;
-        case 0x3F: A = cbSRL(A); break;
-        case 0x40 ... 0x7F:
-            cbBIT(cbOpcode);
-            break;
-       case 0x80 ... 0xBF:
-            cbRES(cbOpcode);
-            break;
-        case 0xC0 ... 0xFF:
-            cbSET(cbOpcode);
-            break;
-        default: {
-            char errorMsg[256];
-            sprintf(errorMsg, "CPU crashed after reaching unimplemented CB 0x%02X", cbOpcode);
-            romIsLoaded = false;
-            reset();
-            DebugPrintLog("CPU", "%s", errorMsg);
-            QMessageBox::critical((QMainWindow*)globalQTWin, "Fatal error", errorMsg);
-            break;
-        }
-    }
+void GbCPU::executeCB(uint8_t opcode) {
+    int mode = (opcode >> 6) & 3; 
+    int param = (opcode >> 3) & 7;
+    int reg = opcode & 7;
 
-    if ((cbOpcode & 0x07) == 6) {
+    uint8_t value = 0;
+    uint16_t hlAddr = getHL();
+
+    if (reg == 6) {
+        value = read(hlAddr);
         cycles = 16;
     } else {
+        switch (reg) {
+            case 0: value = B; break;
+            case 1: value = C; break;
+            case 2: value = D; break;
+            case 3: value = E; break;
+            case 4: value = H; break;
+            case 5: value = L; break;
+            case 7: value = A; break;
+        }
         cycles = 8;
+    }
+
+    switch (mode) {
+        case 0:
+            switch (param) {
+                case 0: value = cbRLC(value); break;
+                case 1: value = cbRRC(value); break;
+                case 2: value = cbRL(value); break;
+                case 3: value = cbRR(value); break;
+                case 4: value = cbSLA(value); break;
+                case 5: value = cbSRA(value); break;
+                case 6: value = cbSWAP(value); break;
+                case 7: value = cbSRL(value); break;
+            }
+            break;
+
+        case 1:
+            cbBIT(param, value);
+            if (reg == 6) {
+                cycles = 12;
+            }
+            return;
+
+        case 2:
+            value &= ~(1 << param);
+            break;
+
+        case 3:
+            value |= (1 << param);
+            break;
+    }
+
+    if (reg == 6) {
+        write(hlAddr, value);
+    } else {
+        switch (reg) {
+            case 0: B = value; break;
+            case 1: C = value; break;
+            case 2: D = value; break;
+            case 3: E = value; break;
+            case 4: H = value; break;
+            case 5: L = value; break;
+            case 7: A = value; break;
+        }
     }
 }
 

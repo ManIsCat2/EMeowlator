@@ -77,12 +77,19 @@ bool loadConsoleWithGame(const std::string &file) {
     bool allow = false;
     std::string matchedExt = "";
 
-    for (auto &ext : allowedExts) {
-        if (file.length() >= ext.length() && 
-            file.compare(file.length() - ext.length(), ext.length(), ext) == 0) {
-            allow = true;
-            matchedExt = ext;
-            break;
+    size_t dotPos = file.find_last_of(".");
+    if (dotPos != std::string::npos) {
+        std::string rawExt = file.substr(dotPos);
+        for (size_t i = 0; i < rawExt.length(); i++) {
+            rawExt[i] = std::tolower(rawExt[i]);
+        }
+
+        for (auto &ext : allowedExts) {
+            if (rawExt == ext) {
+                allow = true;
+                matchedExt = ext;
+                break;
+            }
         }
     }
     
