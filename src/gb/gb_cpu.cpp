@@ -29,6 +29,8 @@ void GbCPU::reset() {
     divCounter = 0;
     timerCounter = 0;
 
+    serialData = 0;
+    serialControl = 0;
     joypadReg = 0x30;
 
     halted = false;
@@ -2199,7 +2201,7 @@ uint8_t GbCPU::read(uint16_t addr) {
         return ppu->readOAM(addr);
     }
     if (addr >= 0xFEA0 && addr <= 0xFEFF) {
-        return dataBus;
+        return 0xff;
     }
 
     if (addr == 0xFF00) {
@@ -2240,8 +2242,8 @@ uint8_t GbCPU::read(uint16_t addr) {
     if (addr == 0xFF07) {
         return TAC;
     }
-    if (addr >= 0xFF01 && addr <= 0xFF7F) {
-        return 0x00;
+    if (addr >= 0xFF10 && addr <= 0xFF3F) { // apu
+        return 0;
     }
     if (addr >= 0xC000 && addr <= 0xDFFF) {
         return getGBRom()->mbc->WRAM[addr - 0xC000];
@@ -2252,6 +2254,12 @@ uint8_t GbCPU::read(uint16_t addr) {
     if (addr >= 0xFF80 && addr <= 0xFFFE) {
         return getGBRom()->mbc->HRAM[addr - 0xFF80];
     }
+    if (addr == 0xFF01) {
+        return serialData;
+    }
+    if (addr == 0xFF02) {
+        return serialControl;
+    }
     if (addr == 0xFFFF) {
         return IE;
     }
@@ -2259,7 +2267,6 @@ uint8_t GbCPU::read(uint16_t addr) {
 }
 
 void GbCPU::write(uint16_t addr, uint8_t value) {
-    dataBus = value;
     if (addr >= 0x8000 && addr <= 0x9FFF) {
         ppu->writeVRAM(addr, value);
         return;
@@ -2312,7 +2319,7 @@ void GbCPU::write(uint16_t addr, uint8_t value) {
         TAC = value & 0x07;
         return;
     }
-    if (addr >= 0xFF01 && addr <= 0xFF7F) {
+    if (addr >= 0xFF10 && addr <= 0xFF3F) { // apu
         return;
     }
     if (addr >= 0xC000 && addr <= 0xDFFF) {
@@ -2325,6 +2332,20 @@ void GbCPU::write(uint16_t addr, uint8_t value) {
     }
     if (addr >= 0xFF80 && addr <= 0xFFFE) {
         getGBRom()->mbc->HRAM[addr - 0xFF80] = value;
+        return;
+    }
+
+    if (addr == 0xFF01) {
+        serialData = value;
+        return;
+    }
+    if (addr == 0xFF02) {
+        if (value & 0x80) {
+            serialControl = (value & 0x7F);
+            IF |= 0x08;
+        } else {
+            serialControl = value;
+        }
         return;
     }
     if (addr == 0xFFFF) {

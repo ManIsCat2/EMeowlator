@@ -27,10 +27,12 @@ public:
     uint8_t TIMA = 0;
     uint8_t TMA = 0;
     uint8_t TAC = 0;
-    uint8_t dataBus = 0;
     bool IME = false;
     uint8_t EIPending = 0;
     bool HALTBug = false;
+
+    uint8_t serialData = 0;
+    uint8_t serialControl = 0;
 
     void reset();
 
@@ -339,7 +341,7 @@ private:
         } else {
             PC++;
         }
-        return dataBus = opcode;
+        return opcode;
     }
     uint16_t fetch16() { return fetch() | (fetch() << 8); }
 };

@@ -120,6 +120,7 @@ bool GbROM::load(const std::string &filename) {
         case 0x11:
         case 0x12:
         case 0x13:
+            mbc = new MBC3();
             break;
 
         case 0x19:
