@@ -2194,14 +2194,13 @@ void GbCPU::executeCB(uint8_t opcode) {
 }
 
 uint8_t GbCPU::read(uint16_t addr) {
+    GbROM *rom = getGBRom();
+
     if (addr >= 0x8000 && addr <= 0x9FFF) {
         return ppu->readVRAM(addr);
     }
     if (addr >= 0xFE00 && addr <= 0xFE9F) {
         return ppu->readOAM(addr);
-    }
-    if (addr >= 0xFEA0 && addr <= 0xFEFF) {
-        return 0xff;
     }
 
     if (addr == 0xFF00) {
@@ -2246,13 +2245,13 @@ uint8_t GbCPU::read(uint16_t addr) {
         return 0;
     }
     if (addr >= 0xC000 && addr <= 0xDFFF) {
-        return getGBRom()->mbc->WRAM[addr - 0xC000];
+        return rom->mbc->WRAM[addr - 0xC000];
     }
     if (addr >= 0xE000 && addr <= 0xFDFF) {
-        return getGBRom()->mbc->WRAM[addr - 0x2000];
+        return rom->mbc->WRAM[addr - 0x2000];
     }
     if (addr >= 0xFF80 && addr <= 0xFFFE) {
-        return getGBRom()->mbc->HRAM[addr - 0xFF80];
+        return rom->mbc->HRAM[addr - 0xFF80];
     }
     if (addr == 0xFF01) {
         return serialData;
@@ -2263,10 +2262,12 @@ uint8_t GbCPU::read(uint16_t addr) {
     if (addr == 0xFFFF) {
         return IE;
     }
-    return getGBRom()->mbc->cpuRead(addr);
+    return rom->mbc->cpuRead(addr);
 }
 
 void GbCPU::write(uint16_t addr, uint8_t value) {
+    GbROM *rom = getGBRom();
+
     if (addr >= 0x8000 && addr <= 0x9FFF) {
         ppu->writeVRAM(addr, value);
         return;
@@ -2275,10 +2276,6 @@ void GbCPU::write(uint16_t addr, uint8_t value) {
         ppu->writeOAM(addr, value);
         return;
     }
-    if (addr >= 0xFEA0 && addr <= 0xFEFF) {
-        return;
-    }
-
     if (addr == 0xFF00) {
         joypadReg = (joypadReg & 0xCF) | (value & 0x30);
         return;
@@ -2323,15 +2320,15 @@ void GbCPU::write(uint16_t addr, uint8_t value) {
         return;
     }
     if (addr >= 0xC000 && addr <= 0xDFFF) {
-        getGBRom()->mbc->WRAM[addr - 0xC000] = value;
+        rom->mbc->WRAM[addr - 0xC000] = value;
         return;
     }
     if (addr >= 0xE000 && addr <= 0xFDFF) {
-        getGBRom()->mbc->WRAM[addr - 0x2000] = value;
+        rom->mbc->WRAM[addr - 0x2000] = value;
         return;
     }
     if (addr >= 0xFF80 && addr <= 0xFFFE) {
-        getGBRom()->mbc->HRAM[addr - 0xFF80] = value;
+        rom->mbc->HRAM[addr - 0xFF80] = value;
         return;
     }
 
@@ -2352,7 +2349,7 @@ void GbCPU::write(uint16_t addr, uint8_t value) {
         IE = value;
         return;
     }
-    getGBRom()->mbc->cpuWrite(addr, value);
+    rom->mbc->cpuWrite(addr, value);
 }
 
 
