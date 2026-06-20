@@ -2192,6 +2192,9 @@ void GbCPU::executeCB(uint8_t opcode) {
 }
 
 uint8_t GbCPU::read(uint16_t addr) {
+    if (addr >= 0x8000 && addr <= 0x9FFF) {
+        return ppu->readVRAM(addr);
+    }
     if (addr >= 0xFE00 && addr <= 0xFE9F) {
         return ppu->readOAM(addr);
     }
@@ -2240,6 +2243,12 @@ uint8_t GbCPU::read(uint16_t addr) {
     if (addr >= 0xFF01 && addr <= 0xFF7F) {
         return 0x00;
     }
+    if (addr >= 0xC000 && addr <= 0xDFFF) {
+        return getGBRom()->mbc->WRAM[addr - 0xC000];
+    }
+    if (addr >= 0xE000 && addr <= 0xFDFF) {
+        return getGBRom()->mbc->WRAM[addr - 0x2000];
+    }
     if (addr >= 0xFF80 && addr <= 0xFFFE) {
         return getGBRom()->mbc->HRAM[addr - 0xFF80];
     }
@@ -2251,6 +2260,10 @@ uint8_t GbCPU::read(uint16_t addr) {
 
 void GbCPU::write(uint16_t addr, uint8_t value) {
     dataBus = value;
+    if (addr >= 0x8000 && addr <= 0x9FFF) {
+        ppu->writeVRAM(addr, value);
+        return;
+    }
     if (addr >= 0xFE00 && addr <= 0xFE9F) {
         ppu->writeOAM(addr, value);
         return;
@@ -2302,6 +2315,14 @@ void GbCPU::write(uint16_t addr, uint8_t value) {
     if (addr >= 0xFF01 && addr <= 0xFF7F) {
         return;
     }
+    if (addr >= 0xC000 && addr <= 0xDFFF) {
+        getGBRom()->mbc->WRAM[addr - 0xC000] = value;
+        return;
+    }
+    if (addr >= 0xE000 && addr <= 0xFDFF) {
+        getGBRom()->mbc->WRAM[addr - 0x2000] = value;
+        return;
+    }
     if (addr >= 0xFF80 && addr <= 0xFFFE) {
         getGBRom()->mbc->HRAM[addr - 0xFF80] = value;
         return;
@@ -2312,6 +2333,7 @@ void GbCPU::write(uint16_t addr, uint8_t value) {
     }
     getGBRom()->mbc->cpuWrite(addr, value);
 }
+
 
 void GbCPU::push(uint8_t value) {
     SP--;

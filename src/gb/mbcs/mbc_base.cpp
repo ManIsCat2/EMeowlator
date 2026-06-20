@@ -44,12 +44,12 @@ void MBCBase::initialize(void) {
     uint32_t ramSize = getGBRom()->ramSize;
     if (ramSize) {
         cartRAM = new uint8_t[ramSize];
-        //DebugPrintLog("ROM", "Cart has 0x%x bytes of CartRAM", ramSize);
+        DebugPrintLog("ROM", "Cart has 0x%x bytes of CartRAM", ramSize);
     }
 
-    mapCPUMemory(0x8000, 0x9FFF, ppu->VRAM, 0, true);
-    mapCPUMemory(0xC000, 0xDFFF, WRAM, 0, true);
-    mapCPUMemory(0xE000, 0xFDFF, WRAM, 0, true);
+    //mapCPUMemory(0x8000, 0x9FFF, ppu->VRAM, 0, true);
+    //mapCPUMemory(0xC000, 0xDFFF, WRAM, 0, true);
+    //mapCPUMemory(0xE000, 0xFDFF, WRAM, 0, true);
     //mapCPUMemory(0xFE00, 0xFE9F, ppu->OAM, 0, true);
     //mapCPUMemory(0xFF80, 0xFFFE, HRAM, 0, true);
 
