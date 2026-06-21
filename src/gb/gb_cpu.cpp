@@ -22,11 +22,11 @@ void GbCPU::reset() {
     IE = 0; IF = 0xe1;
 
     DIV = 0xAB;
+    DIVInternal = 0xAB00;
     TIMA = 0;
     TMA = 0;
     TAC = 0;
 
-    divCounter = 0;
     timerCounter = 0;
 
     serialData = 0;
@@ -60,6 +60,7 @@ void GbCPU::handleInterrupts() {
         halted = false;
         if (!IME) {
             HALTBug = true;
+            return;
         }
     }
     if (!IME) return;
@@ -74,39 +75,53 @@ void GbCPU::handleInterrupts() {
 
             PC = interruptVectors[i];
 
-            cycles += 20;
+            cycles = 20;
             return;
         }
     }
 }
 
 void GbCPU::updateTimers(uint8_t cycles) {
-    divCounter += cycles;
+    while (cycles--) {
+        uint16_t oldDiv = DIVInternal;
+        DIVInternal++;
 
-    while (divCounter >= 256) {
-        divCounter -= 256;
-        DIV++;
-    }
+        DIV = DIVInternal >> 8;
 
-    if (!(TAC & 0x04)) return;
+        if (!(TAC & 0x04)) continue;
 
-    int freq = 0;
-    switch (TAC & 0x03) {
-        case 0: freq = 1024; break;
-        case 1: freq = 16;   break;
-        case 2: freq = 64;   break;
-        case 3: freq = 256;  break;
-    }
+        bool oldBit = false;
+        bool newBit = false;
 
-    timerCounter += cycles;
-    while (timerCounter >= freq) {
-        timerCounter -= freq;
+        switch (TAC & 3) {
+            case 0:
+                oldBit = oldDiv & (1 << 9);
+                newBit = DIVInternal & (1 << 9);
+                break;
 
-        if (TIMA == 0xFF) {
-            TIMA = TMA;
-            IF |= 0x04;
-        } else {
-            TIMA++;
+            case 1:
+                oldBit = oldDiv & (1 << 3);
+                newBit = DIVInternal & (1 << 3);
+                break;
+
+            case 2:
+                oldBit = oldDiv & (1 << 5);
+                newBit = DIVInternal & (1 << 5);
+                break;
+
+            default:
+                oldBit = oldDiv & (1 << 7);
+                newBit = DIVInternal & (1 << 7);
+                break;
+        }
+
+        if (oldBit && !newBit) {
+            if (TIMA == 0xFF) {
+                TIMA = TMA;
+                IF |= 0x04;
+            } else {
+                TIMA++;
+            }
         }
     }
 }
@@ -2284,16 +2299,6 @@ void GbCPU::write(uint16_t addr, uint8_t value) {
         IF = value | 0xE0;
         return;
     }
-    
-    if (addr == 0xFF46) {
-        ppu->writeRegister(addr, value);
-        uint16_t srcHeader = value << 8;
-        for (uint16_t i = 0; i < 160; i++) {
-            uint8_t byteData = read(srcHeader + i); 
-            ppu->writeOAM(0xFE00 + i, byteData);
-        }
-        return;
-    }
 
     if (addr >= 0xFF40 && addr <= 0xFF4B) {
         ppu->writeRegister(addr, value);
@@ -2301,8 +2306,7 @@ void GbCPU::write(uint16_t addr, uint8_t value) {
     }
     if (addr == 0xFF04) {
         DIV = 0;
-        divCounter = 0;
-        timerCounter = 0;
+        DIVInternal = 0;
         return;
     }
     if (addr == 0xFF05) {

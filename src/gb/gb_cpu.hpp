@@ -21,9 +21,9 @@ public:
 
     bool paused = false;
 
-    uint16_t divCounter = 0;
     uint16_t timerCounter = 0;
     uint8_t DIV = 0;
+    uint16_t DIVInternal = 0;
     uint8_t TIMA = 0;
     uint8_t TMA = 0;
     uint8_t TAC = 0;

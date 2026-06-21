@@ -36,11 +36,34 @@ void GbPPU::Step(uint8_t cycles) {
     if (!(LCDC & 0x80)) {
         LY = 0;
         scanlineCounter = 456;
-        STAT = (STAT & ~0x03) | 0x00;
+        STAT = (STAT & ~0x03);
         return;
     }
 
     scanlineCounter -= cycles;
+
+    while (scanlineCounter <= 0) {
+        scanlineCounter += 456;
+        LY++;
+
+        if (LY == 144) {
+            cpu->IF |= 0x01;
+        }
+
+        if (LY > 153) {
+            LY = 0;
+        }
+
+        if (LY == LYC) {
+            STAT |= 0x04;
+
+            if (STAT & 0x40) {
+                cpu->IF |= 0x02;
+            }
+        } else {
+            STAT &= ~0x04;
+        }
+    }
 
     uint8_t oldMode = STAT & 0x03;
     uint8_t newMode;
@@ -75,30 +98,6 @@ void GbPPU::Step(uint8_t cycles) {
         }
 
         STAT = (STAT & ~0x03) | newMode;
-    }
-
-    while (scanlineCounter <= 0) {
-        scanlineCounter += 456;
-        LY++;
-
-        if (LY == 144) {
-            cpu->IF |= 0x01;
-
-            if (STAT & 0x10) cpu->IF |= 0x02;
-        }
-
-        if (LY > 153) {
-            LY = 0;
-        }
-
-        if (LY == LYC) {
-            STAT |= 0x04;
-
-            if (STAT & 0x40) cpu->IF |= 0x02;
-        }
-        else {
-            STAT &= ~0x04;
-        }
     }
 }
 
@@ -241,11 +240,11 @@ uint8_t GbPPU::readRegister(uint16_t addr) {
 void GbPPU::writeRegister(uint16_t addr, uint8_t value) {
     switch (addr) {
         case 0xFF40: {
-            uint8_t oldLCDC = LCDC;
             LCDC = value; 
-            if (!(oldLCDC & 0x80) && (LCDC & 0x80)) {
+            if (!(value & 0x80)) {
                 LY = 0;
                 scanlineCounter = 456;
+                STAT = (STAT & ~0x03);
             }
             break;
         }
@@ -255,8 +254,25 @@ void GbPPU::writeRegister(uint16_t addr, uint8_t value) {
         case 0xFF42: SCY = value; break;
         case 0xFF43: SCX = value; break;
         case 0xFF44: LY = 0; break;
-        case 0xFF45: LYC = value; break;
-        case 0xFF46: DMA = value; break;
+        case 0xFF45:
+            LYC = value;
+            if (LY == LYC) {
+                STAT |= 0x04;
+                if (STAT & 0x40) cpu->IF |= 0x02;
+            } else {
+                STAT &= ~0x04;
+            }
+
+            break;
+        case 0xFF46: {
+            DMA = value;
+
+            uint16_t src = value << 8;
+            for (int i = 0; i < 160; i++) {
+                OAM[i] = cpu->read(src + i);
+            }
+            break;
+        }
         case 0xFF47: BGP = value; break;
         case 0xFF48: OBP0 = value; break;
         case 0xFF49: OBP1 = value; break;
