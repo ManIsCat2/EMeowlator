@@ -147,6 +147,42 @@ void GbPPU::RenderScanline() {
         }
     }
 
+    if ((LCDC & 0x20) && LY >= WY) {
+        uint16_t windowTileMap = (LCDC & 0x40) ? 0x9C00 : 0x9800;
+
+        int windowY = LY - WY;
+        int tileRow = ((windowY / 8) & 31) * 32;
+
+        for (int pixel = 0; pixel < 160; pixel++) {
+            int windowX = pixel - (WX - 7);
+            if (windowX < 0) continue;
+
+            uint16_t tileCol = (windowX / 8) & 31;
+            uint16_t tileAddr = windowTileMap + tileRow + tileCol;
+            uint16_t tileDataLocation = 0;
+
+            if (isUnsigned) {
+                uint8_t tileNum = VRAM[tileAddr - 0x8000];
+                tileDataLocation = 0x8000 + tileNum * 16;
+            } else {
+                int8_t tileNum = (int8_t)VRAM[tileAddr - 0x8000];
+                tileDataLocation = 0x9000 + tileNum * 16;
+            }
+
+            uint8_t line = (windowY % 8) * 2;
+            uint8_t byte1 = VRAM[tileDataLocation + line - 0x8000];
+            uint8_t byte2 = VRAM[tileDataLocation + line + 1 - 0x8000];
+
+            int bit = 7 - (windowX % 8);
+
+            uint8_t colorId = (((byte2 >> bit) & 1) << 1) | ((byte1 >> bit) & 1);
+            bgLineColorIds[pixel] = colorId;
+
+            uint8_t shade = (BGP >> (colorId * 2)) & 3;
+            frameBuffer[LY * 160 + pixel] = originalGbcPal[shade];
+        }
+    }
+
     if (!(LCDC & 0x02)) return;
 
     bool use8x16 = (LCDC & 0x04);
@@ -253,7 +289,14 @@ void GbPPU::writeRegister(uint16_t addr, uint8_t value) {
             break;
         case 0xFF42: SCY = value; break;
         case 0xFF43: SCX = value; break;
-        case 0xFF44: LY = 0; break;
+        case 0xFF44:
+            LY = 0;
+            if (LY == LYC) {
+                STAT |= 0x04;
+            } else {
+                STAT &= ~0x04;
+            }
+            break;
         case 0xFF45:
             LYC = value;
             if (LY == LYC) {

@@ -25,21 +25,18 @@ void MBC3::updateBanks() {
     uint32_t numRomBanks = rom->RomSize / 0x4000;
     uint32_t activeRomBank = (romBank == 0) ? 1 : (romBank & 0x7F);
     mapCPUMemory(0x4000, 0x7FFF, rom->ROM, (activeRomBank % numRomBanks) * 0x4000, false);
-}
 
-uint8_t MBC3::cpuRead(uint16_t addr) {
-    if (addr >= 0xA000 && addr <= 0xBFFF) {
-        if (ramEnable && getGBRom()->hasRAM() && cartRAM && ramBank <= 0x03) {
-            return cartRAM[(ramBank * 0x2000) + (addr - 0xA000)];
-        }
+    if (ramEnable && rom->hasRAM() && cartRAM && ramBank <= 0x03) {
+        mapCPUMemory(0xA000, 0xBFFF, cartRAM, ramBank * 0x2000, true, rom->ramSize);
+    } else {
+        unmapCPUMemory(0xA000, 0xBFFF);
     }
-    
-    return MBCBase::cpuRead(addr);
 }
 
 void MBC3::cpuWrite(uint16_t addr, uint8_t value) {
     if (addr >= 0x0000 && addr <= 0x1FFF) {
         ramEnable = ((value & 0x0F) == 0x0A);
+        updateBanks();
         return;
     }
 
@@ -51,13 +48,7 @@ void MBC3::cpuWrite(uint16_t addr, uint8_t value) {
 
     if (addr >= 0x4000 && addr <= 0x5FFF) {
         ramBank = value;
-        return;
-    }
-
-    if (addr >= 0xA000 && addr <= 0xBFFF) {
-        if (ramEnable && getGBRom()->hasRAM() && cartRAM && ramBank <= 0x03) {
-            cartRAM[(ramBank * 0x2000) + (addr - 0xA000)] = value;
-        }
+        updateBanks();
         return;
     }
 

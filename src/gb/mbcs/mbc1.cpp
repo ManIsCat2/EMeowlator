@@ -49,16 +49,12 @@ void MBC1::updateBanks() {
     }
 
     mapCPUMemory(0x4000, 0x7FFF, rom->ROM, romBank * 0x4000, false);
-}
 
-uint8_t MBC1::cpuRead(uint16_t addr) {
     if (ramEnable && cartRAM) {
-        if (addr >= 0xA000 && addr <= 0xBFFF) {
-            return cartRAM[(ramBank * 0x2000) + (addr - 0xA000)];
-        }
+        mapCPUMemory(0xA000, 0xBFFF, cartRAM, ramBank * 0x2000, true, rom->ramSize);
+    } else {
+        unmapCPUMemory(0xA000, 0xBFFF);
     }
-    
-    return MBCBase::cpuRead(addr);
 }
 
 void MBC1::cpuWrite(uint16_t addr, uint8_t value) {
@@ -88,13 +84,6 @@ void MBC1::cpuWrite(uint16_t addr, uint8_t value) {
         bankingMode = value & 0x01;
         updateBanks();
         return;
-    }
-
-    if (ramEnable && cartRAM) {
-        if (addr >= 0xA000 && addr <= 0xBFFF) {
-            cartRAM[(ramBank * 0x2000) + (addr - 0xA000)] = value;
-            return;
-        }
     }
 
     MBCBase::cpuWrite(addr, value);

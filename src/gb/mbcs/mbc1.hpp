@@ -7,7 +7,6 @@ public:
 
     const char* getName(void) override;
     void reset() override;
-    uint8_t cpuRead(uint16_t addr) override;
     void cpuWrite(uint16_t addr, uint8_t value) override;
 private:
     bool ramEnable = false;

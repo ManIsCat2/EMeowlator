@@ -22,11 +22,12 @@ void MBCBase::cpuWrite(uint16_t addr, uint8_t value) {
     }
 }
 
-void MBCBase::mapCPUMemory(uint16_t start, uint16_t end, uint8_t *memory, uint32_t offset, bool writable) {
+void MBCBase::mapCPUMemory(uint16_t start, uint16_t end, uint8_t *memory, uint32_t offset, bool writable, uint32_t size) {
     uint8_t page = start >> 8;
+    uint32_t memSize = size ? size : getGBRom()->RomSize;
     
     for (uint32_t addr = start; addr <= end; addr += 0x100) {
-        CPUPages[page].ptr = memory + ((offset + (addr - start)) & (getGBRom()->RomSize - 1));
+        CPUPages[page].ptr = memory + ((offset + (addr - start)) & (memSize - 1));
         CPUPages[page].write = writable;
         page++;
     }
