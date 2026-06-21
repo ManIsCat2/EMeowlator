@@ -9,7 +9,7 @@ MBCBase::~MBCBase() {
 
 uint8_t MBCBase::cpuRead(uint16_t addr) {
     if (!CPUPages[addr >> 8].ptr) {
-        DebugPrintLog("MEM", "Read ignored: 0x%04x\n", addr);
+        DebugPrintLog("MEM", "Read ignored: 0x%04x", addr);
         return 0;
     }
     return CPUPages[addr >> 8].ptr[addr & 0xFF];
@@ -18,7 +18,7 @@ void MBCBase::cpuWrite(uint16_t addr, uint8_t value) {
     if (CPUPages[addr >> 8].write) {
         CPUPages[addr >> 8].ptr[addr & 0xFF] = value;
     } else {
-        DebugPrintLog("MEM", "Write ignored: 0x%04x\n", addr);
+        DebugPrintLog("MEM", "Write ignored: 0x%04x", addr);
     }
 }
 

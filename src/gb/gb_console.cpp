@@ -13,7 +13,7 @@
 #define DPAD_LEFT      (1 << 6)
 #define DPAD_RIGHT     (1 << 7)
 
-#define CYCLES_PER_FRAME 70224
+#define CYCLES_PER_FRAME (4194304.0 / 60.0)
 
 bool GBConsole::loadGame(const std::string &file) {
     if (!rom) {

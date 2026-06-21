@@ -29,7 +29,6 @@ void MBC3::updateBanks() {
 
 uint8_t MBC3::cpuRead(uint16_t addr) {
     if (addr >= 0xA000 && addr <= 0xBFFF) {
-        // mapCPUMemory doesnt work for this for some dumbass reason
         if (ramEnable && getGBRom()->hasRAM() && cartRAM && ramBank <= 0x03) {
             return cartRAM[(ramBank * 0x2000) + (addr - 0xA000)];
         }

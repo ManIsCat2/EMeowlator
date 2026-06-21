@@ -2250,14 +2250,14 @@ uint8_t GbCPU::read(uint16_t addr) {
     if (addr >= 0xE000 && addr <= 0xFDFF) {
         return rom->mbc->WRAM[addr - 0x2000];
     }
-    if (addr >= 0xFF80 && addr <= 0xFFFE) {
-        return rom->mbc->HRAM[addr - 0xFF80];
-    }
     if (addr == 0xFF01) {
         return serialData;
     }
     if (addr == 0xFF02) {
         return serialControl;
+    }
+    if (addr >= 0xFF80 && addr <= 0xFFFE) {
+        return rom->mbc->HRAM[addr - 0xFF80];
     }
     if (addr == 0xFFFF) {
         return IE;
@@ -2302,6 +2302,7 @@ void GbCPU::write(uint16_t addr, uint8_t value) {
     if (addr == 0xFF04) {
         DIV = 0;
         divCounter = 0;
+        timerCounter = 0;
         return;
     }
     if (addr == 0xFF05) {
@@ -2327,11 +2328,6 @@ void GbCPU::write(uint16_t addr, uint8_t value) {
         rom->mbc->WRAM[addr - 0x2000] = value;
         return;
     }
-    if (addr >= 0xFF80 && addr <= 0xFFFE) {
-        rom->mbc->HRAM[addr - 0xFF80] = value;
-        return;
-    }
-
     if (addr == 0xFF01) {
         serialData = value;
         return;
@@ -2343,6 +2339,13 @@ void GbCPU::write(uint16_t addr, uint8_t value) {
         } else {
             serialControl = value;
         }
+        if (value == 0x81) {
+            DebugPrintLog("GAMEBOY", "Serial output: %c (0x%02x)", serialData, serialData);
+        }
+        return;
+    }
+    if (addr >= 0xFF80 && addr <= 0xFFFE) {
+        rom->mbc->HRAM[addr - 0xFF80] = value;
         return;
     }
     if (addr == 0xFFFF) {

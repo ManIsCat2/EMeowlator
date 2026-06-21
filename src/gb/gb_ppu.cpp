@@ -83,6 +83,8 @@ void GbPPU::Step(uint8_t cycles) {
 
         if (LY == 144) {
             cpu->IF |= 0x01;
+
+            if (STAT & 0x10) cpu->IF |= 0x02;
         }
 
         if (LY > 153) {
