@@ -2257,7 +2257,7 @@ uint8_t GbCPU::read(uint16_t addr) {
         return 0;
     }
     if (addr >= 0xE000 && addr <= 0xFDFF) {
-        return rom->mbc->WRAM[addr - 0x2000];
+        return rom->mbc->WRAM[addr - 0xE000];
     }
     if (addr == 0xFF01) {
         return serialData;
@@ -2315,7 +2315,7 @@ void GbCPU::write(uint16_t addr, uint8_t value) {
         return;
     }
     if (addr >= 0xE000 && addr <= 0xFDFF) {
-        rom->mbc->WRAM[addr - 0x2000] = value;
+        rom->mbc->WRAM[addr - 0xE000] = value;
         return;
     }
     if (addr == 0xFF01) {

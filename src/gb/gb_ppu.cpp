@@ -29,13 +29,24 @@ GbPPU::~GbPPU() {
 
 void GbPPU::reset() {
     connectBus(&gbCpu, nullptr);
-    std::memset(VRAM, 0, sizeof(VRAM));
-    std::memset(OAM, 0, sizeof(OAM));
-    std::memset(frameBuffer, 0, sizeof(frameBuffer));
+
+    memset(VRAM, 0, sizeof(VRAM));
+    memset(OAM, 0, sizeof(OAM));
+    memset(frameBuffer, 0, sizeof(frameBuffer));
+
     LCDC = 0x91;
-    STAT = 0x82;
-    BGP = 0xFC;
-    LY = 0x00;
+    STAT = 0x85;
+    SCY  = 0x00;
+    SCX  = 0x00;
+    LY   = 0x00;
+    LYC  = 0x00;
+    DMA  = 0xFF;
+    BGP  = 0xFC;
+    OBP0 = 0xFF;
+    OBP1 = 0xFF;
+    WY   = 0x00;
+    WX   = 0x00;
+
     scanlineCounter = 456;
 }
 
