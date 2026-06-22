@@ -4,7 +4,14 @@
 
 GbPPU gbPpu;
 
-const uint32_t originalGbcPal[4] = {
+uint32_t gbPaletteDefault[4] = {
+    0xFFFFFFFF,
+    0xFFB0B0B0,
+    0xFF686868,
+    0xFF000000
+};
+
+uint32_t gbPalette[4] = {
     0xFFFFFFFF,
     0xFFB0B0B0,
     0xFF686868,
@@ -139,17 +146,16 @@ void GbPPU::RenderScanline() {
             bgLineColorIds[pixel] = colorId;
 
             uint8_t colorPaletteShade = (BGP >> (colorId * 2)) & 0x03;
-            frameBuffer[LY * 160 + pixel] = originalGbcPal[colorPaletteShade];
+            frameBuffer[LY * 160 + pixel] = gbPalette[colorPaletteShade];
         }
     } else {
         for(int pixel = 0; pixel < 160; pixel++) {
-            frameBuffer[LY * 160 + pixel] = originalGbcPal[0];
+            frameBuffer[LY * 160 + pixel] = gbPalette[0];
         }
     }
 
     if ((LCDC & 0x20) && LY >= WY) {
         uint16_t windowTileMap = (LCDC & 0x40) ? 0x9C00 : 0x9800;
-
         int windowY = LY - WY;
         int tileRow = ((windowY / 8) & 31) * 32;
 
@@ -179,7 +185,7 @@ void GbPPU::RenderScanline() {
             bgLineColorIds[pixel] = colorId;
 
             uint8_t shade = (BGP >> (colorId * 2)) & 3;
-            frameBuffer[LY * 160 + pixel] = originalGbcPal[shade];
+            frameBuffer[LY * 160 + pixel] = gbPalette[shade];
         }
     }
 
@@ -236,18 +242,18 @@ void GbPPU::RenderScanline() {
                 }
 
                 uint8_t colorPaletteShade = (paletteReg >> (colorId * 2)) & 0x03;
-                frameBuffer[LY * 160 + pixelX] = originalGbcPal[colorPaletteShade];
+                frameBuffer[LY * 160 + pixelX] = gbPalette[colorPaletteShade];
             }
         }
     }
 }
 
-uint8_t GbPPU::readVRAM(uint16_t addr) {
+/*uint8_t GbPPU::readVRAM(uint16_t addr) {
     return VRAM[addr - 0x8000];
 }
 void GbPPU::writeVRAM(uint16_t addr, uint8_t value) {
     VRAM[addr - 0x8000] = value;
-}
+}*/
 uint8_t GbPPU::readOAM(uint16_t addr) {
     return OAM[addr - 0xFE00];
 }

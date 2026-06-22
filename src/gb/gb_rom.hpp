@@ -12,7 +12,7 @@ public:
 
     uint8_t Header[80];
     uint8_t *ROM = nullptr;
-    size_t RomSize = 0;
+    uint32_t RomSize = 0;
     uint8_t cartType = 0;
     MBCBase *mbc = nullptr;
     uint32_t ramSize = 0;

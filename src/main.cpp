@@ -2,7 +2,8 @@
 #include "nes/nes_apu.hpp"
 #include "nes/nes_rom.hpp"
 #include "nes/nes_console.hpp"
-//#include "gb/gb_cpu.hpp"
+#include "gb/gb_cpu.hpp"
+#include "gb/gb_ppu.hpp"
 //#include "gb/gb_apu.hpp"
 #include "gb/gb_rom.hpp"
 #include "gb/gb_console.hpp"
@@ -325,7 +326,7 @@ int main(int argc, char *argv[]) {
     QObject::connect(displayConfAction, &QAction::triggered, [&]() {
         QDialog *dialog = new QDialog(&window);
         dialog->setWindowTitle("Display Config");
-        dialog->setFixedSize(560, 420);
+        dialog->setFixedSize(560, emuConsole->getConsoleType() == ConsoleType::NES ? 420 : 280);
 
         QGridLayout *mainLayout = new QGridLayout(dialog);
         QGroupBox *settingsBox = new QGroupBox("Settings", dialog);
@@ -362,7 +363,7 @@ int main(int argc, char *argv[]) {
         QGridLayout *ppuSettingsLayout = new QGridLayout(ppuSettingsBox);
         QCheckBox *VRAMCorruptCheckBox = new QCheckBox("VRAM Corruption", ppuSettingsBox);
 
-        ppuSettingsBox->setFixedSize(270, 160);
+        ppuSettingsBox->setFixedSize(270, emuConsole->getConsoleType() == ConsoleType::NES ? 160 : 100);
 
         VRAMCorruptCheckBox->setChecked(nesPpu.VRAMCorruption);
 
@@ -380,41 +381,46 @@ int main(int argc, char *argv[]) {
         });
 
         //nt
+        if (emuConsole->getConsoleType() == ConsoleType::NES) {
+            QGroupBox *ntmirrorBox = new QGroupBox("NT Mirroring", dialog);
+            QVBoxLayout *ntmirrorLayout = new QVBoxLayout(ntmirrorBox);
+            QComboBox *ntmirrorComboBox = new QComboBox(ntmirrorBox);
 
-        QGroupBox *ntmirrorBox = new QGroupBox("NT Mirroring", dialog);
-        QVBoxLayout *ntmirrorLayout = new QVBoxLayout(ntmirrorBox);
-        QComboBox *ntmirrorComboBox = new QComboBox(ntmirrorBox);
+        // regionBox->setFixedSize(90, 90);
+            std::array<std::string, 5> ntmirrorStrs = {"Horizontal", "Vertical", "Screen A", "Screen B", "Fourscreen"};
 
-       // regionBox->setFixedSize(90, 90);
-        std::array<std::string, 5> ntmirrorStrs = {"Horizontal", "Vertical", "Screen A", "Screen B", "Fourscreen"};
+            for (int i = 0; i < ntmirrorStrs.size(); ++i) {
+                ntmirrorComboBox->addItem(QString::fromStdString(ntmirrorStrs[i]), i);
+            }
 
-        for (int i = 0; i < ntmirrorStrs.size(); ++i) {
-            ntmirrorComboBox->addItem(QString::fromStdString(ntmirrorStrs[i]), i);
+            ntmirrorComboBox->setCurrentIndex((int)(nesPpu.Mirroring));
+
+            QComboBox::connect(ntmirrorComboBox, &QComboBox::currentIndexChanged, [&](int index) {
+                nesPpu.Mirroring = (MirrorMode)index;
+                DebugPrintLog("SETTINGS", "Set NT Mirroring to %d", index);
+            });
+
+            ntmirrorLayout->addWidget(ntmirrorComboBox);
+            ppuSettingsLayout->addWidget(ntmirrorBox);
         }
-
-        ntmirrorComboBox->setCurrentIndex((int)(nesPpu.Mirroring));
-
-        QComboBox::connect(ntmirrorComboBox, &QComboBox::currentIndexChanged, [&](int index) {
-            nesPpu.Mirroring = (MirrorMode)index;
-            DebugPrintLog("SETTINGS", "Set NT Mirroring to %d", index);
-        });
-
-        ntmirrorLayout->addWidget(ntmirrorComboBox);
-        ppuSettingsLayout->addWidget(ntmirrorBox);
 
         //palettes
         QGroupBox *paletteBox = new QGroupBox("Palette", dialog);
         QGridLayout *paletteLayout = new QGridLayout(paletteBox);
         PaletteButton* buttons[64];
 
-        paletteBox->setFixedHeight(400);
+        //paletteBox->setAlignment(Qt::AlignTop);
+        paletteBox->setFixedHeight(emuConsole->getConsoleType() == ConsoleType::NES ? 400 : 200);
 
+        int palCount = emuConsole->getConsoleType() == ConsoleType::NES ? 64 : 4;
+        uint32_t *palTable = emuConsole->getConsoleType() == ConsoleType::NES ? nesPalette : gbPalette;
+        uint32_t *palTableOg = emuConsole->getConsoleType() == ConsoleType::NES ? nesPaletteDefault : gbPaletteDefault;
         auto updateAllButtonsColor = [&]() {
-            for (int i = 0; i < 64; i++) {
+            for (int i = 0; i < palCount; i++) {
                 QColor color(
-                    (nesPalette[i] >> 16) & 0xFF,
-                    (nesPalette[i] >> 8) & 0xFF,
-                    nesPalette[i] & 0xFF
+                    (palTable[i] >> 16) & 0xFF,
+                    (palTable[i] >> 8) & 0xFF,
+                    palTable[i] & 0xFF
                 );
                 buttons[i]->setStyleSheet(QString("background-color: %1").arg(color.name()));
                 if (nesPpu.filtering == VideoFilter::NTSC) {
@@ -423,31 +429,31 @@ int main(int argc, char *argv[]) {
             }
         };
 
-        for (int i = 0; i < 64; i++) {
+        for (int i = 0; i < palCount; i++) {
             buttons[i] = new PaletteButton(i, dialog);
 
-            auto updateButtonColor = [i, buttons]() {
+            auto updateButtonColor = [i, buttons, palTable]() {
                 QColor color(
-                    (nesPalette[i] >> 16) & 0xFF,
-                    (nesPalette[i] >> 8) & 0xFF,
-                    nesPalette[i] & 0xFF
+                    (palTable[i] >> 16) & 0xFF,
+                    (palTable[i] >> 8) & 0xFF,
+                    palTable[i] & 0xFF
                 );
                 buttons[i]->setStyleSheet(QString("background-color: %1").arg(color.name()));
             };
 
             updateButtonColor();
 
-            QObject::connect(buttons[i], &QPushButton::clicked, [i, dialog, updateButtonColor]() {
+            QObject::connect(buttons[i], &QPushButton::clicked, [i, dialog, palTable, updateButtonColor]() {
                 QColor current(
-                    (nesPalette[i] >> 16) & 0xFF,
-                    (nesPalette[i] >> 8) & 0xFF,
-                    nesPalette[i] & 0xFF
+                    (palTable[i] >> 16) & 0xFF,
+                    (palTable[i] >> 8) & 0xFF,
+                    palTable[i] & 0xFF
                 );
 
                 QColor newColor = QColorDialog::getColor(current, dialog);
 
                 if (newColor.isValid()) {
-                    nesPalette[i] =
+                    palTable[i] =
                         (newColor.red() << 16) |
                         (newColor.green() << 8) |
                         newColor.blue();
@@ -474,12 +480,12 @@ int main(int argc, char *argv[]) {
         exportButton->setFixedHeight(25);
         importButton->setFixedHeight(25);
         QObject::connect(resetButton, &QPushButton::clicked, [&]() {
-            memcpy(nesPalette, nesPaletteDefault, sizeof(nesPaletteDefault));
+            memcpy(palTable, palTableOg, palCount * sizeof(uint32_t));
             updateAllButtonsColor();
         });
         QObject::connect(randomButton, &QPushButton::clicked, [&]() {
-            for (int i = 0; i < 64; i++) {
-                nesPalette[i] = 0xFF000000 | (rand() << 16) | (rand() << 8) | rand();
+            for (int i = 0; i < palCount; i++) {
+                palTable[i] = 0xFF000000 | (rand() << 16) | (rand() << 8) | rand();
             }
             updateAllButtonsColor();
         });
@@ -494,7 +500,7 @@ int main(int argc, char *argv[]) {
             if (!file.isEmpty()) {
                 FILE* f = fopen(file.toStdString().c_str(), "wb");
                 if (!f) return;
-                fwrite(nesPalette, 1, sizeof(nesPalette), f);
+                fwrite(palTable, 1, palCount * sizeof(uint32_t), f);
                 fclose(f);
                 updateAllButtonsColor();
             }
@@ -510,7 +516,7 @@ int main(int argc, char *argv[]) {
             if (!file.isEmpty()) {
                 FILE* f = fopen(file.toStdString().c_str(), "rb");
                 if (!f) return;
-                fread(nesPalette, 1, sizeof(nesPalette), f);
+                fread(palTable, 1, palCount * sizeof(uint32_t), f);
                 fclose(f);
                 updateAllButtonsColor();
             }
@@ -591,36 +597,46 @@ int main(int argc, char *argv[]) {
         if (emuConsole && romIsLoaded) {
             std::string fileStr = "File: " + getRom()->Name;
             if (emuConsole->getConsoleType() == ConsoleType::NES) {
+                NesROM *rom = getNESRom();
                 std::string HeaderHexStr;
                 for (int i = 0; i < 8; i++) {
                     char Buf[4];
-                    snprintf(Buf, sizeof(Buf), "%02X", getNESRom()->Header[i]);
+                    snprintf(Buf, sizeof(Buf), "%02X", rom->Header[i]);
                     HeaderHexStr += Buf;
                     if (i < 7) HeaderHexStr += " ";
                 }
                 HeaderHexStr = "Header: " + HeaderHexStr;
-                std::string headVerStr = "Header Version: " + std::string(getNESRom()->Version == HeaderVersion::NES2_0 ? "NES2.0" : "INES");
+                std::string headVerStr = "Header Version: " + std::string(rom->Version == HeaderVersion::NES2_0 ? "NES2.0" : "INES");
                 char PRGSizeStr[128];
-                sprintf(PRGSizeStr, "PRG Size: %uKiB (%u x 16KiB)", getNESRom()->PRGNumPages * 16, getNESRom()->PRGNumPages);
+                sprintf(PRGSizeStr, "PRG Size: %uKiB (%u x 16KiB)", rom->PRGNumPages * 16, rom->PRGNumPages);
                 char CHRSizeStr[128];
-                sprintf(CHRSizeStr, "CHR Size: %uKiB (%u x 8KiB)", getNESRom()->CHRNumPages * 8, getNESRom()->CHRNumPages);
-                std::string mapperStr = "Mapper: " + std::string(getNESRom()->mapper ? getNESRom()->mapper->getName() : (getNESRom()->MapperID ? "Unknown" : "NROM")) + " (Mapper " + std::to_string(getNESRom()->MapperID)+")";
-                std::string subMapperStr = "Sub Mapper: " + std::to_string(getNESRom()->SubMapperID);
-                std::string mirrorStr = "Mirroring: " + std::string(getNESRom()->Mirroring == MirrorMode::HORIZONTAL ? "Horizontal" : "Vertical");
-                std::string batteryStr = "Battery: " + std::string(getNESRom()->hasBattery ? "Yes" : "No");
-                std::string CHRRamStr = "CHR-RAM: " + std::string(getNESRom()->CHRRomSize == 0 ? "Yes" : "No");
+                sprintf(CHRSizeStr, "CHR Size: %uKiB (%u x 8KiB)", rom->CHRNumPages * 8, rom->CHRNumPages);
+                std::string mapperStr = "Mapper: " + std::string(rom->mapper ? rom->mapper->getName() : (rom->MapperID ? "Unknown" : "NROM")) + " (Mapper " + std::to_string(rom->MapperID)+")";
+                std::string subMapperStr = "Sub Mapper: " + std::to_string(rom->SubMapperID);
+                std::string mirrorStr = "Mirroring: " + std::string(rom->Mirroring == MirrorMode::HORIZONTAL ? "Horizontal" : "Vertical");
+                std::string batteryStr = "Battery: " + std::string(rom->hasBattery ? "Yes" : "No");
+                std::string CHRRamStr = "CHR-RAM: " + std::string(rom->CHRRomSize == 0 ? "Yes" : "No");
                 char batterySizeStr[128];
-                size_t SRAMSize = getNESRom()->hasBattery ? getNESRom()->mapper->getSRAMSize() : 0x0000; 
+                size_t SRAMSize = rom->hasBattery ? rom->mapper->getSRAMSize() : 0x0000; 
                 sprintf(batterySizeStr, "SRAM/Battery Size: 0x%zx (%zu)", SRAMSize, SRAMSize);
                 char RESETVecStr[128];
-                sprintf(RESETVecStr, "RESET Vector: 0x%x", getNESRom()->ResetVec);
+                sprintf(RESETVecStr, "RESET Vector: 0x%x", rom->ResetVec);
 
                 fullInfo = joinLines({fileStr, HeaderHexStr, headVerStr, PRGSizeStr, CHRSizeStr, mapperStr, subMapperStr, mirrorStr, batteryStr, CHRRamStr, batterySizeStr, RESETVecStr});
             } else if (emuConsole->getConsoleType() == ConsoleType::GAMEBOY) {
-                std::string titleStr = "Title: " + getGBRom()->Title;
-                std::string mapperStr = "Mapper: " + std::string(getGBRom()->mbc->getName());
+                GbROM *rom = getGBRom();
 
-                fullInfo = joinLines({fileStr, titleStr, mapperStr});
+                std::string titleStr = "Title: " + rom->Title;
+                std::string mapperStr = "Mapper: " + std::string(rom->mbc->getName()) + " (Mapper " + std::to_string(rom->cartType)+")";
+                std::string batteryStr = "Battery: " + std::string(rom->hasBattery() ? "Yes" : "No");
+                std::string RAMStr = "External RAM: " + std::string(rom->hasRAM() ? "Yes" : "No");
+
+                char ROMSizeStr[128];
+                sprintf(ROMSizeStr, "ROM Size: %uKiB", rom->RomSize / 1024);
+                char RAMSizeStr[128];
+                sprintf(RAMSizeStr, "RAM Size: %uKiB", rom->ramSize/ 1024);
+
+                fullInfo = joinLines({fileStr, titleStr, mapperStr, batteryStr, RAMStr, ROMSizeStr, RAMSizeStr});
             }
         }
         QLabel* label = new QLabel(QString::fromStdString(fullInfo), dialog);

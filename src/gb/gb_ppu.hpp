@@ -33,8 +33,8 @@ public:
     void Step(uint8_t cycles);
     void RenderScanline();
     
-    uint8_t readVRAM(uint16_t addr);
-    void writeVRAM(uint16_t addr, uint8_t value);
+    //uint8_t readVRAM(uint16_t addr);
+    //void writeVRAM(uint16_t addr, uint8_t value);
     uint8_t readOAM(uint16_t addr);
     void writeOAM(uint16_t addr, uint8_t value);
     uint8_t readRegister(uint16_t addr);
@@ -42,3 +42,5 @@ public:
 };
 
 extern GbPPU gbPpu;
+extern uint32_t gbPaletteDefault[4];
+extern uint32_t gbPalette[4];

@@ -9,7 +9,7 @@ MBCBase::~MBCBase() {
 
 uint8_t MBCBase::cpuRead(uint16_t addr) {
     if (!CPUPages[addr >> 8].ptr) {
-        DebugPrintLog("MEM", "Read ignored: 0x%04x", addr);
+        //DebugPrintLog("MEM", "Read ignored: 0x%04x", addr);
         return 0;
     }
     return CPUPages[addr >> 8].ptr[addr & 0xFF];
@@ -18,7 +18,7 @@ void MBCBase::cpuWrite(uint16_t addr, uint8_t value) {
     if (CPUPages[addr >> 8].write) {
         CPUPages[addr >> 8].ptr[addr & 0xFF] = value;
     } else {
-        DebugPrintLog("MEM", "Write ignored: 0x%04x", addr);
+        //DebugPrintLog("MEM", "Write ignored: 0x%04x", addr);
     }
 }
 
@@ -51,8 +51,8 @@ void MBCBase::initialize(void) {
         DebugPrintLog("ROM", "Cart has 0x%x bytes of CartRAM", ramSize);
     }
 
-    //mapCPUMemory(0x8000, 0x9FFF, ppu->VRAM, 0, true);
-    //mapCPUMemory(0xC000, 0xDFFF, WRAM, 0, true);
+    mapCPUMemory(0x8000, 0x9FFF, ppu->VRAM, 0, true, 0x2000);
+    mapCPUMemory(0xC000, 0xDFFF, WRAM, 0, true, 0x2000);
     //mapCPUMemory(0xE000, 0xFDFF, WRAM, 0, true);
     //mapCPUMemory(0xFE00, 0xFE9F, ppu->OAM, 0, true);
     //mapCPUMemory(0xFF80, 0xFFFE, HRAM, 0, true);
