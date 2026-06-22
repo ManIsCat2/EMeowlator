@@ -60,10 +60,10 @@ QImage *GBConsole::getOutputImage(void) {
 }
 
 void GBConsole::loadSave(void) {
-    
+    getGBRom()->mbc->loadSRAM();
 }
 void GBConsole::writeSave(void) {
-    
+    getGBRom()->mbc->saveSRAM();
 }
 
 void GBConsole::init(void) {

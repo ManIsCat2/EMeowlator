@@ -22,5 +22,9 @@ public:
     void mapCPUMemory(uint16_t start, uint16_t end, uint8_t* memory, uint32_t offset, bool writable, uint32_t size=0);
     void unmapCPUMemory(uint16_t start, uint16_t end);
     virtual void reset(void) {}
+
+    void saveSRAM(void);
+    void loadSRAM(void);
+
     void initialize(void);
 };

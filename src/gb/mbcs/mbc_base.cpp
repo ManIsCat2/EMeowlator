@@ -42,13 +42,38 @@ void MBCBase::unmapCPUMemory(uint16_t start, uint16_t end) {
     }
 }
 
+void MBCBase::saveSRAM(void) {
+    GbROM *rom = getGBRom();
+    if (!rom->hasBattery()) return;
+
+    std::string fname = ("saves/"+rom->Name+".sav");
+    FILE* f = fopen(fname.c_str(), "wb");
+    if (!f) return;
+    fwrite(cartRAM, 1, rom->ramSize, f);
+    fclose(f);
+    DebugPrintLog("MAPPER", "Saved SRAM to %s", fname.c_str())
+}
+void MBCBase::loadSRAM(void) {
+    GbROM *rom = getGBRom();
+    if (!rom->hasBattery()) return;
+
+    std::string fname = ("saves/"+rom->Name+".sav");
+    FILE* f = fopen(fname.c_str(), "rb");
+    if (!f) return;
+    fread(cartRAM, 1, rom->ramSize, f);
+    fclose(f);
+    DebugPrintLog("MAPPER", "Loaded SRAM from %s", fname.c_str())
+}
+
 void MBCBase::initialize(void) {
     connectBus(&gbCpu, &gbPpu);
 
     uint32_t ramSize = getGBRom()->ramSize;
     if (ramSize) {
         cartRAM = new uint8_t[ramSize];
-        DebugPrintLog("ROM", "Cart has 0x%x bytes of CartRAM", ramSize);
+        if (getGBRom()->hasBattery()) {
+            loadSRAM();
+        }
     }
 
     mapCPUMemory(0x8000, 0x9FFF, ppu->VRAM, 0, true, 0x2000);
