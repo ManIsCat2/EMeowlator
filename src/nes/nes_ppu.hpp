@@ -36,6 +36,7 @@ public:
     uint8_t OAM[0x100];
     uint32_t *frameBuffer = nullptr;
     uint8_t *palIndexBuf = nullptr;
+    uint8_t *bgMaskBuf = nullptr;
 
     VFilterBase *vfilter = nullptr;
     VideoFilter filtering = VideoFilter::NONE;
@@ -77,6 +78,7 @@ public:
 
     bool DisableSprites = false;
     bool VRAMCorruption = false;
+    uint8_t AddShadows = 0;
     uint8_t scrollFineX = 0;
     uint8_t patternTableLow = 0;
     uint8_t patternTableHigh = 0;

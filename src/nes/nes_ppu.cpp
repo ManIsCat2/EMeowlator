@@ -59,6 +59,7 @@ uint32_t getRainbowColor() {
 NesPPU::NesPPU() {
     frameBuffer = new uint32_t[PPU_PIXEL_COUNT_NTSC];
     palIndexBuf = new uint8_t[PPU_PIXEL_COUNT];
+    bgMaskBuf = new uint8_t[PPU_PIXEL_COUNT];
     rawOutputImage = new QImage((uint8_t*)(frameBuffer), NES_WIDTH, NES_HEIGHT, QImage::Format_RGB32);
     filteredOutputImage = new QImage((uint8_t*)(frameBuffer), NES_NTSC_OUT_WIDTH(256), NES_HEIGHT, QImage::Format_RGB32);
 }
@@ -66,6 +67,7 @@ NesPPU::NesPPU() {
 NesPPU::~NesPPU() {
     delete[] frameBuffer;
     delete[] palIndexBuf;
+    delete[] bgMaskBuf;
     delete rawOutputImage;
     delete filteredOutputImage;
     delete vfilter;
@@ -151,44 +153,92 @@ void NesPPU::RenderScreen() {
         if (renderBG && (Dot >= 8 || mask.background8pxMask)) {
             uint16_t bit = 0x8000 >> scrollFineX;
             bgColor = ((shiftRegHigh & bit) ? 2 : 0) | ((shiftRegLow  & bit) ? 1 : 0);
+            if (bgColor != 0) {
+                bgMaskBuf[ScanLine * NES_WIDTH + Dot] = 1;
+            } else {
+                bgMaskBuf[ScanLine * NES_WIDTH + Dot] = 0;
+            }
             bgPalette = ((((shiftAttrHigh & bit) ? 2 : 0) | ((shiftAttrLow  & bit) ? 1 : 0)) << 2);
         }
 
         uint8_t finalColor = bgColor;
         uint8_t finalPalette = bgPalette;
+        bool shadowPixel = false;
+        bool spritePixelVisible = false;
 
         if (renderSPR) {
             uint16_t spriteH = control.use8x16Sprites ? 16 : 8;
             for (int i = 0; i < 256; i += 4) {
-                uint8_t *sprite = &OAM[i];
+                uint8_t* sprite = &OAM[i];
+
+                if ((AddShadows & 0x01) && !DisableSprites && i != 0) {
+                    int shadowSpriteX = (Dot - 2) - sprite[3];
+                    int shadowSpriteY = (ScanLine - 2) - sprite[0] - 1;
+                    if ((uint32_t)shadowSpriteX < 8 && (uint32_t)shadowSpriteY < spriteH) {
+                        int flipH = sprite[2] & 0x40;
+                        int flipV = sprite[2] & 0x80;
+
+                        int sx = flipH ? shadowSpriteX : (7 - shadowSpriteX);
+                        int sy = flipV ? (spriteH - 1 - shadowSpriteY) : shadowSpriteY;
+
+                        uint16_t spriteTile = sprite[1];
+                        uint16_t spriteAddress = (control.use8x16Sprites ? ((spriteTile & 1) << 12) | ((spriteTile & 0xFE) << 4) | ((sy & 8) << 1) : ((control.spritePatternTable << 9) | (spriteTile << 4))) | (sy & 7);
+                        uint8_t shadowColor = (((romMapper->readCHR(spriteAddress + 8, true) >> sx) & 1) << 1) | ((romMapper->readCHR(spriteAddress, true) >> sx) & 1);
+
+                        if (shadowColor) shadowPixel = true;
+                    }
+                }
+
                 uint16_t spriteX = Dot - sprite[3];
                 uint16_t spriteY = ScanLine - sprite[0] - 1;
-                
-                int flipH = sprite[2] & 0x40;
-                int flipV = sprite[2] & 0x80;
-                
-                uint16_t sx = flipH ? spriteX : (7 - spriteX);
-                uint16_t sy = flipV ? (spriteH - 1 - spriteY) : spriteY;
                 if (spriteX < 8 && spriteY < spriteH) {
+                    int flipH = sprite[2] & 0x40;
+                    int flipV = sprite[2] & 0x80;
+
+                    uint16_t sx = flipH ? spriteX : (7 - spriteX);
+                    uint16_t sy = flipV ? (spriteH - 1 - spriteY) : spriteY;
+
                     uint16_t spriteTile = sprite[1];
-                    uint16_t spriteAddress = (control.use8x16Sprites ? spriteTile % 0x02 << 0x0C | spriteTile << 4 & -32 | sy * 0x02 & 0x10 : (control.spritePatternTable) << 0x09 | spriteTile << 0x04) | sy & 0x07;
-                    uint16_t spriteColor = romMapper->readCHR(spriteAddress + 8, true) >> sx << 0x01 & 0x02 | romMapper->readCHR(spriteAddress, true) >> sx & 0x01;
+                    uint16_t spriteAddress = (control.use8x16Sprites ? spriteTile % 2 << 12 | spriteTile << 4 & -32 | sy * 2 & 0x10 : control.spritePatternTable << 9 | spriteTile << 4) | (sy & 7);
+                    uint16_t spriteColor = (romMapper->readCHR(spriteAddress + 8, true) >> sx << 1 & 2) | (romMapper->readCHR(spriteAddress, true) >> sx & 1);
+
                     if (spriteColor) {
+                        spritePixelVisible = true;
+
                         if (!(sprite[2] & 0x20 && bgColor) && !DisableSprites) {
                             finalColor = spriteColor;
-                            finalPalette = 0x10 | sprite[2] * 0x04 & 0x0C;
+                            finalPalette = 0x10 | (sprite[2] * 4 & 0x0C);                                                    
                         }
-                            
+
                         if (i == 0 && spriteColor != 0 && bgColor != 0 && Dot != 255 && renderBG && (Dot >= 8 || mask.sprite8pxMask)) {
                             sprite0Hit = true;
                         }
+
                         break;
                     }
                 }
             }
         }
 
-        uint8_t palIndex = paletteRAM[finalColor ? (finalPalette | finalColor) : 0] & 0x3F;
+        if (AddShadows & 0x02) {
+            int shadowX = Dot - 2;
+            int shadowY = ScanLine - 2;
+
+            if (shadowX >= 0 && shadowY >= 0) {
+                if (bgColor == 0) {
+                    if (bgMaskBuf[shadowY * NES_WIDTH + shadowX]) {
+                        shadowPixel = true;
+                    }
+                }
+            }
+        }
+
+        uint8_t palIndex = 0;
+        if (shadowPixel && !spritePixelVisible) {
+            palIndex = 0x0D;
+        } else {
+            palIndex = paletteRAM[finalColor ? (finalPalette | finalColor) : 0] & 0x3F;
+        }
         if (palIndex == hoveredPaletteIndex) palIndex = 254;
         palIndexBuf[ScanLine * NES_WIDTH + Dot] = palIndex;
     }
@@ -254,6 +304,8 @@ void NesPPU::Step() {
         Vblank = false;
         sprite0Hit = false;
         spriteOverflow = false;
+
+        memset(bgMaskBuf, 0, PPU_PIXEL_COUNT);
     }
 
     if (mask.renderBackground || mask.renderSprites) {

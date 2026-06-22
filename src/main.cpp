@@ -75,6 +75,7 @@ std::string allowedExts[] = {
     ".gb"
 };
 bool loadConsoleWithGame(const std::string &file) {
+    QMainWindow *win = (QMainWindow*)globalQTWin;
     bool allow = false;
     std::string matchedExt = "";
 
@@ -96,17 +97,20 @@ bool loadConsoleWithGame(const std::string &file) {
     
     if (!allow) {
         DebugPrintLog("LOADER", "Console not supported");
-        QMessageBox::critical((QMainWindow*)globalQTWin, "Error", "Console not supported");
+        QMessageBox::critical(win, "Error", "Console not supported");
         return false;
     }
     
     if (matchedExt == ".nes") {
         emuConsole = new NESConsole;
+        win->setWindowTitle("EMeowlator - NES");
     } else if (matchedExt == ".gb") {
         emuConsole = new GBConsole;
+        win->setWindowTitle("EMeowlator - Game Boy");
     }
     
     if (!emuConsole) {
+        win->setWindowTitle("EMeowlator");
         return false;
     }
     
@@ -118,6 +122,7 @@ bool loadConsoleWithGame(const std::string &file) {
         romIsLoaded = false;
         delete emuConsole;
         emuConsole = nullptr;
+        win->setWindowTitle("EMeowlator");
     }
     return ret;
 }
@@ -356,14 +361,35 @@ int main(int argc, char *argv[]) {
         });
 
         regionLayout->addWidget(tvtypeComboBox);
-        //regionLayout->addStretch();
+
+        if (emuConsole->getConsoleType() == ConsoleType::NES) {
+            //shadow
+            QGroupBox *shadowBox = new QGroupBox("Shadows", dialog);
+            QVBoxLayout *shadowLayout = new QVBoxLayout(shadowBox);
+            QComboBox *shadowComboBox = new QComboBox(shadowBox);
+
+            std::array<std::string, 4> shadowStrs = {"None", "Sprites", "Tiles", "Sprites & Tiles"};
+
+            for (int i = 0; i < shadowStrs.size(); ++i) {
+                shadowComboBox->addItem(QString::fromStdString(shadowStrs[i]), i);
+            }
+
+            shadowComboBox->setCurrentIndex(nesPpu.AddShadows);
+
+            QComboBox::connect(shadowComboBox, &QComboBox::currentIndexChanged, [&](int index) {
+                nesPpu.AddShadows = index;
+            });
+
+            shadowLayout->addWidget(shadowComboBox);
+            settingsLayout->addWidget(shadowBox, 3, 0);
+        }
         
         //ppu settings
         QGroupBox *ppuSettingsBox = new QGroupBox("PPU Settings", dialog);
+        ppuSettingsBox->setFixedSize(270, emuConsole->getConsoleType() == ConsoleType::NES ? 150 : 65);
+
         QGridLayout *ppuSettingsLayout = new QGridLayout(ppuSettingsBox);
         QCheckBox *VRAMCorruptCheckBox = new QCheckBox("VRAM Corruption", ppuSettingsBox);
-
-        ppuSettingsBox->setFixedSize(270, emuConsole->getConsoleType() == ConsoleType::NES ? 160 : 100);
 
         VRAMCorruptCheckBox->setChecked(nesPpu.VRAMCorruption);
 
@@ -401,7 +427,7 @@ int main(int argc, char *argv[]) {
             });
 
             ntmirrorLayout->addWidget(ntmirrorComboBox);
-            ppuSettingsLayout->addWidget(ntmirrorBox);
+            ppuSettingsLayout->addWidget(ntmirrorBox, 1, 0);
         }
 
         //palettes

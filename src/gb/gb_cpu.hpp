@@ -36,9 +36,7 @@ public:
 
     void reset();
 
-    void GetInfo(uint8_t *AReg, uint8_t *FReg, uint8_t *BReg, uint8_t *CReg, 
-                 uint8_t *DReg, uint8_t *EReg, uint8_t *HReg, uint8_t *LReg, 
-                 uint16_t *PCReg, uint16_t *SPReg) {
+    void GetInfo(uint8_t *AReg, uint8_t *FReg, uint8_t *BReg, uint8_t *CReg, int8_t *DReg, uint8_t *EReg, uint8_t *HReg, uint8_t *LReg,  uint16_t *PCReg, uint16_t *SPReg) {
         *AReg = A; *FReg = F;
         *BReg = B; *CReg = C;
         *DReg = D; *EReg = E;
@@ -47,9 +45,7 @@ public:
         *SPReg = SP;
     }
 
-    void SetInfo(uint8_t AReg, uint8_t FReg, uint8_t BReg, uint8_t CReg, 
-                 uint8_t DReg, uint8_t EReg, uint8_t HReg, uint8_t LReg, 
-                 uint16_t PCReg, uint16_t SPReg) {
+    void SetInfo(uint8_t AReg, uint8_t FReg, uint8_t BReg, uint8_t CReg, uint8_t DReg, uint8_t EReg, uint8_t HReg, uint8_t LReg, uint16_t PCReg, uint16_t SPReg) {
         A = AReg; F = FReg & 0xF0;
         B = BReg; C = CReg;
         D = DReg; E = EReg;
