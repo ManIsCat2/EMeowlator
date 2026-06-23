@@ -46,6 +46,8 @@ public:
     int Dot = 0;
     int ScanLine = 0;
     bool Vblank = false;
+    bool VblankSuppress = false;
+    bool VblankPending = false;
     bool sprite0Hit = false;
     bool spriteOverflow = false;
 

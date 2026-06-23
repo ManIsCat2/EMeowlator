@@ -291,7 +291,7 @@ void NesPPU::Step() {
     const int preRenderLine = isPal ? 311 : 261;
     const int totalScanlines = isPal ? 312 : 262;
 
-    if (Dot == 1 && ScanLine == 241) Vblank = true;
+    if (Dot == 1 && ScanLine == 241) VblankPending = true;
     if (Dot == 0 && ScanLine == 241) {
         if (vfilter->hasCustomBlit()) {
             vfilter->blit();
@@ -371,6 +371,14 @@ void NesPPU::Step() {
             VRAMAddr = ((VRAMAddr & 0x41f) | (TransferAddr & 0x7be0));
         }
         romMapper->clockPPU();
+    }
+
+    if (VblankPending) {
+        VblankPending = false;
+        if (!VblankSuppress) {
+            Vblank = true;
+        }
+        VblankSuppress = false;
     }
 
     Dot++;

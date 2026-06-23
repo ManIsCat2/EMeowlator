@@ -1950,6 +1950,10 @@ uint8_t NesCPU::read(uint16_t addr) {
                 result |= (ppu->spriteOverflow ? 0x20 : 0x00);
                 result |= (ppu->dataBus & 0x1F);
 
+                if (ppu->ScanLine == 241 && ppu->Dot == 1) {
+                    ppu->VblankSuppress = true;
+                }
+
                 ppu->Vblank = false;
                 ppu->WriteLatch = false;
                 ppu->dataBus = result;
