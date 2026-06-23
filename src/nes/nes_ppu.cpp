@@ -62,6 +62,7 @@ NesPPU::NesPPU() {
     bgMaskBuf = new uint8_t[PPU_PIXEL_COUNT];
     rawOutputImage = new QImage((uint8_t*)(frameBuffer), NES_WIDTH, NES_HEIGHT, QImage::Format_RGB32);
     filteredOutputImage = new QImage((uint8_t*)(frameBuffer), NES_NTSC_OUT_WIDTH(256), NES_HEIGHT, QImage::Format_RGB32);
+    InitFilter(VideoFilter::NONE);
 }
 
 NesPPU::~NesPPU() {

@@ -25,7 +25,9 @@ GbPPU::GbPPU() {
 }
 
 GbPPU::~GbPPU() {
-    if (rawOutputImage) delete rawOutputImage;
+    delete rawOutputImage;
+    delete filteredOutputImage;
+    delete vfilter;
 }
 
 void GbPPU::reset() {
