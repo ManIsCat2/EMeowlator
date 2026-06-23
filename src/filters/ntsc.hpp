@@ -1,6 +1,6 @@
 #pragma once
 #include "filter_base.hpp"
-#include "../nes_ntsc.h"
+#include "nes_ntsc.h"
 
 class NTSCFilter : public VFilterBase {
 public:

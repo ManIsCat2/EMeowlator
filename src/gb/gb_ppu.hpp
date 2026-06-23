@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <QImage>
+#include "../filters/filters.hpp"
 #include "gb_bus.hpp"
 
 class GbPPU : public HasGBBus {
@@ -26,12 +27,19 @@ public:
     uint8_t WX   = 0x00;
 
     int scanlineCounter = 0;
-    uint32_t frameBuffer[160 * 144];
+    uint32_t frameBuffer[NES_NTSC_OUT_WIDTH(160) * 144];
+    uint8_t palIndexBuf[160 * 144];
     QImage *rawOutputImage = nullptr;
+    QImage *filteredOutputImage = nullptr;
+
+    VFilterBase *vfilter = nullptr;
+    VideoFilter filtering = VideoFilter::NONE;
 
     void reset();
     void Step(uint8_t cycles);
     void RenderScanline();
+    void blitPixels();
+    void InitFilter(VideoFilter filter);
     
     //uint8_t readVRAM(uint16_t addr);
     //void writeVRAM(uint16_t addr, uint8_t value);

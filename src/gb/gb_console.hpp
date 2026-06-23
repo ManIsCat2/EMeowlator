@@ -13,6 +13,7 @@ public:
     void handleController(int id, int key, bool pressed) override;
     double getAudioOutput(void) override;
     QImage *getOutputImage(void) override;
+    void setVideoFilter(int filter) override;
     void writeSave(void) override;
     void loadSave(void) override;
     void init(void) override;

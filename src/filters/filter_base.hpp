@@ -14,4 +14,11 @@ public:
     virtual void blit(void) {};
 };
 
-#include "../nes_ppu.hpp"
+enum class VideoFilter {
+    NONE,
+    NTSC,
+    CHROMA,
+    GRAYSCALE
+};
+
+#include "../nes/nes_ppu.hpp"

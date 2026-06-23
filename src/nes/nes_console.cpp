@@ -61,6 +61,9 @@ QImage *NESConsole::getOutputImage(void) {
        return nesPpu.rawOutputImage;
     }
 }
+void NESConsole::setVideoFilter(int filter) {
+    nesPpu.InitFilter((VideoFilter)filter);
+}
 
 void NESConsole::loadSave(void) {
     getNESRom()->mapper->loadSRAM();

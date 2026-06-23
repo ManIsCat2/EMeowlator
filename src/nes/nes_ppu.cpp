@@ -422,19 +422,9 @@ void NesPPU::Init() {
     memset(palIndexBuf, 0, PPU_PIXEL_COUNT);
 }
 
-VFilterBase *NesPPU::GetVideoFilter(VideoFilter filter) {
-    switch (filter) {
-        case VideoFilter::NONE: return new DefaultFilter();
-        case VideoFilter::NTSC: return new NTSCFilter();
-        case VideoFilter::CHROMA: return new ChromaFilter();
-        case VideoFilter::GRAYSCALE: return new GrayScaleFilter();
-    }
-    return nullptr;
-}
-
 void NesPPU::InitFilter(VideoFilter filter) {
     filtering = filter;
     if (vfilter) { delete vfilter; vfilter = nullptr; }
-    vfilter = GetVideoFilter(filter);
+    vfilter = GetVideoFilterFromID(filter);
     vfilter->initialize();
 }

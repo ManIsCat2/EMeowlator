@@ -5,8 +5,7 @@
 #include <cstring>
 
 #include "nes.hpp"
-#include "nes_ntsc.h"
-#include "filters/filters.hpp"
+#include "../filters/filters.hpp"
 #include "mappers/mapper_base.hpp"
 
 #include <QImage>
@@ -17,13 +16,6 @@ enum class MirrorMode {
     SCREEN_A,
     SCREEN_B,
     FOURSCREEN
-};
-
-enum class VideoFilter {
-    NONE,
-    NTSC,
-    CHROMA,
-    GRAYSCALE
 };
 
 class NesPPU {
@@ -106,7 +98,6 @@ public:
     void blitPixels();
 
     void Init();
-    VFilterBase *GetVideoFilter(VideoFilter filter);
     void InitFilter(VideoFilter filter);
 };
 

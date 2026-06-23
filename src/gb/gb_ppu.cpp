@@ -5,22 +5,23 @@
 GbPPU gbPpu;
 
 uint32_t gbPaletteDefault[4] = {
-    0xFFFFFFFF,
-    0xFFB0B0B0,
-    0xFF686868,
-    0xFF000000
+    0xFFE0F8D0,
+    0xFF88C070,
+    0xFF346856,
+    0xFF081820
 };
 
 uint32_t gbPalette[4] = {
-    0xFFFFFFFF,
-    0xFFB0B0B0,
-    0xFF686868,
-    0xFF000000
+    0xFFE0F8D0,
+    0xFF88C070,
+    0xFF346856,
+    0xFF081820
 };
 
 GbPPU::GbPPU() {
-    memset(frameBuffer, 0, sizeof(frameBuffer));
+    InitFilter(VideoFilter::NONE);
     rawOutputImage = new QImage((uint8_t*)frameBuffer, 160, 144, 640, QImage::Format_RGB32);
+    filteredOutputImage = new QImage((uint8_t*)(frameBuffer), NES_NTSC_OUT_WIDTH(160), 144, QImage::Format_RGB32);
 }
 
 GbPPU::~GbPPU() {
@@ -33,6 +34,7 @@ void GbPPU::reset() {
     memset(VRAM, 0, sizeof(VRAM));
     memset(OAM, 0, sizeof(OAM));
     memset(frameBuffer, 0, sizeof(frameBuffer));
+    memset(palIndexBuf, 0, sizeof(palIndexBuf));
 
     LCDC = 0x91;
     STAT = 0x85;
@@ -66,6 +68,12 @@ void GbPPU::Step(uint8_t cycles) {
 
         if (LY == 144) {
             cpu->IF |= 0x01;
+
+            if (vfilter->hasCustomBlit()) {
+                vfilter->blit();
+            } else {
+                blitPixels();
+            }
         }
 
         if (LY > 153) {
@@ -157,11 +165,11 @@ void GbPPU::RenderScanline() {
             bgLineColorIds[pixel] = colorId;
 
             uint8_t colorPaletteShade = (BGP >> (colorId * 2)) & 0x03;
-            frameBuffer[LY * 160 + pixel] = gbPalette[colorPaletteShade];
+            palIndexBuf[LY * 160 + pixel] = colorPaletteShade;
         }
     } else {
         for(int pixel = 0; pixel < 160; pixel++) {
-            frameBuffer[LY * 160 + pixel] = gbPalette[0];
+            palIndexBuf[LY * 160 + pixel] = 0;
         }
     }
 
@@ -196,7 +204,7 @@ void GbPPU::RenderScanline() {
             bgLineColorIds[pixel] = colorId;
 
             uint8_t shade = (BGP >> (colorId * 2)) & 3;
-            frameBuffer[LY * 160 + pixel] = gbPalette[shade];
+            palIndexBuf[LY * 160 + pixel] = shade;
         }
     }
 
@@ -253,10 +261,27 @@ void GbPPU::RenderScanline() {
                 }
 
                 uint8_t colorPaletteShade = (paletteReg >> (colorId * 2)) & 0x03;
-                frameBuffer[LY * 160 + pixelX] = gbPalette[colorPaletteShade];
+                palIndexBuf[LY * 160 + pixelX] = colorPaletteShade;
             }
         }
     }
+}
+
+void GbPPU::blitPixels() {
+    for (int y = 0; y < 144; y++) {
+        for (int x = 0; x < 160; x++) {
+            int i = y * 160 + x;
+            frameBuffer[i] = gbPalette[palIndexBuf[i]];
+            vfilter->applyFilter(&frameBuffer[i], x, y);
+        }
+    }
+}
+
+void GbPPU::InitFilter(VideoFilter filter) {
+    filtering = filter;
+    if (vfilter) { delete vfilter; vfilter = nullptr; }
+    vfilter = GetVideoFilterFromID(filter);
+    vfilter->initialize();
 }
 
 /*uint8_t GbPPU::readVRAM(uint16_t addr) {

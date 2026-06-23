@@ -38,7 +38,8 @@ public:
     virtual int getDisplayHeight(void) { return 0; }
     virtual void handleController(int id, int key, bool pressed) { (void)id; (void)key; (void)pressed; }
     virtual double getAudioOutput(void) { return 0.0; }
-    virtual QImage *getOutputImage(void) { return nullptr; };
+    virtual QImage *getOutputImage(void) { return nullptr; }
+    virtual void setVideoFilter(int filter) { (void)filter; }
     virtual void writeSave(void) {}
     virtual void loadSave(void) {}
     virtual void init(void) {}

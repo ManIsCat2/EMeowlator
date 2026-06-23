@@ -56,7 +56,15 @@ double GBConsole::getAudioOutput(void) {
 }
 
 QImage *GBConsole::getOutputImage(void) {
-    return gbPpu.rawOutputImage;
+    if (gbPpu.filtering == VideoFilter::NTSC) {
+        gbPpu.vfilter->initialize();
+        return gbPpu.filteredOutputImage;
+    } else {
+       return gbPpu.rawOutputImage;
+    }
+}
+void GBConsole::setVideoFilter(int filter) {
+    gbPpu.InitFilter((VideoFilter)filter);
 }
 
 void GBConsole::loadSave(void) {

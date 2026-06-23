@@ -561,8 +561,10 @@ int main(int argc, char *argv[]) {
         filterComboBox->setCurrentIndex((int)(nesPpu.filtering));
 
         QComboBox::connect(filterComboBox, &QComboBox::currentIndexChanged, [&](int index) {
-            nesPpu.InitFilter((VideoFilter)(index));
-            DebugPrintLog("SETTINGS", "Set vFilter to %d", index);
+            if (emuConsole) {
+                emuConsole->setVideoFilter(index);
+                DebugPrintLog("SETTINGS", "Set Filter to %d", index);
+            }
         });
 
         filterLayout->addWidget(filterComboBox);
