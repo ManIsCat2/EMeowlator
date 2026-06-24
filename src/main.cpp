@@ -76,44 +76,54 @@ std::string allowedExts[] = {
 };
 bool loadConsoleWithGame(const std::string &file) {
     QMainWindow *win = (QMainWindow*)globalQTWin;
+
     bool allow = false;
     std::string matchedExt = "";
 
     size_t dotPos = file.find_last_of(".");
-    if (dotPos != std::string::npos) {
-        std::string rawExt = file.substr(dotPos);
-        for (size_t i = 0; i < rawExt.length(); i++) {
-            rawExt[i] = std::tolower(rawExt[i]);
-        }
+    if (dotPos == std::string::npos) {
+        romIsLoaded = false;
+        return false;
+    }
 
-        for (auto &ext : allowedExts) {
-            if (rawExt == ext) {
-                allow = true;
-                matchedExt = ext;
-                break;
-            }
+    std::string rawExt = file.substr(dotPos);
+    for (char &c : rawExt) c = std::tolower(c);
+    for (auto &ext : allowedExts) {
+        if (rawExt == ext) {
+            allow = true;
+            matchedExt = ext;
+            break;
         }
     }
-    
+
     if (!allow) {
+        romIsLoaded = false;
         DebugPrintLog("LOADER", "Console not supported");
         QMessageBox::critical(win, "Error", "Console not supported");
         return false;
     }
-    
+
+    delete emuConsole;
+    emuConsole = nullptr;
+
     if (matchedExt == ".nes") {
         emuConsole = new NESConsole;
         win->setWindowTitle("EMeowlator - NES");
     } else if (matchedExt == ".gb") {
         emuConsole = new GBConsole;
         win->setWindowTitle("EMeowlator - Game Boy");
-    }
-    
-    if (!emuConsole) {
+    } else {
+        romIsLoaded = false;
         win->setWindowTitle("EMeowlator");
         return false;
     }
-    
+
+    if (!emuConsole) {
+        romIsLoaded = false;
+        win->setWindowTitle("EMeowlator");
+        return false;
+    }
+
     emuConsole->init();
 
     bool ret = emuConsole->loadGame(file);
@@ -123,8 +133,11 @@ bool loadConsoleWithGame(const std::string &file) {
         delete emuConsole;
         emuConsole = nullptr;
         win->setWindowTitle("EMeowlator");
+        return false;
     }
-    return ret;
+
+    romIsLoaded = true;
+    return true;
 }
 
 void startCPUTimer(void) {
@@ -188,7 +201,7 @@ int main(int argc, char *argv[]) {
 
 		videoFilterMenu->addAction(vfilterAction);
 
-		QObject::connect(vfilterAction, &QAction::triggered, [i]{ nesPpu.InitFilter((VideoFilter)i); DebugPrintLog("SETTINGS", "Set vFilter to %u", i); } );
+		QObject::connect(vfilterAction, &QAction::triggered, [i]{ nesPpu.initFilter((VideoFilter)i); DebugPrintLog("SETTINGS", "Set vFilter to %u", i); } );
 	}*/
 
     //settingsMenu->addAction(paletteEditorAction);
@@ -211,7 +224,6 @@ int main(int argc, char *argv[]) {
 
         if (!file.isEmpty()) {
             if (loadConsoleWithGame(file.toStdString())) {
-                romIsLoaded = true;
                 startCPUTimer();
                 emuConsole->reset();
 
@@ -712,7 +724,6 @@ int main(int argc, char *argv[]) {
 
     if (argc > 1) {
         if (loadConsoleWithGame(argv[1])) {
-            romIsLoaded = true;
             startCPUTimer();
             emuConsole->reset();
 

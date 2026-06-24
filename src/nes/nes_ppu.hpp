@@ -18,7 +18,7 @@ enum class MirrorMode {
     FOURSCREEN
 };
 
-class NesPPU {
+class NesPPU : public HasVideoFilter {
 public:
     NesPPU();
     ~NesPPU();
@@ -29,9 +29,6 @@ public:
     uint32_t *frameBuffer = nullptr;
     uint8_t *palIndexBuf = nullptr;
     uint8_t *bgMaskBuf = nullptr;
-
-    VFilterBase *vfilter = nullptr;
-    VideoFilter filtering = VideoFilter::NONE;
 
     MirrorMode Mirroring = MirrorMode::VERTICAL;
     int busDecayTimers[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -100,7 +97,6 @@ public:
     void blitPixels();
 
     void Init();
-    void InitFilter(VideoFilter filter);
 };
 
 extern NesPPU nesPpu;

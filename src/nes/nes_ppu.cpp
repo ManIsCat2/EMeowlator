@@ -62,7 +62,7 @@ NesPPU::NesPPU() {
     bgMaskBuf = new uint8_t[PPU_PIXEL_COUNT];
     rawOutputImage = new QImage((uint8_t*)(frameBuffer), NES_WIDTH, NES_HEIGHT, QImage::Format_RGB32);
     filteredOutputImage = new QImage((uint8_t*)(frameBuffer), NES_NTSC_OUT_WIDTH(256), NES_HEIGHT, QImage::Format_RGB32);
-    InitFilter(VideoFilter::NONE);
+    initFilter(VideoFilter::NONE);
 }
 
 NesPPU::~NesPPU() {
@@ -426,14 +426,7 @@ void NesPPU::blitPixels() {
 }
 
 void NesPPU::Init() {
-    InitFilter(VideoFilter::NONE);
+    initFilter(VideoFilter::NONE);
     memset(frameBuffer, 0, sizeof(uint32_t) * PPU_PIXEL_COUNT_NTSC);
     memset(palIndexBuf, 0, PPU_PIXEL_COUNT);
-}
-
-void NesPPU::InitFilter(VideoFilter filter) {
-    filtering = filter;
-    if (vfilter) { delete vfilter; vfilter = nullptr; }
-    vfilter = GetVideoFilterFromID(filter);
-    vfilter->initialize();
 }

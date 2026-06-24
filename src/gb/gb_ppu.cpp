@@ -19,8 +19,8 @@ uint32_t gbPalette[4] = {
 };
 
 GbPPU::GbPPU() {
-    InitFilter(VideoFilter::NONE);
-    rawOutputImage = new QImage((uint8_t*)frameBuffer, 160, 144, 640, QImage::Format_RGB32);
+    initFilter(VideoFilter::NONE);
+    rawOutputImage = new QImage((uint8_t*)frameBuffer, 160, 144, QImage::Format_RGB32);
     filteredOutputImage = new QImage((uint8_t*)(frameBuffer), NES_NTSC_OUT_WIDTH(160), 144, QImage::Format_RGB32);
 }
 
@@ -277,13 +277,6 @@ void GbPPU::blitPixels() {
             vfilter->applyFilter(&frameBuffer[i], x, y);
         }
     }
-}
-
-void GbPPU::InitFilter(VideoFilter filter) {
-    filtering = filter;
-    if (vfilter) { delete vfilter; vfilter = nullptr; }
-    vfilter = GetVideoFilterFromID(filter);
-    vfilter->initialize();
 }
 
 /*uint8_t GbPPU::readVRAM(uint16_t addr) {

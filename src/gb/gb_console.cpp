@@ -64,7 +64,7 @@ QImage *GBConsole::getOutputImage(void) {
     }
 }
 void GBConsole::setVideoFilter(int filter) {
-    gbPpu.InitFilter((VideoFilter)filter);
+    gbPpu.initFilter((VideoFilter)filter);
 }
 
 void GBConsole::loadSave(void) {

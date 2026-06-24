@@ -5,7 +5,7 @@
 #include "../filters/filters.hpp"
 #include "gb_bus.hpp"
 
-class GbPPU : public HasGBBus {
+class GbPPU : public HasGBBus, public HasVideoFilter {
 public:
     GbPPU();
     ~GbPPU();
@@ -32,14 +32,10 @@ public:
     QImage *rawOutputImage = nullptr;
     QImage *filteredOutputImage = nullptr;
 
-    VFilterBase *vfilter = nullptr;
-    VideoFilter filtering = VideoFilter::NONE;
-
     void reset();
     void Step(uint8_t cycles);
     void RenderScanline();
     void blitPixels();
-    void InitFilter(VideoFilter filter);
     
     //uint8_t readVRAM(uint16_t addr);
     //void writeVRAM(uint16_t addr, uint8_t value);

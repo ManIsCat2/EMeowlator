@@ -62,7 +62,7 @@ QImage *NESConsole::getOutputImage(void) {
     }
 }
 void NESConsole::setVideoFilter(int filter) {
-    nesPpu.InitFilter((VideoFilter)filter);
+    nesPpu.initFilter((VideoFilter)filter);
 }
 
 void NESConsole::loadSave(void) {

@@ -21,4 +21,18 @@ enum class VideoFilter {
     GRAYSCALE
 };
 
+extern VFilterBase *GetVideoFilterFromID(VideoFilter filter);
+class HasVideoFilter {
+public:
+    VFilterBase *vfilter = nullptr;
+    VideoFilter filtering = VideoFilter::NONE;
+
+    void initFilter(VideoFilter filter) {
+        filtering = filter;
+        if (vfilter) { delete vfilter; vfilter = nullptr; }
+        vfilter = GetVideoFilterFromID(filter);
+        vfilter->initialize();
+    }
+};
+
 #include "../nes/nes_ppu.hpp"
