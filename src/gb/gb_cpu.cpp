@@ -2211,6 +2211,10 @@ void GbCPU::executeCB(uint8_t opcode) {
 uint8_t GbCPU::read(uint16_t addr) {
     GbROM *rom = getGBRom();
 
+    if (addr >= 0x8000 && addr <= 0x9FFF) {
+        return ppu->readVRAM(addr);
+    }
+
     if (addr >= 0xFE00 && addr <= 0xFE9F) {
         return ppu->readOAM(addr);
     }
@@ -2276,6 +2280,10 @@ uint8_t GbCPU::read(uint16_t addr) {
 
 void GbCPU::write(uint16_t addr, uint8_t value) {
     GbROM *rom = getGBRom();
+
+    if (addr >= 0x8000 && addr <= 0x9FFF) {
+        ppu->writeVRAM(addr, value);
+    }
 
     if (addr >= 0xFE00 && addr <= 0xFE9F) {
         ppu->writeOAM(addr, value);

@@ -76,7 +76,7 @@ void MBCBase::initialize(void) {
         }
     }
 
-    mapCPUMemory(0x8000, 0x9FFF, ppu->VRAM, 0, true, 0x2000);
+    //mapCPUMemory(0x8000, 0x9FFF, ppu->VRAM, 0, true, 0x2000);
     mapCPUMemory(0xC000, 0xDFFF, WRAM, 0, true, 0x2000);
     //mapCPUMemory(0xE000, 0xFDFF, WRAM, 0, true);
     //mapCPUMemory(0xFE00, 0xFE9F, ppu->OAM, 0, true);

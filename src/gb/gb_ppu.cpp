@@ -263,7 +263,9 @@ void GbPPU::RenderScanline() {
                 }
 
                 uint8_t colorPaletteShade = (paletteReg >> (colorId * 2)) & 0x03;
-                palIndexBuf[LY * 160 + pixelX] = colorPaletteShade;
+                if (!DisableSprites) {
+                    palIndexBuf[LY * 160 + pixelX] = colorPaletteShade;
+                }
             }
         }
     }
@@ -279,12 +281,19 @@ void GbPPU::blitPixels() {
     }
 }
 
-/*uint8_t GbPPU::readVRAM(uint16_t addr) {
+uint8_t GbPPU::readVRAM(uint16_t addr) {
     return VRAM[addr - 0x8000];
 }
 void GbPPU::writeVRAM(uint16_t addr, uint8_t value) {
-    VRAM[addr - 0x8000] = value;
-}*/
+    uint16_t offset = addr - 0x8000; 
+
+    if (VRAMCorruption && (rand() & 7) == 0) {
+        offset ^= (1 << (rand() % 13)); 
+    }
+
+    offset &= 0x1FFF; 
+    VRAM[offset] = value;
+}
 uint8_t GbPPU::readOAM(uint16_t addr) {
     return OAM[addr - 0xFE00];
 }

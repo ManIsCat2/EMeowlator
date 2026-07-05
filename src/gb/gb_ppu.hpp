@@ -32,13 +32,16 @@ public:
     QImage *rawOutputImage = nullptr;
     QImage *filteredOutputImage = nullptr;
 
+    bool VRAMCorruption = false;
+    bool DisableSprites = false;
+
     void reset();
     void Step(uint8_t cycles);
     void RenderScanline();
     void blitPixels();
     
-    //uint8_t readVRAM(uint16_t addr);
-    //void writeVRAM(uint16_t addr, uint8_t value);
+    uint8_t readVRAM(uint16_t addr);
+    void writeVRAM(uint16_t addr, uint8_t value);
     uint8_t readOAM(uint16_t addr);
     void writeOAM(uint16_t addr, uint8_t value);
     uint8_t readRegister(uint16_t addr);
