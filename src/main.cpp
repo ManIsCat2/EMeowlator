@@ -32,8 +32,7 @@ int hoveredPaletteIndex = -1;
 
 void *globalQTWin;
 
-QAction *patternViewerAction;
-QAction *nametableViewerAction;
+QAction *ppuViewerAction;
 
 const unsigned char EMeowlatorIcon[] = {
     0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
@@ -59,8 +58,7 @@ const unsigned char EMeowlatorIcon[] = {
 
 void UpdateUI(void) {
     bool showNesTools = romIsLoaded && emuConsole && emuConsole->getConsoleType() == ConsoleType::NES;
-    patternViewerAction->setVisible(showNesTools);
-    nametableViewerAction->setVisible(showNesTools);
+    ppuViewerAction->setVisible(showNesTools);
 }
 
 void ErrorEmuAndHalt(const char *title, const char *err) {
@@ -798,7 +796,7 @@ QImage BuildNametableImage(MapperBase *mapper, const uint8_t *ntData, uint16_t p
     return img;
 }
 
-void ShowPatternViewerDialog(QWidget *parent) {
+void ShowPPUViewerDialog(QWidget *parent) {
     if (!emuConsole || !romIsLoaded || emuConsole->getConsoleType() != ConsoleType::NES) {
         return;
     }
@@ -806,10 +804,14 @@ void ShowPatternViewerDialog(QWidget *parent) {
     MapperBase *mapper = getNESRom()->mapper;
 
     QDialog *dialog = new QDialog(parent);
-    dialog->setWindowTitle("Pattern Table Viewer");
-    dialog->setFixedSize(580, 360); 
+    dialog->setWindowTitle("PPU Viewer");
+    dialog->setMinimumSize(580, 420);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(dialog);
+    QTabWidget *tabs = new QTabWidget(dialog);
+
+    QWidget *patternTab = new QWidget(tabs);
+    QVBoxLayout *patternLayout = new QVBoxLayout(patternTab);
     QHBoxLayout *tablesLayout = new QHBoxLayout();
 
     QLabel *imgLabels[2] = { nullptr, nullptr };
@@ -818,14 +820,14 @@ void ShowPatternViewerDialog(QWidget *parent) {
     for (int t = 0; t < 2; t++) {
         QVBoxLayout *colLayout = new QVBoxLayout();
 
-        QLabel *title = new QLabel(t == 0 ? "Pattern Table 0 ($0000-$0FFF)" : "Pattern Table 1 ($1000-$1FFF)", dialog);
+        QLabel *title = new QLabel(t == 0 ? "Pattern Table 0 ($0000-$0FFF)" : "Pattern Table 1 ($1000-$1FFF)", patternTab);
         title->setAlignment(Qt::AlignCenter);
 
-        QLabel *imgLabel = new QLabel(dialog);
+        QLabel *imgLabel = new QLabel(patternTab);
         imgLabel->setFixedSize(256, 256);
         imgLabels[t] = imgLabel;
 
-        QCheckBox *chk = new QCheckBox("View as 8x16", dialog);
+        QCheckBox *chk = new QCheckBox("View as 8x16", patternTab);
         chk8x16[t] = chk;
 
         colLayout->addWidget(title);
@@ -835,9 +837,41 @@ void ShowPatternViewerDialog(QWidget *parent) {
         tablesLayout->addLayout(colLayout);
     }
 
-    mainLayout->addLayout(tablesLayout);
+    patternLayout->addLayout(tablesLayout);
+    patternTab->setLayout(patternLayout);
+    tabs->addTab(patternTab, "Pattern Tables");
 
-    auto refresh = [mapper, imgLabels, chk8x16]() {
+    QWidget *nametableTab = new QWidget(tabs);
+    QVBoxLayout *nametableLayout = new QVBoxLayout(nametableTab);
+    QHBoxLayout *controlsLayout = new QHBoxLayout();
+
+    QLabel *ptLabelText = new QLabel("Pattern Table:", nametableTab);
+    QComboBox *ptComboBox = new QComboBox(nametableTab);
+    ptComboBox->addItem("0 ($0000)", 0);
+    ptComboBox->addItem("1 ($1000)", 1);
+
+    controlsLayout->addWidget(ptLabelText);
+    controlsLayout->addWidget(ptComboBox);
+    controlsLayout->addStretch();
+
+    const int nametableCount = 4;
+    const int cols = 2;
+    const int rows = (nametableCount + cols - 1) / cols;
+    const int combinedW = cols * 256;
+    const int combinedH = rows * 240;
+
+    QLabel *imgLabelNT = new QLabel(nametableTab);
+    imgLabelNT->setFixedSize(combinedW, combinedH);
+
+    nametableLayout->addLayout(controlsLayout);
+    nametableLayout->addWidget(imgLabelNT, 0, Qt::AlignCenter);
+    nametableTab->setLayout(nametableLayout);
+    tabs->addTab(nametableTab, "Nametables");
+
+    mainLayout->addWidget(tabs);
+    dialog->setLayout(mainLayout);
+
+    auto refreshPattern = [&]() {
         for (int t = 0; t < 2; t++) {
             bool mode8x16 = chk8x16[t]->isChecked();
             QImage img = BuildPatternTableImage(mapper, t, mode8x16);
@@ -846,53 +880,7 @@ void ShowPatternViewerDialog(QWidget *parent) {
         }
     };
 
-    refresh();
-
-    QObject::connect(chk8x16[0], &QCheckBox::toggled, refresh);
-    QObject::connect(chk8x16[1], &QCheckBox::toggled, refresh);
-
-    QTimer *autoTimer = new QTimer(dialog);
-    QObject::connect(autoTimer, &QTimer::timeout, refresh);
-    autoTimer->start(100);
-
-    dialog->setLayout(mainLayout);
-    dialog->exec();
-    delete dialog;
-}
-
-void ShowNametableViewerDialog(QWidget *parent) {
-    if (!emuConsole || !romIsLoaded || emuConsole->getConsoleType() != ConsoleType::NES) {
-        return;
-    }
-
-    MapperBase *mapper = getNESRom()->mapper;
-
-    const int nametableCount = 4;
-    const int cols = 2;
-    const int rows = (nametableCount + cols - 1) / cols;
-
-    QDialog *dialog = new QDialog(parent);
-    dialog->setWindowTitle("Nametable Viewer");
-
-    QVBoxLayout *mainLayout = new QVBoxLayout(dialog);
-    QHBoxLayout *controlsLayout = new QHBoxLayout();
-
-    QLabel *ptLabelText = new QLabel("Pattern Table:", dialog);
-    QComboBox *ptComboBox = new QComboBox(dialog);
-    ptComboBox->addItem("0 ($0000)", 0);
-    ptComboBox->addItem("1 ($1000)", 1);
-
-    controlsLayout->addWidget(ptLabelText);
-    controlsLayout->addWidget(ptComboBox);
-    controlsLayout->addStretch();
-
-    const int combinedW = cols * 256;
-    const int combinedH = rows * 240;
-
-    QLabel *imgLabel = new QLabel();
-    imgLabel->setFixedSize(combinedW, combinedH);
-
-    auto refresh = [&]() {
+    auto refreshNametable = [&]() {
         int ptIndex = ptComboBox->currentData().toInt();
         uint16_t patternBaseAddr = (uint16_t)(ptIndex == 0 ? 0x0000 : 0x1000);
 
@@ -916,22 +904,26 @@ void ShowNametableViewerDialog(QWidget *parent) {
         painter.end();
 
         QPixmap pix = QPixmap::fromImage(combined).scaled(combinedW, combinedH, Qt::KeepAspectRatio, Qt::FastTransformation);
-        imgLabel->setPixmap(pix);
+        imgLabelNT->setPixmap(pix);
     };
 
-    refresh();
+    auto refreshAll = [&]() {
+        refreshPattern();
+        refreshNametable();
+    };
 
-    QObject::connect(ptComboBox, &QComboBox::currentIndexChanged, refresh);
+    refreshAll();
+
+    QObject::connect(chk8x16[0], &QCheckBox::toggled, refreshPattern);
+    QObject::connect(chk8x16[1], &QCheckBox::toggled, refreshPattern);
+    QObject::connect(ptComboBox, &QComboBox::currentIndexChanged, refreshNametable);
 
     QTimer *autoTimer = new QTimer(dialog);
-    QObject::connect(autoTimer, &QTimer::timeout, refresh);
+    QObject::connect(autoTimer, &QTimer::timeout, refreshAll);
     autoTimer->start(100);
 
-    mainLayout->addLayout(controlsLayout);
-    mainLayout->addWidget(imgLabel); 
+    mainLayout->setSizeConstraint(QLayout::SetFixedSize);
 
-    dialog->setLayout(mainLayout);
-    dialog->setFixedSize(combinedW + 24, combinedH + 60); 
     dialog->exec();
     delete dialog;
 }
@@ -972,8 +964,7 @@ int main(int argc, char *argv[]) {
     QAction *exitAction = new QAction("Exit", &window);
 
     QAction *memViewerAction = new QAction("Memory Viewer", &window);
-    patternViewerAction = new QAction("Pattern Table Viewer", &window);
-    nametableViewerAction = new QAction("Nametable Viewer", &window);
+    ppuViewerAction = new QAction("PPU Viewer", &window);
 
     fileMenu->addAction(openAction);
     fileMenu->addAction(closeAction);
@@ -989,13 +980,10 @@ int main(int argc, char *argv[]) {
     settingsMenu->addAction(displayConfAction);
     settingsMenu->addAction(emuConfAction);
 
+    toolsMenu->addAction(ppuViewerAction);
     toolsMenu->addAction(memViewerAction);
-    toolsMenu->addSeparator();
-    toolsMenu->addAction(patternViewerAction);
-    toolsMenu->addAction(nametableViewerAction);
 
-    patternViewerAction->setVisible(false);
-    nametableViewerAction->setVisible(false);
+    ppuViewerAction->setVisible(false);
 
     miscMenu->addAction(romInfoAction);
     miscMenu->addAction(exitAction);
@@ -1071,8 +1059,7 @@ int main(int argc, char *argv[]) {
     QObject::connect(displayConfAction, &QAction::triggered, [&]() { ShowDisplayConfigDialog(&window); });
     QObject::connect(romInfoAction, &QAction::triggered, [&]() { ShowRomInfoDialog(&window); });
     QObject::connect(memViewerAction, &QAction::triggered, [&]() { ShowMemoryViewerDialog(&window); });
-    QObject::connect(patternViewerAction, &QAction::triggered, [&]() { ShowPatternViewerDialog(&window); });
-    QObject::connect(nametableViewerAction, &QAction::triggered, [&]() { ShowNametableViewerDialog(&window); });
+    QObject::connect(ppuViewerAction, &QAction::triggered, [&]() { ShowPPUViewerDialog(&window); });
     QObject::connect(emuConfAction, &QAction::triggered, [&]() { ShowEmulatorConfigDialog(&window); });
 
     window.setCentralWidget(screen);
