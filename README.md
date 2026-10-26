@@ -36,22 +36,22 @@ The whole GB support right now is kinda bad, so everything is WIP.
 
 ### Ubuntu / Debian
 ```bash
-sudo apt install qt6-base-dev libsdl2-dev build-essential clang
+sudo apt install qt6-base-dev libsdl3-dev build-essential clang
 ```
 
 ### Arch Linux
 ```bash
-sudo pacman -S qt6-base sdl2 base-devel clang
+sudo pacman -S qt6-base sdl3 base-devel clang
 ```
 
 ### Fedora
 ```bash
-sudo dnf install qt6-qtbase-devel SDL2-devel make clang
+sudo dnf install qt6-qtbase-devel SDL3-devel make clang
 ```
 
 ### Windows (MinGW)
 ```bash
-pacman -S mingw-w64-x86_64-SDL2 mingw-w64-x86_64-qt6 mingw-w64-x86_64-toolchain mingw-w64-x86_64-ntldd mingw-w64-x86_64-pkg-config
+pacman -S mingw-w64-x86_64-SDL3 mingw-w64-x86_64-qt6 mingw-w64-x86_64-toolchain mingw-w64-x86_64-ntldd mingw-w64-x86_64-pkg-config
 ```
 
 ## Step 2: Clone the Repository

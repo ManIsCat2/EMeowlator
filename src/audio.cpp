@@ -10,55 +10,60 @@
 
 Audio audioSystem;
 
-void SDLCALL audioCallback(void *userdata, uint8_t *stream, int len) {
+void SDLCALL audioCallback(void *userdata, SDL_AudioStream *stream, int additional, UNUSED int total) {
     Audio* audio = (Audio*)(userdata);
-    int16_t* out = (int16_t*)(stream);
-    int samplesRequested = len / sizeof(int16_t);
-    
+
+    if (additional <= 0) {
+        return;
+    }
+
+    int samplesRequested = additional / sizeof(int16_t);
+    std::vector<int16_t> out(samplesRequested);
+
     std::lock_guard<std::mutex> lock(audio->mutex);
-    
-    for (int i = 0; i < samplesRequested; ++i) {
+
+    for (int i = 0; i < samplesRequested; i++) {
         double s = 0.0;
         if (!audio->buffer.empty()) {
             s = audio->buffer.front();
             audio->buffer.pop();
         }
-        
+
         out[i] = (int16_t)(s * 30000.0);
     }
+
+    SDL_PutAudioStreamData(stream, out.data(), samplesRequested * sizeof(int16_t));
 }
 
 void Audio::init() {
-    if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) {
-        SDL_Log("Failed to initialize SDL audio: %s", SDL_GetError());
+    if (!SDL_InitSubSystem(SDL_INIT_AUDIO)) {
+        DebugPrintLog("AUDIO", "Failed to initialize SDL audio");
         return;
     }
-    SDL_AudioSpec want, have;
-    SDL_zero(want);
-    want.freq = sampleRate;
-    want.format = AUDIO_S16SYS;
-    want.channels = 1;
-    want.samples = 1024;
-    want.callback = audioCallback;
-    want.userdata = this;
-    
-    device = SDL_OpenAudioDevice(nullptr, 0, &want, &have, 0);
-    if (device == 0) {
-        SDL_Log("Failed to open audio device: %s", SDL_GetError());
+
+    SDL_AudioSpec spec;
+    SDL_zero(spec);
+    spec.freq = sampleRate;
+    spec.format = SDL_AUDIO_S16;
+    spec.channels = 1;
+
+    stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, audioCallback, this);
+    if (!stream) {
+        DebugPrintLog("AUDIO", "Failed to open audio device stream");
         return;
     }
-    
-    SDL_PauseAudioDevice(device, 0);
-    DebugPrintLog("AUDIO", "Initialized SDL2 Audio System");
+
+    SDL_ResumeAudioStreamDevice(stream);
+    DebugPrintLog("AUDIO", "Initialized SDL Audio");
 }
 
 
 void Audio::close() {
-    if (device) {
-        SDL_CloseAudioDevice(device);
-        device = 0;
+    if (stream) {
+        SDL_DestroyAudioStream(stream);
+        stream = nullptr;
     }
-    DebugPrintLog("AUDIO", "Closed SDL2 Audio System");
+    DebugPrintLog("AUDIO", "Shutdown SDL Audio");
 }
 
 void Audio::advance(uint32_t cycles) {

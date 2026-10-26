@@ -13,8 +13,8 @@ else
     EXEEXT :=
 endif
 
-LDFLAGS := $(shell pkg-config --libs Qt6Widgets sdl2) #-fsanitize=address -fsanitize=undefined
-CXXFLAGS += $(shell pkg-config --cflags Qt6Widgets sdl2)
+LDFLAGS := $(shell pkg-config --libs Qt6Widgets sdl3) #-fsanitize=address -fsanitize=undefined
+CXXFLAGS += $(shell pkg-config --cflags Qt6Widgets sdl3)
 
 ifeq ($(OS),Windows_NT)
 	LDFLAGS += resource.res

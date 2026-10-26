@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <queue>
 #include <mutex>
 
@@ -11,7 +11,7 @@ public:
     int sampleRate = 44100;
     double cycleCounter = 0.0;
 
-    SDL_AudioDeviceID device = 0;
+    SDL_AudioStream* stream = nullptr;
     void init();
     void close();
     void advance(uint32_t cycles);
